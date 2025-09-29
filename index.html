@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Course Pricing Calculator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-gradient: radial-gradient(circle at top left, #1e2330, #10131c 55%, #0a0c12 100%);
+      --card-bg: rgba(20, 24, 35, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #4da3ff;
+      --text-primary: #f5f7fb;
+      --text-muted: #b1b7c7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1, h2 {
+      font-weight: 600;
+      margin: 0;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: clamp(16px, 3vw, 32px);
+      gap: clamp(16px, 2vw, 24px);
+    }
+
+    header {
+      text-align: center;
+    }
+
+    .layout {
+      display: flex;
+      gap: 24px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: clamp(16px, 2vw, 24px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px);
+    }
+
+    .controls {
+      flex: 0 0 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .controls fieldset {
+      border: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    label span.hint {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(7, 9, 14, 0.75);
+      color: inherit;
+      font-size: 1rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.25);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      color: #0c111d;
+      background: #f1f5ff;
+    }
+
+    button:focus-visible {
+      outline: 3px solid rgba(77, 163, 255, 0.55);
+      outline-offset: 2px;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    button.secondary {
+      background: rgba(77, 163, 255, 0.15);
+      color: var(--text-primary);
+      border: 1px solid rgba(77, 163, 255, 0.45);
+    }
+
+    button.secondary:hover {
+      background: rgba(77, 163, 255, 0.25);
+    }
+
+    .tables {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      min-width: 0;
+    }
+
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    caption {
+      text-align: left;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    thead th {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    thead th:not(:first-child) {
+      text-align: center;
+    }
+
+    tbody th,
+    tbody td {
+      padding: 10px 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    tbody th {
+      text-align: left;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-primary);
+    }
+
+    tbody td {
+      text-align: center;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+
+    .sub-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .tables .card {
+      min-height: 100%;
+    }
+
+    ul.assumptions {
+      margin: 0;
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .tables-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .status-message {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        flex-direction: column;
+      }
+
+      .controls {
+        flex-basis: auto;
+      }
+    }
+
+    @media (max-width: 520px) {
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .button-row {
+        flex-direction: column;
+      }
+
+      tbody td {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Course Pricing Calculator</h1>
+      <p style="color: var(--text-muted); margin-top: 8px;">
+        Estimate per-student pricing to reach your target income. All calculations stay on this page.
+      </p>
+    </header>
+
+    <div class="layout">
+      <section class="card controls" aria-labelledby="inputs-heading">
+        <h2 id="inputs-heading" style="font-size: 1.1rem;">Inputs</h2>
+        <fieldset>
+          <div class="control">
+            <label for="target-net">Target net income per year
+              <span class="hint">Amount you want to take home after income taxes.</span>
+            </label>
+            <input type="number" id="target-net" value="65000" min="0" step="100" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="tax-rate">Effective income tax rate (%)
+              <span class="hint">Share of profit paid in taxes and social charges.</span>
+            </label>
+            <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="fixed-costs">Fixed annual costs
+              <span class="hint">Venue, insurance, marketing, materials, admin, etc.</span>
+            </label>
+            <input type="number" id="fixed-costs" value="16500" min="0" step="100" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="vat-rate">VAT rate (%)
+              <span class="hint">Set to 0 for VAT-exempt scenarios.</span>
+            </label>
+            <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="classes-per-week">Classes per week
+              <span class="hint">Comma-separated integers (e.g. 4,5,6).</span>
+            </label>
+            <input type="text" id="classes-per-week" value="4,5,6" autocomplete="off" />
+          </div>
+          <div class="control">
+            <label for="students-per-class">Students per class
+              <span class="hint">Comma-separated integers (e.g. 6,8,10,12).</span>
+            </label>
+            <input type="text" id="students-per-class" value="6,8,10,12" autocomplete="off" />
+          </div>
+          <div class="control">
+            <label for="working-weeks">Working weeks per year
+              <span class="hint">Minimum of 1 week. Supports decimals.</span>
+            </label>
+            <input type="number" id="working-weeks" value="32.5" min="1" step="0.5" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="buffer">Safety margin (%)
+              <span class="hint">Applied to cover no-shows, discounts, and slippage.</span>
+            </label>
+            <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="currency-symbol">Currency symbol
+              <span class="hint">Displayed before amounts.</span>
+            </label>
+            <input type="text" id="currency-symbol" value="€" maxlength="3" />
+          </div>
+        </fieldset>
+
+        <div class="button-row" role="group" aria-label="Preset targets">
+          <button type="button" class="secondary" data-preset="65k">Preset: 65k target</button>
+          <button type="button" class="secondary" data-preset="100k">Preset: 100k target</button>
+        </div>
+
+        <div class="button-row" role="group" aria-label="Actions">
+          <button type="button" id="recalculate">Recalculate</button>
+          <button type="button" id="download-csv" class="secondary">Download CSV</button>
+        </div>
+        <p class="status-message" id="status-message" aria-live="polite"></p>
+      </section>
+
+      <section class="tables" aria-live="polite">
+        <div class="table-grid" id="tables-container">
+          <!-- Tables injected here -->
+        </div>
+        <div class="tables-footer">
+          <h2 style="font-size: 1.05rem; margin: 0;">Assumptions</h2>
+          <ul class="assumptions" id="assumptions-list"></ul>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+
+    const controls = {
+      targetNet: document.getElementById('target-net'),
+      taxRate: document.getElementById('tax-rate'),
+      fixedCosts: document.getElementById('fixed-costs'),
+      vatRate: document.getElementById('vat-rate'),
+      classesPerWeek: document.getElementById('classes-per-week'),
+      studentsPerClass: document.getElementById('students-per-class'),
+      workingWeeks: document.getElementById('working-weeks'),
+      buffer: document.getElementById('buffer'),
+      currencySymbol: document.getElementById('currency-symbol'),
+      recalcButton: document.getElementById('recalculate'),
+      downloadCsv: document.getElementById('download-csv'),
+      statusMessage: document.getElementById('status-message')
+    };
+
+    const tablesContainer = document.getElementById('tables-container');
+    const assumptionsList = document.getElementById('assumptions-list');
+    const presetButtons = document.querySelectorAll('button[data-preset]');
+
+    let latestResults = [];
+
+    function parseNumber(value, fallback = 0, { min = -Infinity, max = Infinity } = {}) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) {
+        return fallback;
+      }
+      return Math.min(Math.max(parsed, min), max);
+    }
+
+    function parseList(value) {
+      if (!value) {
+        return [];
+      }
+      return value
+        .split(',')
+        .map(token => Number(token.trim()))
+        .filter(num => Number.isFinite(num) && num > 0)
+        .map(num => Math.round(num));
+    }
+
+    function getInputs() {
+      const targetNet = Math.max(parseNumber(controls.targetNet.value, 65000), 0);
+      const taxRatePercent = Math.min(Math.max(parseNumber(controls.taxRate.value, 40), 0), 99.9);
+      const taxRate = taxRatePercent / 100;
+      const fixedCosts = Math.max(parseNumber(controls.fixedCosts.value, 16500), 0);
+      const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
+      const classesPerWeek = parseList(controls.classesPerWeek.value);
+      const studentsPerClass = parseList(controls.studentsPerClass.value);
+      const workingWeeks = Math.max(parseNumber(controls.workingWeeks.value, 32.5), 1);
+      const bufferPercent = Math.max(parseNumber(controls.buffer.value, 15), 0);
+      const buffer = bufferPercent / 100;
+      const currencySymbol = controls.currencySymbol.value.trim() || '€';
+
+      controls.targetNet.value = targetNet;
+      controls.taxRate.value = (taxRate * 100).toFixed(1).replace(/\.0$/, '');
+      controls.fixedCosts.value = fixedCosts;
+      controls.vatRate.value = (vatRate * 100).toFixed(1).replace(/\.0$/, '');
+      controls.workingWeeks.value = workingWeeks;
+      controls.buffer.value = (buffer * 100).toFixed(1).replace(/\.0$/, '');
+      controls.currencySymbol.value = currencySymbol;
+
+      return {
+        targetNet,
+        taxRate,
+        fixedCosts,
+        vatRate,
+        classesPerWeek,
+        studentsPerClass,
+        workingWeeks,
+        buffer,
+        bufferPercent,
+        currencySymbol
+      };
+    }
+
+    function formatCurrency(symbol, value) {
+      return `${symbol}${numberFormatter.format(Math.round(value))}`;
+    }
+
+    function buildTable(title, data, symbol) {
+      if (!data.length) {
+        return `<div class="card"><p class="status-message">No valid combinations available.</p></div>`;
+      }
+
+      const columnHeaders = data[0].columns
+        .map(col => {
+          return `<th scope="col">${col.classesPerWeek}/week<span class="sub-label">≈ ${numberFormatter.format(col.classesPerYear)} / yr</span></th>`;
+        })
+        .join('');
+
+      const rowsHtml = data
+        .map(row => {
+          const cells = row.columns
+            .map(col => {
+              const exVat = formatCurrency(symbol, col.priceExVat);
+              const inclVat = formatCurrency(symbol, col.priceInclVat);
+              return `<td><strong>${exVat}</strong><br /><span style="color: var(--text-muted);">incl VAT ${inclVat}</span></td>`;
+            })
+            .join('');
+          return `<tr><th scope="row">${row.students}<span class="sub-label">students</span></th>${cells}</tr>`;
+        })
+        .join('');
+
+      return `
+        <div class="card">
+          <table>
+            <caption>${title}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Students / class</th>
+                ${columnHeaders}
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function computeTables(inputs) {
+      const {
+        targetNet,
+        taxRate,
+        fixedCosts,
+        vatRate,
+        classesPerWeek,
+        studentsPerClass,
+        workingWeeks,
+        buffer,
+        bufferPercent,
+        currencySymbol
+      } = inputs;
+
+      const effectiveTaxRate = Math.min(taxRate, 0.99);
+      const denominator = Math.max(1 - effectiveTaxRate, 0.0001);
+      const profitBeforeTax = targetNet / denominator;
+      const revenueNeeded = profitBeforeTax + fixedCosts;
+
+      const breakEvenData = [];
+      const bufferedData = [];
+      latestResults = [];
+
+      if (!classesPerWeek.length || !studentsPerClass.length || !Number.isFinite(revenueNeeded) || revenueNeeded <= 0) {
+        return { breakEvenData, bufferedData, variantLabel: bufferPercent };
+      }
+
+      const sortedStudents = [...studentsPerClass];
+      sortedStudents.sort((a, b) => a - b);
+
+      const columnsMeta = classesPerWeek.map(classes => {
+        const classesPerYear = classes * workingWeeks;
+        return { classesPerWeek: classes, classesPerYear };
+      });
+
+      for (const students of sortedStudents) {
+        const breakEvenRow = { students, columns: [] };
+        const bufferedRow = { students, columns: [] };
+
+        for (const column of columnsMeta) {
+          const revenuePerClass = revenueNeeded / (column.classesPerYear || 1);
+          const priceExVat = revenuePerClass / students;
+          const bufferedExVat = priceExVat * (1 + buffer);
+          const priceInclVat = priceExVat * (1 + vatRate);
+          const bufferedInclVat = bufferedExVat * (1 + vatRate);
+
+          breakEvenRow.columns.push({
+            classesPerWeek: column.classesPerWeek,
+            classesPerYear: column.classesPerYear,
+            priceExVat,
+            priceInclVat
+          });
+
+          bufferedRow.columns.push({
+            classesPerWeek: column.classesPerWeek,
+            classesPerYear: column.classesPerYear,
+            priceExVat: bufferedExVat,
+            priceInclVat: bufferedInclVat
+          });
+
+          latestResults.push({
+            variant: 'Break-even',
+            students,
+            classesPerWeek: column.classesPerWeek,
+            classesPerYear: Math.round(column.classesPerYear),
+            priceExVat: Math.round(priceExVat),
+            priceInclVat: Math.round(priceInclVat)
+          });
+          latestResults.push({
+            variant: `Buffered +${bufferPercent}%`,
+            students,
+            classesPerWeek: column.classesPerWeek,
+            classesPerYear: Math.round(column.classesPerYear),
+            priceExVat: Math.round(bufferedExVat),
+            priceInclVat: Math.round(bufferedInclVat)
+          });
+        }
+
+        breakEvenData.push(breakEvenRow);
+        bufferedData.push(bufferedRow);
+      }
+
+      return {
+        breakEvenData: breakEvenData.map(row => ({
+          ...row,
+          columns: row.columns.map(col => ({
+            ...col,
+            priceExVat: Math.round(col.priceExVat),
+            priceInclVat: Math.round(col.priceInclVat)
+          }))
+        })),
+        bufferedData: bufferedData.map(row => ({
+          ...row,
+          columns: row.columns.map(col => ({
+            ...col,
+            priceExVat: Math.round(col.priceExVat),
+            priceInclVat: Math.round(col.priceInclVat)
+          }))
+        })),
+        bufferPercent
+      };
+    }
+
+    function render() {
+      const inputs = getInputs();
+      const { breakEvenData, bufferedData, bufferPercent } = computeTables(inputs);
+
+      if (!breakEvenData.length || !bufferedData.length) {
+        tablesContainer.innerHTML = `
+          <div class="card">
+            <p class="status-message">Enter at least one valid class count and student count to see pricing tables.</p>
+          </div>
+        `;
+      } else {
+        const breakEvenTable = buildTable('Break-even pricing', breakEvenData, inputs.currencySymbol);
+        const bufferedTable = buildTable(`Buffered pricing (+${bufferPercent}% margin)`, bufferedData, inputs.currencySymbol);
+        tablesContainer.innerHTML = `${breakEvenTable}${bufferedTable}`;
+      }
+
+      renderAssumptions(inputs);
+    }
+
+    function renderAssumptions(inputs) {
+      const {
+        targetNet,
+        taxRate,
+        fixedCosts,
+        vatRate,
+        classesPerWeek,
+        studentsPerClass,
+        workingWeeks,
+        bufferPercent,
+        currencySymbol
+      } = inputs;
+
+      const listItems = [
+        `Target net income: ${formatCurrency(currencySymbol, targetNet)} per year`,
+        `Effective income tax rate: ${(taxRate * 100).toFixed(1).replace(/\.0$/, '')}%`,
+        `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
+        `Working weeks per year: ${workingWeeks}`,
+        `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
+        `Students per class considered: ${studentsPerClass.length ? studentsPerClass.join(', ') : 'none'}`,
+        `Safety margin applied to buffered table: ${bufferPercent.toFixed(1).replace(/\.0$/, '')}%`,
+        `VAT rate: ${(vatRate * 100).toFixed(1).replace(/\.0$/, '')}%`,
+        `Currency symbol: ${currencySymbol}`,
+        `Prices are rounded to whole currency units for display and CSV export.`
+      ];
+
+      assumptionsList.innerHTML = listItems.map(item => `<li>${item}</li>`).join('');
+    }
+
+    function applyPreset(preset) {
+      if (preset === '65k') {
+        controls.targetNet.value = 65000;
+        controls.taxRate.value = 40;
+      } else if (preset === '100k') {
+        controls.targetNet.value = 100000;
+        controls.taxRate.value = 45;
+      }
+      render();
+      controls.statusMessage.textContent = `Preset applied: ${preset === '65k' ? '65k target' : '100k target'}.`;
+      setTimeout(() => {
+        controls.statusMessage.textContent = '';
+      }, 2500);
+    }
+
+    function downloadCsv() {
+      if (!latestResults.length) {
+        controls.statusMessage.textContent = 'Add at least one class and student value before exporting CSV.';
+        setTimeout(() => {
+          controls.statusMessage.textContent = '';
+        }, 2500);
+        return;
+      }
+
+      const header = 'Variant,Students,Classes per week,Classes per year,Price ex VAT,Price incl VAT';
+      const rows = latestResults.map(entry => [
+        entry.variant,
+        entry.students,
+        entry.classesPerWeek,
+        entry.classesPerYear,
+        entry.priceExVat,
+        entry.priceInclVat
+      ].join(','));
+
+      const csvContent = [header, ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const timestamp = new Date().toISOString().slice(0, 10);
+      link.download = `course-pricing-${timestamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      controls.statusMessage.textContent = 'CSV download started. File contains both break-even and buffered rows.';
+      setTimeout(() => {
+        controls.statusMessage.textContent = '';
+      }, 2500);
+    }
+
+    Object.values(controls).forEach(control => {
+      if (control instanceof HTMLInputElement) {
+        control.addEventListener('change', render);
+        control.addEventListener('input', event => {
+          if (event.target.type === 'text') return;
+          render();
+        });
+      }
+    });
+
+    controls.recalcButton.addEventListener('click', render);
+    controls.downloadCsv.addEventListener('click', downloadCsv);
+    presetButtons.forEach(button => {
+      button.addEventListener('click', () => applyPreset(button.dataset.preset));
+    });
+
+    render();
+  </script>
+</body>
+</html>
