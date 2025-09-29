@@ -122,6 +122,17 @@
       box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.25);
     }
 
+    .control output {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(7, 9, 14, 0.45);
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+    }
+
     .button-row {
       display: flex;
       flex-wrap: wrap;
@@ -329,10 +340,34 @@
             <input type="text" id="students-per-class" value="6,8,10,12" autocomplete="off" />
           </div>
           <div class="control">
-            <label for="working-weeks">Working weeks per year
-              <span class="hint">Minimum of 1 week. Supports decimals.</span>
+            <label for="months-off">Months off per year
+              <span class="hint">Total months you plan to take completely off.</span>
             </label>
-            <input type="number" id="working-weeks" value="32.5" min="1" step="0.5" inputmode="decimal" />
+            <input type="number" id="months-off" value="2" min="0" max="12" step="0.5" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="weeks-off-cycle">Weeks off per 4-week cycle
+              <span class="hint">For example, 1 week off means working 3 weeks out of every 4.</span>
+            </label>
+            <input type="number" id="weeks-off-cycle" value="1" min="0" max="4" step="0.25" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="days-off-week">Days off per working week
+              <span class="hint">Assumes a 5-day working week. Supports decimals for half-days.</span>
+            </label>
+            <input type="number" id="days-off-week" value="1" min="0" max="5" step="0.25" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label>Estimated working weeks per year
+              <span class="hint">Calculated from the schedule above.</span>
+            </label>
+            <output id="working-weeks-display">32.5</output>
+          </div>
+          <div class="control">
+            <label>Estimated working days per year
+              <span class="hint">Working weeks × working days per active week.</span>
+            </label>
+            <output id="working-days-display">130</output>
           </div>
           <div class="control">
             <label for="buffer">Safety margin (%)
@@ -382,12 +417,16 @@
       vatRate: document.getElementById('vat-rate'),
       classesPerWeek: document.getElementById('classes-per-week'),
       studentsPerClass: document.getElementById('students-per-class'),
-      workingWeeks: document.getElementById('working-weeks'),
+      monthsOff: document.getElementById('months-off'),
+      weeksOffCycle: document.getElementById('weeks-off-cycle'),
+      daysOffWeek: document.getElementById('days-off-week'),
       buffer: document.getElementById('buffer'),
       currencySymbol: document.getElementById('currency-symbol'),
       recalcButton: document.getElementById('recalculate'),
       downloadCsv: document.getElementById('download-csv'),
-      statusMessage: document.getElementById('status-message')
+      statusMessage: document.getElementById('status-message'),
+      workingWeeksDisplay: document.getElementById('working-weeks-display'),
+      workingDaysDisplay: document.getElementById('working-days-display')
     };
 
     const tablesContainer = document.getElementById('tables-container');
@@ -395,6 +434,16 @@
     const presetButtons = document.querySelectorAll('button[data-preset]');
 
     let latestResults = [];
+
+    const WEEKS_PER_YEAR = 52;
+    const BASE_WORK_DAYS_PER_WEEK = 5;
+
+    function formatFixed(value, fractionDigits = 1) {
+      const fixed = value.toFixed(fractionDigits);
+      return fixed
+        .replace(/\.0+$/, '')
+        .replace(/(\.[0-9]*[1-9])0+$/, '$1');
+    }
 
     function parseNumber(value, fallback = 0, { min = -Infinity, max = Infinity } = {}) {
       const parsed = Number(value);
@@ -423,18 +472,32 @@
       const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
       const classesPerWeek = parseList(controls.classesPerWeek.value);
       const studentsPerClass = parseList(controls.studentsPerClass.value);
-      const workingWeeks = Math.max(parseNumber(controls.workingWeeks.value, 32.5), 1);
+      const monthsOff = parseNumber(controls.monthsOff.value, 2, { min: 0, max: 12 });
+      const weeksOffPerCycle = parseNumber(controls.weeksOffCycle.value, 1, { min: 0, max: 4 });
+      const daysOffPerWeek = parseNumber(controls.daysOffWeek.value, 1, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
       const bufferPercent = Math.max(parseNumber(controls.buffer.value, 15), 0);
       const buffer = bufferPercent / 100;
       const currencySymbol = controls.currencySymbol.value.trim() || '€';
 
       controls.targetNet.value = targetNet;
-      controls.taxRate.value = (taxRate * 100).toFixed(1).replace(/\.0$/, '');
+      controls.taxRate.value = formatFixed(taxRate * 100, 1);
       controls.fixedCosts.value = fixedCosts;
-      controls.vatRate.value = (vatRate * 100).toFixed(1).replace(/\.0$/, '');
-      controls.workingWeeks.value = workingWeeks;
-      controls.buffer.value = (buffer * 100).toFixed(1).replace(/\.0$/, '');
+      controls.vatRate.value = formatFixed(vatRate * 100, 1);
+      controls.monthsOff.value = formatFixed(monthsOff, 2);
+      controls.weeksOffCycle.value = formatFixed(weeksOffPerCycle, 2);
+      controls.daysOffWeek.value = formatFixed(daysOffPerWeek, 2);
+      controls.buffer.value = formatFixed(buffer * 100, 1);
       controls.currencySymbol.value = currencySymbol;
+
+      const activeMonthShare = Math.min(Math.max((12 - monthsOff) / 12, 0), 1);
+      const activeMonths = 12 * activeMonthShare;
+      const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
+      const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
+      const workingDaysPerWeek = Math.max(BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek, 0);
+      const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
+
+      controls.workingWeeksDisplay.textContent = formatFixed(workingWeeks, 2);
+      controls.workingDaysDisplay.textContent = formatFixed(workingDaysPerYear, 2);
 
       return {
         targetNet,
@@ -446,7 +509,15 @@
         workingWeeks,
         buffer,
         bufferPercent,
-        currencySymbol
+        currencySymbol,
+        monthsOff,
+        weeksOffPerCycle,
+        daysOffPerWeek,
+        workingDaysPerWeek,
+        workingDaysPerYear,
+        activeMonths,
+        activeMonthShare,
+        weeksShare
       };
     }
 
@@ -519,7 +590,14 @@
       const bufferedData = [];
       latestResults = [];
 
-      if (!classesPerWeek.length || !studentsPerClass.length || !Number.isFinite(revenueNeeded) || revenueNeeded <= 0) {
+      if (
+        !classesPerWeek.length ||
+        !studentsPerClass.length ||
+        !Number.isFinite(revenueNeeded) ||
+        revenueNeeded <= 0 ||
+        !Number.isFinite(workingWeeks) ||
+        workingWeeks <= 0
+      ) {
         return { breakEvenData, bufferedData, variantLabel: bufferPercent };
       }
 
@@ -628,18 +706,34 @@
         studentsPerClass,
         workingWeeks,
         bufferPercent,
-        currencySymbol
+        currencySymbol,
+        monthsOff,
+        weeksOffPerCycle,
+        daysOffPerWeek,
+        workingDaysPerWeek,
+        workingDaysPerYear,
+        activeMonths,
+        activeMonthShare,
+        weeksShare
       } = inputs;
+
+      const activeMonthPercentage = activeMonthShare * 100;
+      const activeWeeksPercentage = weeksShare * 100;
+      const workingWeeksPerCycle = 4 * weeksShare;
 
       const listItems = [
         `Target net income: ${formatCurrency(currencySymbol, targetNet)} per year`,
-        `Effective income tax rate: ${(taxRate * 100).toFixed(1).replace(/\.0$/, '')}%`,
+        `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
         `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
-        `Working weeks per year: ${workingWeeks}`,
+        `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
+        `Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`,
+        `Days off per working week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
+        `Estimated working weeks per year: ${formatFixed(workingWeeks, 2)}`,
+        `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
         `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
         `Students per class considered: ${studentsPerClass.length ? studentsPerClass.join(', ') : 'none'}`,
-        `Safety margin applied to buffered table: ${bufferPercent.toFixed(1).replace(/\.0$/, '')}%`,
-        `VAT rate: ${(vatRate * 100).toFixed(1).replace(/\.0$/, '')}%`,
+        `Safety margin applied to buffered table: ${formatFixed(bufferPercent, 1)}%`,
+        `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
         `Currency symbol: ${currencySymbol}`,
         `Prices are rounded to whole currency units for display and CSV export.`
       ];
