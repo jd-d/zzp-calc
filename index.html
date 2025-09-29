@@ -707,6 +707,84 @@
       `;
     }
 
+    function buildActiveTargetsTable({
+      currencySymbol,
+      revenueNeeded,
+      workingDaysPerYear,
+      workingWeeks,
+      activeMonths
+    }) {
+      if (!Number.isFinite(revenueNeeded) || revenueNeeded <= 0) {
+        return '';
+      }
+
+      const targets = [
+        {
+          label: 'Active day',
+          basis: workingDaysPerYear,
+          suffix: 'active days / year'
+        },
+        {
+          label: 'Active week',
+          basis: workingWeeks,
+          suffix: 'active weeks / year'
+        },
+        {
+          label: 'Active month',
+          basis: activeMonths,
+          suffix: 'active months / year'
+        }
+      ];
+
+      const rows = targets
+        .map(target => {
+          const hasBasis = Number.isFinite(target.basis) && target.basis > 0;
+          const amount = hasBasis ? revenueNeeded / target.basis : null;
+          const amountDisplay = hasBasis && Number.isFinite(amount)
+            ? formatCurrency(currencySymbol, amount)
+            : '—';
+          const basisDisplay = hasBasis
+            ? `Based on ≈ ${formatFixed(target.basis, 2)} ${target.suffix}`
+            : '—';
+
+          return `
+            <tr>
+              <th scope="row">${target.label}</th>
+              <td>${amountDisplay}</td>
+              <td>${basisDisplay}</td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      return `
+        <div class="card">
+          <table>
+            <caption>
+              Active day / week / month targets
+              <span
+                class="info-icon"
+                tabindex="0"
+                role="img"
+                aria-label="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
+                data-tooltip="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
+              >ℹ️</span>
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Target</th>
+                <th scope="col">Revenue needed</th>
+                <th scope="col">Basis</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
     function computeTables(inputs) {
       const {
         targetNet,
@@ -736,7 +814,7 @@
         !Number.isFinite(workingWeeks) ||
         workingWeeks <= 0
       ) {
-        return { pricingData, bufferPercent };
+        return { pricingData, bufferPercent, revenueNeeded };
       }
 
       const sortedStudents = [...studentsPerClass];
@@ -796,12 +874,12 @@
         pricingData.push(row);
       }
 
-      return { pricingData, bufferPercent };
+      return { pricingData, bufferPercent, revenueNeeded };
     }
 
     function render() {
       const inputs = getInputs();
-      const { pricingData, bufferPercent } = computeTables(inputs);
+      const { pricingData, bufferPercent, revenueNeeded } = computeTables(inputs);
 
       if (!pricingData.length) {
         tablesContainer.innerHTML = `
@@ -810,7 +888,16 @@
           </div>
         `;
       } else {
-        tablesContainer.innerHTML = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent);
+        const pricingTable = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent);
+        const targetsTable = buildActiveTargetsTable({
+          currencySymbol: inputs.currencySymbol,
+          revenueNeeded,
+          workingDaysPerYear: inputs.workingDaysPerYear,
+          workingWeeks: inputs.workingWeeks,
+          activeMonths: inputs.activeMonths
+        });
+
+        tablesContainer.innerHTML = pricingTable + targetsTable;
       }
 
       renderAssumptions(inputs);
