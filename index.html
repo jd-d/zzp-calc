@@ -628,6 +628,32 @@
             <input type="number" id="target-net" value="65000" min="0" step="100" inputmode="decimal" />
           </div>
           <div class="control">
+            <label for="target-net-week">
+              <span class="label-text">Target net income per active week</span>
+              <span
+                class="info-icon"
+                tabindex="0"
+                role="img"
+                aria-label="Weeks you are actively teaching after factoring in planned time off."
+                data-tooltip="Weeks you are actively teaching after factoring in planned time off."
+              >ℹ️</span>
+            </label>
+            <input type="number" id="target-net-week" value="2000" min="0" step="50" inputmode="decimal" />
+          </div>
+          <div class="control">
+            <label for="target-net-month">
+              <span class="label-text">Target net income per active month</span>
+              <span
+                class="info-icon"
+                tabindex="0"
+                role="img"
+                aria-label="Active months exclude the time off set below."
+                data-tooltip="Active months exclude the time off set below."
+              >ℹ️</span>
+            </label>
+            <input type="number" id="target-net-month" value="6500" min="0" step="100" inputmode="decimal" />
+          </div>
+          <div class="control">
             <label for="tax-rate">
               <span class="label-text">Effective income tax rate (%)</span>
               <span class="info-icon" tabindex="0" role="img" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
@@ -810,6 +836,8 @@
 
     const controls = {
       targetNet: document.getElementById('target-net'),
+      targetNetWeek: document.getElementById('target-net-week'),
+      targetNetMonth: document.getElementById('target-net-month'),
       taxRate: document.getElementById('tax-rate'),
       fixedCosts: document.getElementById('fixed-costs'),
       vatRate: document.getElementById('vat-rate'),
@@ -832,9 +860,11 @@
     const presetButtons = document.querySelectorAll('button[data-preset]');
 
     let latestResults = [];
+    let targetNetBasis = 'year';
 
     const WEEKS_PER_YEAR = 52;
     const BASE_WORK_DAYS_PER_WEEK = 5;
+    const TARGET_NET_DEFAULT = 65000;
 
     function formatFixed(value, fractionDigits = 1) {
       const fixed = value.toFixed(fractionDigits);
@@ -844,7 +874,14 @@
     }
 
     function parseNumber(value, fallback = 0, { min = -Infinity, max = Infinity } = {}) {
-      const parsed = Number(value);
+      if (value === null || value === undefined) {
+        return fallback;
+      }
+      const normalized = typeof value === 'string' ? value.trim() : value;
+      if (normalized === '') {
+        return fallback;
+      }
+      const parsed = Number(normalized);
       if (!Number.isFinite(parsed)) {
         return fallback;
       }
@@ -863,21 +900,63 @@
     }
 
     function getInputs() {
-      const targetNet = Math.max(parseNumber(controls.targetNet.value, 65000), 0);
+      const monthsOff = parseNumber(controls.monthsOff.value, 2, { min: 0, max: 12 });
+      const weeksOffPerCycle = parseNumber(controls.weeksOffCycle.value, 1, { min: 0, max: 4 });
+      const daysOffPerWeek = parseNumber(controls.daysOffWeek.value, 1, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
+
       const taxRatePercent = Math.min(Math.max(parseNumber(controls.taxRate.value, 40), 0), 99.9);
       const taxRate = taxRatePercent / 100;
       const fixedCosts = Math.max(parseNumber(controls.fixedCosts.value, 16500), 0);
       const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
       const classesPerWeek = parseList(controls.classesPerWeek.value);
       const studentsPerClass = parseList(controls.studentsPerClass.value);
-      const monthsOff = parseNumber(controls.monthsOff.value, 2, { min: 0, max: 12 });
-      const weeksOffPerCycle = parseNumber(controls.weeksOffCycle.value, 1, { min: 0, max: 4 });
-      const daysOffPerWeek = parseNumber(controls.daysOffWeek.value, 1, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
       const bufferPercent = Math.max(parseNumber(controls.buffer.value, 15), 0);
       const buffer = bufferPercent / 100;
       const currencySymbol = controls.currencySymbol.value.trim() || '€';
 
-      controls.targetNet.value = targetNet;
+      const activeMonthShare = Math.min(Math.max((12 - monthsOff) / 12, 0), 1);
+      const activeMonths = 12 * activeMonthShare;
+      const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
+      const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
+      const workingDaysPerWeek = Math.max(BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek, 0);
+      const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
+
+      const defaultTargetNetWeek = workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT;
+      const defaultTargetNetMonth = activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT;
+
+      const targetNetYearInput = Math.max(parseNumber(controls.targetNet.value, TARGET_NET_DEFAULT), 0);
+      const targetNetWeekInput = Math.max(parseNumber(controls.targetNetWeek.value, defaultTargetNetWeek), 0);
+      const targetNetMonthInput = Math.max(parseNumber(controls.targetNetMonth.value, defaultTargetNetMonth), 0);
+
+      const hasWorkingWeeks = workingWeeks > 0;
+      const hasActiveMonths = activeMonths > 0;
+
+      let targetNet;
+      if (targetNetBasis === 'week') {
+        targetNet = hasWorkingWeeks ? targetNetWeekInput * workingWeeks : targetNetYearInput;
+      } else if (targetNetBasis === 'month') {
+        targetNet = hasActiveMonths ? targetNetMonthInput * activeMonths : targetNetYearInput;
+      } else {
+        targetNet = targetNetYearInput;
+      }
+
+      targetNet = Math.max(targetNet, 0);
+
+      const targetNetPerWeek = hasWorkingWeeks ? targetNet / workingWeeks : null;
+      const targetNetPerMonth = hasActiveMonths ? targetNet / activeMonths : null;
+
+      controls.targetNet.value = formatFixed(targetNet, 2);
+
+      const weekDisplayValue = targetNetBasis === 'week' ? targetNetWeekInput : targetNetPerWeek;
+      controls.targetNetWeek.value = weekDisplayValue == null || !Number.isFinite(weekDisplayValue)
+        ? ''
+        : formatFixed(weekDisplayValue, 2);
+
+      const monthDisplayValue = targetNetBasis === 'month' ? targetNetMonthInput : targetNetPerMonth;
+      controls.targetNetMonth.value = monthDisplayValue == null || !Number.isFinite(monthDisplayValue)
+        ? ''
+        : formatFixed(monthDisplayValue, 2);
+
       controls.taxRate.value = formatFixed(taxRate * 100, 1);
       controls.fixedCosts.value = fixedCosts;
       controls.vatRate.value = formatFixed(vatRate * 100, 1);
@@ -887,18 +966,13 @@
       controls.buffer.value = formatFixed(buffer * 100, 1);
       controls.currencySymbol.value = currencySymbol;
 
-      const activeMonthShare = Math.min(Math.max((12 - monthsOff) / 12, 0), 1);
-      const activeMonths = 12 * activeMonthShare;
-      const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
-      const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
-      const workingDaysPerWeek = Math.max(BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek, 0);
-      const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
-
       controls.workingWeeksDisplay.textContent = formatFixed(workingWeeks, 2);
       controls.workingDaysDisplay.textContent = formatFixed(workingDaysPerYear, 2);
 
       return {
         targetNet,
+        targetNetPerWeek,
+        targetNetPerMonth,
         taxRate,
         fixedCosts,
         vatRate,
@@ -1183,6 +1257,8 @@
     function renderAssumptions(inputs) {
       const {
         targetNet,
+        targetNetPerWeek,
+        targetNetPerMonth,
         taxRate,
         fixedCosts,
         vatRate,
@@ -1205,8 +1281,17 @@
       const activeWeeksPercentage = weeksShare * 100;
       const workingWeeksPerCycle = 4 * weeksShare;
 
+      const targetPerWeekDisplay = Number.isFinite(targetNetPerWeek)
+        ? formatCurrency(currencySymbol, targetNetPerWeek)
+        : '—';
+      const targetPerMonthDisplay = Number.isFinite(targetNetPerMonth)
+        ? formatCurrency(currencySymbol, targetNetPerMonth)
+        : '—';
+
       const listItems = [
         `Target net income: ${formatCurrency(currencySymbol, targetNet)} per year`,
+        `Target net income per active week: ${targetPerWeekDisplay}`,
+        `Target net income per active month: ${targetPerMonthDisplay}`,
         `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
         `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
         `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
@@ -1233,6 +1318,7 @@
         controls.targetNet.value = 100000;
         controls.taxRate.value = 45;
       }
+      targetNetBasis = 'year';
       render();
       controls.statusMessage.textContent = `Preset applied: ${preset === '65k' ? '65k target' : '100k target'}.`;
       setTimeout(() => {
@@ -1275,6 +1361,19 @@
         controls.statusMessage.textContent = '';
       }, 2500);
     }
+
+    [
+      { control: controls.targetNet, basis: 'year' },
+      { control: controls.targetNetWeek, basis: 'week' },
+      { control: controls.targetNetMonth, basis: 'month' }
+    ].forEach(({ control, basis }) => {
+      if (!(control instanceof HTMLInputElement)) return;
+      const updateBasis = () => {
+        targetNetBasis = basis;
+      };
+      control.addEventListener('input', updateBasis);
+      control.addEventListener('change', updateBasis);
+    });
 
     Object.values(controls).forEach(control => {
       if (control instanceof HTMLInputElement) {
