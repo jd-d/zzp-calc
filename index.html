@@ -93,14 +93,83 @@
     label {
       font-size: 0.95rem;
       font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    label span.hint {
-      display: block;
+    .label-text {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .info-icon {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      background: rgba(77, 163, 255, 0.15);
+      color: var(--accent);
+      cursor: help;
+      border: 1px solid rgba(77, 163, 255, 0.35);
+      flex: 0 0 auto;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .info-icon:hover,
+    .info-icon:focus-visible {
+      background: rgba(77, 163, 255, 0.25);
+      border-color: rgba(77, 163, 255, 0.55);
+      outline: none;
+      color: #fff;
+      box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.25);
+    }
+
+    .info-icon::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translate(-50%, 4px);
+      width: clamp(180px, 32vw, 260px);
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(12, 16, 26, 0.95);
+      color: var(--text-primary);
       font-size: 0.8rem;
-      color: var(--text-muted);
-      font-weight: 400;
-      margin-top: 2px;
+      line-height: 1.35;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 10;
+    }
+
+    .info-icon::before {
+      content: '';
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translate(-50%, 4px);
+      border-width: 6px;
+      border-style: solid;
+      border-color: rgba(12, 16, 26, 0.95) transparent transparent transparent;
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .info-icon:hover::after,
+    .info-icon:focus-visible::after,
+    .info-icon:hover::before,
+    .info-icon:focus-visible::before {
+      opacity: 1;
+      transform: translate(-50%, 0);
     }
 
     input[type="number"],
@@ -231,6 +300,45 @@
       white-space: nowrap;
     }
 
+    .price-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .price-line {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .price-line strong {
+      font-size: 1.05rem;
+    }
+
+    .price-line .price-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .price-line .vat {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .price-line.buffered {
+      background: rgba(77, 163, 255, 0.08);
+      border-color: rgba(77, 163, 255, 0.25);
+    }
+
     .sub-label {
       display: block;
       font-size: 0.75rem;
@@ -304,80 +412,93 @@
         <h2 id="inputs-heading" style="font-size: 1.1rem;">Inputs</h2>
         <fieldset>
           <div class="control">
-            <label for="target-net">Target net income per year
-              <span class="hint">Amount you want to take home after income taxes.</span>
+            <label for="target-net">
+              <span class="label-text">Target net income per year</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
             </label>
             <input type="number" id="target-net" value="65000" min="0" step="100" inputmode="decimal" />
           </div>
           <div class="control">
-            <label for="tax-rate">Effective income tax rate (%)
-              <span class="hint">Share of profit paid in taxes and social charges.</span>
+            <label for="tax-rate">
+              <span class="label-text">Effective income tax rate (%)</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
             </label>
             <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
           </div>
           <div class="control">
-            <label for="fixed-costs">Fixed annual costs
-              <span class="hint">Venue, insurance, marketing, materials, admin, etc.</span>
+            <label for="fixed-costs">
+              <span class="label-text">Fixed annual costs</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Venue, insurance, marketing, materials, admin, etc." data-tooltip="Venue, insurance, marketing, materials, admin, etc.">ℹ️</span>
             </label>
             <input type="number" id="fixed-costs" value="16500" min="0" step="100" inputmode="decimal" />
           </div>
           <div class="control">
-            <label for="vat-rate">VAT rate (%)
-              <span class="hint">Set to 0 for VAT-exempt scenarios.</span>
+            <label for="vat-rate">
+              <span class="label-text">VAT rate (%)</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Set to 0 for VAT-exempt scenarios." data-tooltip="Set to 0 for VAT-exempt scenarios.">ℹ️</span>
             </label>
             <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
           </div>
           <div class="control">
-            <label for="classes-per-week">Classes per week
-              <span class="hint">Comma-separated integers (e.g. 4,5,6).</span>
+            <label for="classes-per-week">
+              <span class="label-text">Classes per week</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Comma-separated integers (e.g. 4,5,6)." data-tooltip="Comma-separated integers (e.g. 4,5,6).">ℹ️</span>
             </label>
             <input type="text" id="classes-per-week" value="4,5,6" autocomplete="off" />
           </div>
           <div class="control">
-            <label for="students-per-class">Students per class
-              <span class="hint">Comma-separated integers (e.g. 6,8,10,12).</span>
+            <label for="students-per-class">
+              <span class="label-text">Students per class</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Comma-separated integers (e.g. 6,8,10,12)." data-tooltip="Comma-separated integers (e.g. 6,8,10,12).">ℹ️</span>
             </label>
             <input type="text" id="students-per-class" value="6,8,10,12" autocomplete="off" />
           </div>
           <div class="control">
-            <label for="months-off">Months off per year
-              <span class="hint">Total months you plan to take completely off.</span>
+            <label for="months-off">
+              <span class="label-text">Months off per year</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Total months you plan to take completely off." data-tooltip="Total months you plan to take completely off.">ℹ️</span>
             </label>
             <input type="number" id="months-off" value="2" min="0" max="12" step="0.5" inputmode="decimal" />
           </div>
           <div class="control">
-            <label for="weeks-off-cycle">Weeks off per 4-week cycle
-              <span class="hint">For example, 1 week off means working 3 weeks out of every 4.</span>
+            <label for="weeks-off-cycle">
+              <span class="label-text">Weeks off per 4-week cycle</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="For example, 1 week off means working 3 weeks out of every 4." data-tooltip="For example, 1 week off means working 3 weeks out of every 4.">ℹ️</span>
             </label>
             <input type="number" id="weeks-off-cycle" value="1" min="0" max="4" step="0.25" inputmode="decimal" />
           </div>
           <div class="control">
-            <label for="days-off-week">Days off per working week
-              <span class="hint">Assumes a 5-day working week. Supports decimals for half-days.</span>
+            <label for="days-off-week">
+              <span class="label-text">Days off per working week</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Assumes a 5-day working week. Supports decimals for half-days." data-tooltip="Assumes a 5-day working week. Supports decimals for half-days.">ℹ️</span>
             </label>
             <input type="number" id="days-off-week" value="1" min="0" max="5" step="0.25" inputmode="decimal" />
           </div>
           <div class="control">
-            <label>Estimated working weeks per year
-              <span class="hint">Calculated from the schedule above.</span>
+            <label>
+              <span class="label-text">Estimated working weeks per year</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Calculated from the schedule above." data-tooltip="Calculated from the schedule above.">ℹ️</span>
             </label>
             <output id="working-weeks-display">32.5</output>
           </div>
           <div class="control">
-            <label>Estimated working days per year
-              <span class="hint">Working weeks × working days per active week.</span>
+            <label>
+              <span class="label-text">Estimated working days per year</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Working weeks × working days per active week." data-tooltip="Working weeks × working days per active week.">ℹ️</span>
             </label>
             <output id="working-days-display">130</output>
           </div>
           <div class="control">
-            <label for="buffer">Safety margin (%)
-              <span class="hint">Applied to cover no-shows, discounts, and slippage.</span>
+            <label for="buffer">
+              <span class="label-text">Safety margin (%)</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Applied to cover no-shows, discounts, and slippage." data-tooltip="Applied to cover no-shows, discounts, and slippage.">ℹ️</span>
             </label>
             <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
           </div>
           <div class="control">
-            <label for="currency-symbol">Currency symbol
-              <span class="hint">Displayed before amounts.</span>
+            <label for="currency-symbol">
+              <span class="label-text">Currency symbol</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
             </label>
             <input type="text" id="currency-symbol" value="€" maxlength="3" />
           </div>
@@ -525,10 +646,12 @@
       return `${symbol}${numberFormatter.format(Math.round(value))}`;
     }
 
-    function buildTable(title, data, symbol) {
+    function buildPricingTable(data, symbol, bufferPercent) {
       if (!data.length) {
         return `<div class="card"><p class="status-message">No valid combinations available.</p></div>`;
       }
+
+      const formattedBuffer = formatFixed(bufferPercent, 1);
 
       const columnHeaders = data[0].columns
         .map(col => {
@@ -540,9 +663,26 @@
         .map(row => {
           const cells = row.columns
             .map(col => {
-              const exVat = formatCurrency(symbol, col.priceExVat);
-              const inclVat = formatCurrency(symbol, col.priceInclVat);
-              return `<td><strong>${exVat}</strong><br /><span style="color: var(--text-muted);">incl VAT ${inclVat}</span></td>`;
+              const breakEvenExVat = formatCurrency(symbol, col.breakEven.priceExVat);
+              const breakEvenInclVat = formatCurrency(symbol, col.breakEven.priceInclVat);
+              const bufferedExVat = formatCurrency(symbol, col.buffered.priceExVat);
+              const bufferedInclVat = formatCurrency(symbol, col.buffered.priceInclVat);
+              return `
+                <td>
+                  <div class="price-pair">
+                    <div class="price-line">
+                      <span class="price-label">Break-even</span>
+                      <strong>${breakEvenExVat}</strong>
+                      <span class="vat">incl VAT ${breakEvenInclVat}</span>
+                    </div>
+                    <div class="price-line buffered">
+                      <span class="price-label">Buffered +${formattedBuffer}%</span>
+                      <strong>${bufferedExVat}</strong>
+                      <span class="vat">incl VAT ${bufferedInclVat}</span>
+                    </div>
+                  </div>
+                </td>
+              `;
             })
             .join('');
           return `<tr><th scope="row">${row.students}<span class="sub-label">students</span></th>${cells}</tr>`;
@@ -552,7 +692,7 @@
       return `
         <div class="card">
           <table>
-            <caption>${title}</caption>
+            <caption>Per-student pricing (includes optional safety margin)</caption>
             <thead>
               <tr>
                 <th scope="col">Students / class</th>
@@ -577,8 +717,7 @@
         studentsPerClass,
         workingWeeks,
         buffer,
-        bufferPercent,
-        currencySymbol
+        bufferPercent
       } = inputs;
 
       const effectiveTaxRate = Math.min(taxRate, 0.99);
@@ -586,8 +725,7 @@
       const profitBeforeTax = targetNet / denominator;
       const revenueNeeded = profitBeforeTax + fixedCosts;
 
-      const breakEvenData = [];
-      const bufferedData = [];
+      const pricingData = [];
       latestResults = [];
 
       if (
@@ -598,7 +736,7 @@
         !Number.isFinite(workingWeeks) ||
         workingWeeks <= 0
       ) {
-        return { breakEvenData, bufferedData, variantLabel: bufferPercent };
+        return { pricingData, bufferPercent };
       }
 
       const sortedStudents = [...studentsPerClass];
@@ -610,28 +748,31 @@
       });
 
       for (const students of sortedStudents) {
-        const breakEvenRow = { students, columns: [] };
-        const bufferedRow = { students, columns: [] };
+        const row = { students, columns: [] };
 
         for (const column of columnsMeta) {
-          const revenuePerClass = revenueNeeded / (column.classesPerYear || 1);
+          const revenuePerClass = revenueNeeded / Math.max(column.classesPerYear, 1);
           const priceExVat = revenuePerClass / students;
           const bufferedExVat = priceExVat * (1 + buffer);
           const priceInclVat = priceExVat * (1 + vatRate);
           const bufferedInclVat = bufferedExVat * (1 + vatRate);
 
-          breakEvenRow.columns.push({
-            classesPerWeek: column.classesPerWeek,
-            classesPerYear: column.classesPerYear,
-            priceExVat,
-            priceInclVat
-          });
+          const roundedBreakEvenExVat = Math.round(priceExVat);
+          const roundedBreakEvenInclVat = Math.round(priceInclVat);
+          const roundedBufferedExVat = Math.round(bufferedExVat);
+          const roundedBufferedInclVat = Math.round(bufferedInclVat);
 
-          bufferedRow.columns.push({
+          row.columns.push({
             classesPerWeek: column.classesPerWeek,
             classesPerYear: column.classesPerYear,
-            priceExVat: bufferedExVat,
-            priceInclVat: bufferedInclVat
+            breakEven: {
+              priceExVat: roundedBreakEvenExVat,
+              priceInclVat: roundedBreakEvenInclVat
+            },
+            buffered: {
+              priceExVat: roundedBufferedExVat,
+              priceInclVat: roundedBufferedInclVat
+            }
           });
 
           latestResults.push({
@@ -639,58 +780,37 @@
             students,
             classesPerWeek: column.classesPerWeek,
             classesPerYear: Math.round(column.classesPerYear),
-            priceExVat: Math.round(priceExVat),
-            priceInclVat: Math.round(priceInclVat)
+            priceExVat: roundedBreakEvenExVat,
+            priceInclVat: roundedBreakEvenInclVat
           });
           latestResults.push({
             variant: `Buffered +${bufferPercent}%`,
             students,
             classesPerWeek: column.classesPerWeek,
             classesPerYear: Math.round(column.classesPerYear),
-            priceExVat: Math.round(bufferedExVat),
-            priceInclVat: Math.round(bufferedInclVat)
+            priceExVat: roundedBufferedExVat,
+            priceInclVat: roundedBufferedInclVat
           });
         }
 
-        breakEvenData.push(breakEvenRow);
-        bufferedData.push(bufferedRow);
+        pricingData.push(row);
       }
 
-      return {
-        breakEvenData: breakEvenData.map(row => ({
-          ...row,
-          columns: row.columns.map(col => ({
-            ...col,
-            priceExVat: Math.round(col.priceExVat),
-            priceInclVat: Math.round(col.priceInclVat)
-          }))
-        })),
-        bufferedData: bufferedData.map(row => ({
-          ...row,
-          columns: row.columns.map(col => ({
-            ...col,
-            priceExVat: Math.round(col.priceExVat),
-            priceInclVat: Math.round(col.priceInclVat)
-          }))
-        })),
-        bufferPercent
-      };
+      return { pricingData, bufferPercent };
     }
 
     function render() {
       const inputs = getInputs();
-      const { breakEvenData, bufferedData, bufferPercent } = computeTables(inputs);
+      const { pricingData, bufferPercent } = computeTables(inputs);
 
-      if (!breakEvenData.length || !bufferedData.length) {
+      if (!pricingData.length) {
         tablesContainer.innerHTML = `
           <div class="card">
-            <p class="status-message">Enter at least one valid class count and student count to see pricing tables.</p>
+            <p class="status-message">Enter at least one valid class count and student count to see the pricing table.</p>
           </div>
         `;
       } else {
-        const breakEvenTable = buildTable('Break-even pricing', breakEvenData, inputs.currencySymbol);
-        const bufferedTable = buildTable(`Buffered pricing (+${bufferPercent}% margin)`, bufferedData, inputs.currencySymbol);
-        tablesContainer.innerHTML = `${breakEvenTable}${bufferedTable}`;
+        tablesContainer.innerHTML = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent);
       }
 
       renderAssumptions(inputs);
@@ -732,7 +852,7 @@
         `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
         `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
         `Students per class considered: ${studentsPerClass.length ? studentsPerClass.join(', ') : 'none'}`,
-        `Safety margin applied to buffered table: ${formatFixed(bufferPercent, 1)}%`,
+        `Safety margin applied to buffered line: ${formatFixed(bufferPercent, 1)}%`,
         `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
         `Currency symbol: ${currencySymbol}`,
         `Prices are rounded to whole currency units for display and CSV export.`
