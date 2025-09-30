@@ -14,7 +14,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-preview-${{ github.event.inputs.ref && replace(github.event.inputs.ref, '/', '-') || 'main' }}
+  group: pages-preview-${{ github.event.inputs.ref && github.event.inputs.ref || 'main' }}
   cancel-in-progress: true
 
 jobs:
