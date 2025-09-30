@@ -755,7 +755,7 @@
           <div class="control">
             <label for="vat-rate">
               <span class="label-text">VAT rate (%)</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Set to 0 for VAT-exempt scenarios." data-tooltip="Set to 0 for VAT-exempt scenarios.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Modify if the services you offer fall into a lower VAT band." data-tooltip="Modify if the services you offer fall into a lower VAT band.">ℹ️</span>
             </label>
             <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
           </div>
@@ -785,7 +785,7 @@
               >ℹ️</span>
             </label>
             <input type="number" id="lesson-cost" min="0" step="0.01" inputmode="decimal" />
-            <p class="field-note">Entering an amount here will add a highlighted box around the target net income fields below. Click a target income field to switch back.</p>
+            <p class="field-note">Entering an amount here will temporarily disable the target net income fields above and display projected income(s) in the table.</p>
             <p class="field-message" id="lesson-cost-message" aria-live="polite"></p>
           </div>
           <div class="control">
@@ -826,7 +826,7 @@
           <div class="control">
             <label for="buffer">
               <span class="label-text">Safety margin (%)</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Applied to cover no-shows, discounts, and slippage." data-tooltip="Applied to cover no-shows, discounts, and slippage.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Applied to cover no-shows, refunds, etc." data-tooltip="Applied to cover no-shows, refunds, etc.">ℹ️</span>
             </label>
             <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
           </div>
