@@ -598,7 +598,7 @@
       color: var(--text-muted);
     }
 
-    .price-line .vat {
+    .price-line .price-secondary {
       font-size: 0.8rem;
       color: var(--text-muted);
     }
@@ -654,6 +654,30 @@
 
       .theme-toggle {
         align-self: center;
+      }
+
+      .layout {
+        gap: 16px;
+      }
+
+      .controls {
+        gap: 16px;
+      }
+
+      .controls .presets {
+        order: 1;
+      }
+
+      .controls fieldset {
+        order: 2;
+      }
+
+      .controls .actions {
+        order: 3;
+      }
+
+      .controls .status-message {
+        order: 4;
       }
     }
 
@@ -839,12 +863,12 @@
           </div>
         </fieldset>
 
-        <div class="button-row" role="group" aria-label="Preset targets">
+        <div class="button-row presets" role="group" aria-label="Preset targets">
           <button type="button" class="secondary" data-preset="65k">Preset: 65k target</button>
           <button type="button" class="secondary" data-preset="100k">Preset: 100k target</button>
         </div>
 
-        <div class="button-row" role="group" aria-label="Actions">
+        <div class="button-row actions" role="group" aria-label="Actions">
           <button type="button" id="recalculate">Recalculate</button>
           <button type="button" id="download-csv" class="secondary">Download CSV</button>
         </div>
@@ -1238,35 +1262,26 @@
                     <div class="price-line">
                       <span class="price-label">Monthly net</span>
                       <strong>${monthlyDisplay}</strong>
-                      <span class="vat">Annual net ${annualDisplay}</span>
+                      <span class="price-secondary">Annual net ${annualDisplay}</span>
                     </div>
                     <div class="price-line buffered">
                       <span class="price-label">Monthly net with ${formattedBuffer}% shortfall</span>
                       <strong>${bufferedMonthlyDisplay}</strong>
-                      <span class="vat">Annual net ${bufferedAnnualDisplay}</span>
+                      <span class="price-secondary">Annual net ${bufferedAnnualDisplay}</span>
                     </div>
                   </div>
                 </td>
               `;
               }
 
-              const breakEvenExVat = formatCurrency(symbol, col.breakEven.priceExVat);
-              const breakEvenInclVat = formatCurrency(symbol, col.breakEven.priceInclVat);
               const bufferedExVat = formatCurrency(symbol, col.buffered.priceExVat);
               const bufferedInclVat = formatCurrency(symbol, col.buffered.priceInclVat);
               return `
                 <td>
-                  <div class="price-pair">
-                    <div class="price-line">
-                      <span class="price-label">Break-even</span>
-                      <strong>${breakEvenExVat}</strong>
-                      <span class="vat">incl VAT ${breakEvenInclVat}</span>
-                    </div>
-                    <div class="price-line buffered">
-                      <span class="price-label">Buffered +${formattedBuffer}%</span>
-                      <strong>${bufferedExVat}</strong>
-                      <span class="vat">incl VAT ${bufferedInclVat}</span>
-                    </div>
+                  <div class="price-line buffered">
+                    <span class="price-label">Buffered +${formattedBuffer}%</span>
+                    <strong>${bufferedInclVat}</strong>
+                    <span class="price-secondary">ex VAT ${bufferedExVat}</span>
                   </div>
                 </td>
               `;
@@ -1498,32 +1513,18 @@
           const priceInclVat = priceExVat * (1 + vatRate);
           const bufferedInclVat = bufferedExVat * (1 + vatRate);
 
-          const roundedBreakEvenExVat = Math.round(priceExVat);
-          const roundedBreakEvenInclVat = Math.round(priceInclVat);
           const roundedBufferedExVat = Math.round(bufferedExVat);
           const roundedBufferedInclVat = Math.round(bufferedInclVat);
 
           row.columns.push({
             classesPerWeek: column.classesPerWeek,
             classesPerYear: column.classesPerYear,
-            breakEven: {
-              priceExVat: roundedBreakEvenExVat,
-              priceInclVat: roundedBreakEvenInclVat
-            },
             buffered: {
               priceExVat: roundedBufferedExVat,
               priceInclVat: roundedBufferedInclVat
             }
           });
 
-          latestResults.push({
-            variant: 'Break-even',
-            students,
-            classesPerWeek: column.classesPerWeek,
-            classesPerYear: Math.round(column.classesPerYear),
-            priceExVat: roundedBreakEvenExVat,
-            priceInclVat: roundedBreakEvenInclVat
-          });
           latestResults.push({
             variant: `Buffered +${bufferPercent}%`,
             students,
@@ -1678,14 +1679,14 @@
           ].join(',');
         });
       } else {
-        header = 'Variant,Students,Classes per week,Classes per year,Price ex VAT,Price incl VAT';
+        header = 'Variant,Students,Classes per week,Classes per year,Price incl VAT,Price ex VAT';
         rows = latestResults.map(entry => [
           entry.variant,
           entry.students,
           entry.classesPerWeek,
           entry.classesPerYear,
-          entry.priceExVat,
-          entry.priceInclVat
+          entry.priceInclVat,
+          entry.priceExVat
         ].join(','));
       }
 
@@ -1702,7 +1703,7 @@
       URL.revokeObjectURL(url);
       controls.statusMessage.textContent = latestResultsMode === PRICING_MODE_LESSON
         ? 'CSV download started. File lists monthly and annual net income for each combination.'
-        : 'CSV download started. File contains both break-even and buffered rows.';
+        : 'CSV download started. File lists buffered prices including and excluding VAT.';
       setTimeout(() => {
         controls.statusMessage.textContent = '';
       }, 2500);
