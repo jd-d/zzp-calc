@@ -787,16 +787,16 @@
           <div class="control">
             <label for="classes-per-week">
               <span class="label-text">Classes per week</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Comma-separated integers (e.g. 4,5,6)." data-tooltip="Comma-separated integers (e.g. 4,5,6).">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Comma-separated integers (e.g. 4,5)." data-tooltip="Comma-separated integers (e.g. 4,5).">ℹ️</span>
             </label>
-            <input type="text" id="classes-per-week" value="4,5,6" autocomplete="off" />
+            <input type="text" id="classes-per-week" value="4,5" autocomplete="off" />
           </div>
           <div class="control">
             <label for="students-per-class">
               <span class="label-text">Students per class</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Comma-separated integers (e.g. 6,8,10,12)." data-tooltip="Comma-separated integers (e.g. 6,8,10,12).">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="img" aria-label="Comma-separated integers (e.g. 4,6,8)." data-tooltip="Comma-separated integers (e.g. 4,6,8).">ℹ️</span>
             </label>
-            <input type="text" id="students-per-class" value="6,8,10,12" autocomplete="off" />
+            <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
           </div>
           <div class="control mode-field" id="lesson-cost-wrapper">
             <label for="lesson-cost">
@@ -865,7 +865,7 @@
         </fieldset>
 
         <div class="button-row presets" role="group" aria-label="Preset targets">
-          <button type="button" class="secondary" data-preset="65k">Preset: 65k target</button>
+          <button type="button" class="secondary" data-preset="50k">Preset: 50k target</button>
           <button type="button" class="secondary" data-preset="100k">Preset: 100k target</button>
         </div>
 
@@ -1182,15 +1182,17 @@
           : '';
       }
 
+      const lessonCostInactive = computedMode !== PRICING_MODE_LESSON;
+
       if (lessonCostWrapper) {
         lessonCostWrapper.classList.toggle('is-active', manualActive);
-        lessonCostWrapper.classList.toggle('is-inactive', manualInactive);
+        lessonCostWrapper.classList.toggle('is-inactive', lessonCostInactive);
       }
 
       if (controls.lessonCost instanceof HTMLInputElement) {
         controls.lessonCost.classList.toggle('inactive-field', manualInactive);
         controls.lessonCost.readOnly = manualInactive;
-        if (manualActive || manualInactive) {
+        if (manualActive || manualInactive || lessonCostInactive) {
           controls.lessonCost.setAttribute('aria-describedby', 'lesson-cost-message');
         } else if (controls.lessonCost.getAttribute('aria-describedby') === 'lesson-cost-message') {
           controls.lessonCost.removeAttribute('aria-describedby');
@@ -1202,6 +1204,8 @@
           lessonCostMessage.textContent = 'Lesson cost controls the calculation. Click a target income field to switch back.';
         } else if (manualInactive) {
           lessonCostMessage.textContent = 'Inactive when target income fields active—click to reactivate.';
+        } else if (computedMode !== PRICING_MODE_LESSON) {
+          lessonCostMessage.textContent = 'Enter a lesson cost to switch the calculator to manual pricing mode.';
         } else {
           lessonCostMessage.textContent = '';
         }
@@ -1637,7 +1641,7 @@
     }
 
     function applyPreset(preset) {
-      if (preset === '65k') {
+      if (preset === '50k') {
         controls.targetNet.value = 50000;
         controls.taxRate.value = 40;
       } else if (preset === '100k') {
@@ -1647,7 +1651,7 @@
       targetNetBasis = 'year';
       updatePricingMode(PRICING_MODE_TARGET);
       render();
-      controls.statusMessage.textContent = `Preset applied: ${preset === '65k' ? '65k target' : '100k target'}.`;
+      controls.statusMessage.textContent = `Preset applied: ${preset === '100k' ? '100k target' : '50k target'}.`;
       setTimeout(() => {
         controls.statusMessage.textContent = '';
       }, 2500);
