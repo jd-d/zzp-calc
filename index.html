@@ -116,6 +116,10 @@
       transition: background 0.4s ease, color 0.4s ease;
     }
 
+    body.dialog-open {
+      overflow: hidden;
+    }
+
     body[data-theme="dark"] {
       color-scheme: dark;
     }
@@ -127,6 +131,192 @@
 
     a {
       color: inherit;
+    }
+
+    .top-nav {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 0 0;
+    }
+
+    .top-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--secondary-button-border);
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .top-link::before {
+      content: "📘";
+      font-size: 1rem;
+    }
+
+    .top-link:hover,
+    .top-link:focus-visible {
+      background: var(--secondary-button-hover-bg);
+      border-color: var(--secondary-button-border);
+      transform: translateY(-1px);
+      outline: none;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .readme-dialog[hidden] {
+      display: none;
+    }
+
+    .readme-dialog {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .readme-dialog__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    .readme-dialog__content {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      box-shadow: 0 35px 70px var(--card-shadow);
+      max-width: min(960px, 92vw);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .readme-dialog__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--table-row-border);
+      background: var(--row-header-bg);
+    }
+
+    .readme-dialog__close {
+      appearance: none;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      line-height: 1;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .readme-dialog__close:hover,
+    .readme-dialog__close:focus-visible {
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      outline: none;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .readme-dialog__body {
+      padding: 24px;
+      overflow-y: auto;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: var(--field-output-bg);
+    }
+
+    .readme-dialog__body h1,
+    .readme-dialog__body h2,
+    .readme-dialog__body h3,
+    .readme-dialog__body h4,
+    .readme-dialog__body h5,
+    .readme-dialog__body h6 {
+      color: var(--text-primary);
+      margin-top: 1.4em;
+    }
+
+    .readme-dialog__body p,
+    .readme-dialog__body li {
+      color: var(--text-muted);
+    }
+
+    .readme-dialog__body pre {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 12px 14px;
+      border-radius: 12px;
+      overflow-x: auto;
+      border: 1px solid var(--table-row-border);
+    }
+
+    .readme-dialog__body code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    .readme-dialog__body a {
+      color: var(--accent);
+    }
+
+    .readme-dialog__body ul,
+    .readme-dialog__body ol {
+      padding-left: 1.25em;
+    }
+
+    .readme-dialog__body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5em 0;
+    }
+
+    .readme-dialog__body th,
+    .readme-dialog__body td {
+      border: 1px solid var(--table-row-border);
+      padding: 8px 12px;
+    }
+
+    .readme-dialog__body blockquote {
+      border-left: 3px solid var(--accent);
+      margin: 1.2em 0;
+      padding: 0.5em 1em;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+    }
+
+    .readme-status {
+      margin: 0;
+      color: var(--text-muted);
+    }
+
+    .readme-status--error {
+      color: var(--inactive-strong);
+    }
+
+    @media (max-width: 720px) {
+      .top-nav {
+        justify-content: center;
+      }
+
+      .top-link {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .readme-dialog__content {
+        width: 92vw;
+        max-height: 92vh;
+      }
     }
 
     .page {
@@ -710,6 +900,9 @@
 </head>
 <body data-theme="dark">
   <div class="page">
+    <nav class="top-nav">
+      <a href="#" id="how-to-link" class="top-link">How To Use This Tool</a>
+    </nav>
     <header>
       <div class="header-text">
         <h1>Course Pricing Calculator</h1>
@@ -888,7 +1081,175 @@
     </div>
   </div>
 
+  <div class="readme-dialog" id="readme-dialog" role="dialog" aria-modal="true" aria-labelledby="readme-title" hidden>
+    <div class="readme-dialog__backdrop" id="readme-backdrop" tabindex="-1"></div>
+    <div class="readme-dialog__content" role="document">
+      <div class="readme-dialog__header">
+        <h2 id="readme-title">How To Use This Tool</h2>
+        <button type="button" class="readme-dialog__close" id="readme-close" aria-label="Close instructions">×</button>
+      </div>
+      <div class="readme-dialog__body" id="readme-body" tabindex="0"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
+    const howToLink = document.getElementById('how-to-link');
+    const readmeDialog = document.getElementById('readme-dialog');
+    const readmeBody = document.getElementById('readme-body');
+    const readmeClose = document.getElementById('readme-close');
+    const readmeBackdrop = document.getElementById('readme-backdrop');
+    let readmeLoaded = false;
+    let readmeLoading = false;
+    let previouslyFocusedElement = null;
+
+    function getFocusableElements(container) {
+      if (!container) {
+        return [];
+      }
+
+      const selectors = [
+        'a[href]',
+        'button:not([disabled])',
+        'textarea:not([disabled])',
+        'input:not([disabled])',
+        'select:not([disabled])',
+        '[tabindex]:not([tabindex="-1"])'
+      ].join(',');
+
+      return Array.from(container.querySelectorAll(selectors)).filter(element => {
+        if (element.hasAttribute('hidden') || element.getAttribute('aria-hidden') === 'true') {
+          return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+    }
+
+    function parseMarkdown(text) {
+      if (window.marked && typeof window.marked.parse === 'function') {
+        return window.marked.parse(text);
+      }
+      const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return `<pre>${escaped}</pre>`;
+    }
+
+    function loadReadme() {
+      if (readmeLoaded || readmeLoading || !readmeBody) {
+        return;
+      }
+
+      readmeLoading = true;
+
+      fetch('README.md')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to load README (status ${response.status})`);
+          }
+          return response.text();
+        })
+        .then(text => {
+          readmeBody.innerHTML = parseMarkdown(text);
+          readmeLoaded = true;
+        })
+        .catch(() => {
+          readmeBody.innerHTML = '<p class="readme-status readme-status--error">Unable to load instructions. Please check the README file directly.</p>';
+        })
+        .finally(() => {
+          readmeLoading = false;
+        });
+    }
+
+    function openReadme(event) {
+      if (event) {
+        event.preventDefault();
+      }
+
+      if (!readmeDialog || !readmeBody) {
+        return;
+      }
+
+      previouslyFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      readmeDialog.hidden = false;
+      document.body.classList.add('dialog-open');
+
+      if (!readmeLoaded) {
+        readmeBody.innerHTML = '<p class="readme-status">Loading instructions…</p>';
+        loadReadme();
+      }
+
+      window.requestAnimationFrame(() => {
+        if (readmeClose) {
+          readmeClose.focus();
+        }
+      });
+
+      document.addEventListener('keydown', handleReadmeKeydown);
+    }
+
+    function closeReadme() {
+      if (!readmeDialog) {
+        return;
+      }
+
+      readmeDialog.hidden = true;
+      document.body.classList.remove('dialog-open');
+      document.removeEventListener('keydown', handleReadmeKeydown);
+
+      if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+        previouslyFocusedElement.focus();
+      }
+    }
+
+    function handleReadmeKeydown(event) {
+      if (event.key === 'Escape') {
+        closeReadme();
+        return;
+      }
+
+      if (event.key === 'Tab' && readmeDialog && !readmeDialog.hidden) {
+        const focusable = getFocusableElements(readmeDialog);
+        if (focusable.length === 0) {
+          event.preventDefault();
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      }
+    }
+
+    if (howToLink) {
+      howToLink.addEventListener('click', openReadme);
+    }
+
+    if (readmeClose) {
+      readmeClose.addEventListener('click', closeReadme);
+    }
+
+    if (readmeBackdrop) {
+      readmeBackdrop.addEventListener('click', closeReadme);
+    }
+
+    if (readmeDialog) {
+      readmeDialog.addEventListener('click', event => {
+        if (event.target === readmeDialog) {
+          closeReadme();
+        }
+      });
+    }
+
     const themeToggleButton = document.getElementById('theme-toggle');
     const themeToggleLabel = themeToggleButton ? themeToggleButton.querySelector('.toggle-label') : null;
     const THEME_STORAGE_KEY = 'course-pricing-theme';
