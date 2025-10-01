@@ -145,6 +145,40 @@
       gap: 16px;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .header-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--secondary-button-border);
+      background: var(--secondary-button-bg);
+      color: inherit;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+    }
+
+    .header-link:hover,
+    .header-link:focus-visible {
+      background: var(--secondary-button-hover-bg);
+      border-color: var(--secondary-button-border);
+      transform: translateY(-1px);
+    }
+
+    .header-link:focus-visible {
+      outline: 3px solid var(--focus-outline);
+      outline-offset: 2px;
+    }
+
     .header-text {
       flex: 1 1 340px;
       min-width: 240px;
@@ -171,6 +205,35 @@
       box-shadow: var(--card-shadow);
       backdrop-filter: blur(12px);
       transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
+    }
+
+    .privacy-info {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      line-height: 1.6;
+    }
+
+    .privacy-info h2,
+    .privacy-info h3 {
+      margin: 0;
+    }
+
+    .privacy-info h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .privacy-info ol {
+      margin: 0;
+      padding-left: 1.2rem;
+      display: grid;
+      gap: 12px;
+    }
+
+    .privacy-info li {
+      padding-left: 4px;
     }
 
     .controls {
@@ -692,6 +755,14 @@
       }
     }
 
+    @media (max-width: 720px) {
+      .header-actions {
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+      }
+    }
+
     @media (max-width: 520px) {
       button {
         width: 100%;
@@ -715,12 +786,15 @@
         <h1>Course Pricing Calculator</h1>
         <p>Estimate per-student pricing to reach your target income. All calculations stay on this page.</p>
       </div>
-      <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="true">
-        <span class="toggle-track" aria-hidden="true">
-          <span class="toggle-thumb"></span>
-        </span>
-        <span class="toggle-label">Dark mode</span>
-      </button>
+      <div class="header-actions">
+        <a class="header-link" href="#privacy-info">Your Info Is Safe</a>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="true">
+          <span class="toggle-track" aria-hidden="true">
+            <span class="toggle-thumb"></span>
+          </span>
+          <span class="toggle-label">Dark mode</span>
+        </button>
+      </div>
     </header>
 
     <div class="layout">
@@ -886,6 +960,52 @@
         </div>
       </section>
     </div>
+
+    <section class="card privacy-info" id="privacy-info" aria-labelledby="privacy-heading">
+      <div>
+        <h2 id="privacy-heading">Your Info Is Safe</h2>
+        <p>
+          This calculator runs entirely in your browser. There are no sign-ins, accounts, or background network calls—everything
+          you type stays on this page. The only thing saved between visits is your light/dark mode preference, which lives in
+          local storage under the key <code>course-pricing-theme</code> so the interface reopens in your chosen theme.
+        </p>
+        <p>
+          When you export results, the CSV file is generated on your device: the app assembles the rows, wraps them in a
+          <code>Blob</code>, spawns a temporary download link, clicks it for you, and immediately cleans it up again, so nothing
+          leaves your device. Want to dig deeper? The full source code is available on
+          <a href="https://github.com/jd-d/zzp" target="_blank" rel="noreferrer noopener">GitHub</a>—review it yourself or with a
+          developer you trust to confirm exactly how the site works.
+        </p>
+      </div>
+      <div>
+        <h3>Easy ways to verify this yourself</h3>
+        <ol>
+          <li>
+            <strong>Check that no cookies are created.</strong> Open DevTools → Application/Storage → Cookies, reload the page,
+            and interact with the calculator. The cookies list will stay empty.
+          </li>
+          <li>
+            <strong>Inspect local storage.</strong> In the same panel, open “Local Storage,” select the site origin, and confirm
+            the only entry is <code>course-pricing-theme</code>. Delete it and reload to see the theme reset—nothing else is
+            persisted.
+          </li>
+          <li>
+            <strong>Watch for network requests.</strong> Keep the Network tab open with “Preserve log” enabled as you adjust
+            inputs, apply presets, and export CSV. You’ll see no additional requests after the initial page load because every
+            calculation happens locally.
+          </li>
+          <li>
+            <strong>Review the page source.</strong> Search for calls like <code>fetch</code>, <code>XMLHttpRequest</code>, or
+            <code>navigator.sendBeacon</code>. You’ll only find the theme-related
+            <code>localStorage.getItem</code>/<code>setItem</code> calls.
+          </li>
+          <li>
+            <strong>Browse the GitHub repository.</strong> Inspect the project files directly on GitHub to confirm exactly what
+            the site ships and how it behaves.
+          </li>
+        </ol>
+      </div>
+    </section>
   </div>
 
   <script>
