@@ -18,7 +18,9 @@ the production site at the repository's standard GitHub Pages URL.
 Pull requests against `main` trigger the same workflow. Their builds are
 published to `gh-pages` under `previews/pr-<number>/`, and the workflow
 comments the preview URL on the pull request so you can verify changes
-before merging.
+before merging. The comment step writes back to the pull request thread,
+so the workflow file must grant it `issues: write` permissions (and
+optionally `pull-requests: write`) to keep that automation functioning.
 
 ### Preview cleanup
 Preview directories are removed automatically when a pull request
