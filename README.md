@@ -3,33 +3,23 @@ Something for working out costs and income.
 
 ## Deployment options
 This repository publishes the static site defined in `index.html` to
-GitHub Pages using the workflows in `.github/workflows/`.
+GitHub Pages using the **Pages (prod + previews)** workflow in
+`.github/workflows/pages.yml`. The workflow runs for pushes to `main`,
+pull requests targeting `main`, and any manual `workflow_dispatch`
+invocations. Each run builds the site once and uploads it as a shared
+`site-dist` artifact that every deployment job reuses.
 
 ### Production deployment (`main`)
-The **Deploy to GitHub Pages** workflow runs automatically when commits
-are pushed to the `main` branch. It uploads the repository contents as a
-Pages artifact and deploys them to the `github-pages` environment. The
-resulting public URL is exposed on the workflow run summary page.
+When commits land on `main`, the workflow deploys the contents of the
+`site-dist` artifact to the root of the `gh-pages` branch. This publishes
+the production site at the repository's standard GitHub Pages URL.
 
 ### Pull request preview deployments
-The same **Deploy to GitHub Pages** workflow also runs for
-`pull_request` events. When you open or update a pull request, GitHub
-creates a preview deployment with its own URL. You can access it from the
-pull request page under **Deployments → github-pages**. Each PR gets a
-unique preview, so you can validate changes before merging to `main`.
+Pull requests against `main` trigger the same workflow. Their builds are
+published to `gh-pages` under `previews/pr-<number>/`, and the workflow
+comments the preview URL on the pull request so you can verify changes
+before merging.
 
-### Manual branch previews
-To preview any branch (even without a pull request), use the
-**Preview GitHub Pages Build** workflow:
-
-1. Open the **Actions** tab and select **Preview GitHub Pages Build**.
-2. Click **Run workflow**, choose the branch or tag to preview, and start
-the run.
-3. After the workflow finishes, open the run summary. Under
-   **Artifacts** you can download the generated site ZIP. Under
-   **Deployments → preview** you will also find a temporary URL that
-   serves the same files directly from GitHub Pages.
-
-Both preview approaches use the same artifact that production receives,
-so what you see in the preview is exactly what will be published when the
-changes reach `main`.
+### Preview cleanup
+Preview directories are removed automatically when a pull request
+closes, courtesy of `.github/workflows/cleanup-preview.yml`.
