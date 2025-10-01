@@ -734,7 +734,7 @@
                 <span class="label-text">Target net income per year</span>
                 <span class="info-icon" tabindex="0" role="img" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
               </label>
-              <input type="number" id="target-net" value="65000" min="0" step="100" inputmode="decimal" />
+              <input type="number" id="target-net" value="50000" min="0" step="100" inputmode="decimal" />
             </div>
             <div class="control">
               <label for="target-net-week">
@@ -760,7 +760,7 @@
                   data-tooltip="Active months exclude the time off set below."
                 >ℹ️</span>
               </label>
-              <input type="number" id="target-net-month" value="6500" min="0" step="100" inputmode="decimal" />
+              <input type="number" id="target-net-month" value="5000" min="0" step="100" inputmode="decimal" />
             </div>
           </div>
           <div class="control">
@@ -1003,7 +1003,7 @@
 
     const WEEKS_PER_YEAR = 52;
     const BASE_WORK_DAYS_PER_WEEK = 5;
-    const TARGET_NET_DEFAULT = 65000;
+    const TARGET_NET_DEFAULT = 50000;
 
     function formatFixed(value, fractionDigits = 1) {
       const fixed = value.toFixed(fractionDigits);
@@ -1638,7 +1638,7 @@
 
     function applyPreset(preset) {
       if (preset === '65k') {
-        controls.targetNet.value = 65000;
+        controls.targetNet.value = 50000;
         controls.taxRate.value = 40;
       } else if (preset === '100k') {
         controls.targetNet.value = 100000;
