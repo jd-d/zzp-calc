@@ -544,14 +544,16 @@
       font-size: 0.9rem;
       background: var(--info-bg);
       color: var(--accent);
-      cursor: help;
+      cursor: pointer;
       border: 1px solid var(--info-border);
       flex: 0 0 auto;
       transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      touch-action: manipulation;
     }
 
     .info-icon:hover,
-    .info-icon:focus-visible {
+    .info-icon:focus-visible,
+    .info-icon.is-active {
       background: var(--info-hover-bg);
       border-color: var(--info-hover-border);
       outline: none;
@@ -594,8 +596,10 @@
 
     .info-icon:hover::after,
     .info-icon:focus-visible::after,
+    .info-icon.is-active::after,
     .info-icon:hover::before,
-    .info-icon:focus-visible::before {
+    .info-icon:focus-visible::before,
+    .info-icon.is-active::before {
       opacity: 1;
       transform: translate(-50%, 0);
     }
@@ -999,7 +1003,7 @@
             <div class="control">
               <label for="target-net">
                 <span class="label-text">Target net income per year</span>
-                <span class="info-icon" tabindex="0" role="img" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
+                <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
               </label>
               <input type="number" id="target-net" value="50000" min="0" step="100" inputmode="decimal" />
             </div>
@@ -1009,7 +1013,7 @@
                 <span
                   class="info-icon"
                   tabindex="0"
-                  role="img"
+                  role="button" aria-expanded="false"
                   aria-label="Weeks you are actively teaching after factoring in planned time off."
                   data-tooltip="Weeks you are actively teaching after factoring in planned time off."
                 >ℹ️</span>
@@ -1022,7 +1026,7 @@
                 <span
                   class="info-icon"
                   tabindex="0"
-                  role="img"
+                  role="button" aria-expanded="false"
                   aria-label="Active months exclude the time off set below."
                   data-tooltip="Active months exclude the time off set below."
                 >ℹ️</span>
@@ -1033,35 +1037,35 @@
           <div class="control">
             <label for="tax-rate">
               <span class="label-text">Effective income tax rate (%)</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
             </label>
             <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
           </div>
           <div class="control">
             <label for="fixed-costs">
               <span class="label-text">Fixed annual costs</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Venue, insurance, marketing, materials, admin, etc." data-tooltip="Venue, insurance, marketing, materials, admin, etc.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Venue, insurance, marketing, materials, admin, etc." data-tooltip="Venue, insurance, marketing, materials, admin, etc.">ℹ️</span>
             </label>
             <input type="number" id="fixed-costs" value="16500" min="0" step="100" inputmode="decimal" />
           </div>
           <div class="control">
             <label for="vat-rate">
               <span class="label-text">VAT rate (%)</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Modify if the services you offer fall into a lower VAT band." data-tooltip="Modify if the services you offer fall into a lower VAT band.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Modify if the services you offer fall into a lower VAT band." data-tooltip="Modify if the services you offer fall into a lower VAT band.">ℹ️</span>
             </label>
             <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
           </div>
           <div class="control">
             <label for="classes-per-week">
               <span class="label-text">Classes per week</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Comma-separated integers (e.g. 4,5)." data-tooltip="Comma-separated integers (e.g. 4,5).">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,5)." data-tooltip="Comma-separated integers (e.g. 4,5).">ℹ️</span>
             </label>
             <input type="text" id="classes-per-week" value="4,5" autocomplete="off" />
           </div>
           <div class="control">
             <label for="students-per-class">
               <span class="label-text">Students per class</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Comma-separated integers (e.g. 4,6,8)." data-tooltip="Comma-separated integers (e.g. 4,6,8).">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,6,8)." data-tooltip="Comma-separated integers (e.g. 4,6,8).">ℹ️</span>
             </label>
             <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
           </div>
@@ -1071,7 +1075,7 @@
               <span
                 class="info-icon"
                 tabindex="0"
-                role="img"
+                role="button" aria-expanded="false"
                 aria-label="Set a fixed per-student lesson price including VAT."
                 data-tooltip="Set a fixed per-student lesson price including VAT."
               >ℹ️</span>
@@ -1083,49 +1087,49 @@
           <div class="control">
             <label for="months-off">
               <span class="label-text">Months off per year</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Total months you plan to take completely off." data-tooltip="Total months you plan to take completely off.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Total months you plan to take completely off." data-tooltip="Total months you plan to take completely off.">ℹ️</span>
             </label>
             <input type="number" id="months-off" value="2" min="0" max="12" step="0.5" inputmode="decimal" />
           </div>
           <div class="control">
             <label for="weeks-off-cycle">
               <span class="label-text">Weeks off per 4-week cycle</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="For example, 1 week off means working 3 weeks out of every 4." data-tooltip="For example, 1 week off means working 3 weeks out of every 4.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="For example, 1 week off means working 3 weeks out of every 4." data-tooltip="For example, 1 week off means working 3 weeks out of every 4.">ℹ️</span>
             </label>
             <input type="number" id="weeks-off-cycle" value="1" min="0" max="4" step="0.25" inputmode="decimal" />
           </div>
           <div class="control">
             <label for="days-off-week">
               <span class="label-text">Days off per working week</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Assumes a 5-day working week. Supports decimals for half-days." data-tooltip="Assumes a 5-day working week. Supports decimals for half-days.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Assumes a 5-day working week. Supports decimals for half-days." data-tooltip="Assumes a 5-day working week. Supports decimals for half-days.">ℹ️</span>
             </label>
             <input type="number" id="days-off-week" value="1" min="0" max="5" step="0.25" inputmode="decimal" />
           </div>
           <div class="control">
             <label>
               <span class="label-text">Estimated working weeks per year</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Calculated from the schedule above." data-tooltip="Calculated from the schedule above.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Calculated from the schedule above." data-tooltip="Calculated from the schedule above.">ℹ️</span>
             </label>
             <output id="working-weeks-display">32.5</output>
           </div>
           <div class="control">
             <label>
               <span class="label-text">Estimated working days per year</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Working weeks × working days per active week." data-tooltip="Working weeks × working days per active week.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Working weeks × working days per active week." data-tooltip="Working weeks × working days per active week.">ℹ️</span>
             </label>
             <output id="working-days-display">130</output>
           </div>
           <div class="control">
             <label for="buffer">
               <span class="label-text">Safety margin (%)</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Applied to cover no-shows, refunds, etc." data-tooltip="Applied to cover no-shows, refunds, etc.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Applied to cover no-shows, refunds, etc." data-tooltip="Applied to cover no-shows, refunds, etc.">ℹ️</span>
             </label>
             <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
           </div>
           <div class="control">
             <label for="currency-symbol">
               <span class="label-text">Currency symbol</span>
-              <span class="info-icon" tabindex="0" role="img" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
+              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
             </label>
             <input type="text" id="currency-symbol" value="€" maxlength="3" />
           </div>
@@ -1505,6 +1509,115 @@
       controls.targetNetMonth
     ].filter(input => input instanceof HTMLInputElement);
 
+    const INFO_ICON_ACTIVE_CLASS = 'is-active';
+    let activeInfoIcon = null;
+
+    function isInfoIcon(element) {
+      return element instanceof HTMLElement && element.classList.contains('info-icon');
+    }
+
+    function enhanceInfoIcon(icon) {
+      if (!isInfoIcon(icon)) {
+        return;
+      }
+      if (!icon.hasAttribute('tabindex')) {
+        icon.setAttribute('tabindex', '0');
+      }
+      icon.setAttribute('role', 'button');
+      icon.setAttribute('aria-expanded', icon.classList.contains(INFO_ICON_ACTIVE_CLASS) ? 'true' : 'false');
+      if (!icon.hasAttribute('aria-label') && icon.dataset.tooltip) {
+        icon.setAttribute('aria-label', icon.dataset.tooltip);
+      }
+    }
+
+    function enhanceAllInfoIcons() {
+      document.querySelectorAll('.info-icon').forEach(enhanceInfoIcon);
+    }
+
+    function closeActiveInfoIcon() {
+      if (activeInfoIcon instanceof HTMLElement) {
+        activeInfoIcon.classList.remove(INFO_ICON_ACTIVE_CLASS);
+        activeInfoIcon.setAttribute('aria-expanded', 'false');
+      }
+      activeInfoIcon = null;
+    }
+
+    function openInfoIcon(icon) {
+      if (!isInfoIcon(icon)) {
+        return;
+      }
+      if (activeInfoIcon && activeInfoIcon !== icon) {
+        closeActiveInfoIcon();
+      }
+      icon.classList.add(INFO_ICON_ACTIVE_CLASS);
+      icon.setAttribute('aria-expanded', 'true');
+      activeInfoIcon = icon;
+    }
+
+    function toggleInfoIcon(icon) {
+      if (!isInfoIcon(icon)) {
+        return;
+      }
+      if (icon.classList.contains(INFO_ICON_ACTIVE_CLASS)) {
+        if (activeInfoIcon === icon) {
+          closeActiveInfoIcon();
+        } else {
+          icon.classList.remove(INFO_ICON_ACTIVE_CLASS);
+          icon.setAttribute('aria-expanded', 'false');
+        }
+      } else {
+        openInfoIcon(icon);
+      }
+    }
+
+    document.addEventListener('click', event => {
+      const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
+      if (!isInfoIcon(target)) {
+        closeActiveInfoIcon();
+        return;
+      }
+      event.preventDefault();
+      enhanceInfoIcon(target);
+      toggleInfoIcon(target);
+      if (typeof target.focus === 'function') {
+        target.focus();
+      }
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        if (activeInfoIcon) {
+          event.preventDefault();
+          const current = activeInfoIcon;
+          closeActiveInfoIcon();
+          if (current instanceof HTMLElement && typeof current.focus === 'function') {
+            current.focus();
+          }
+        }
+        return;
+      }
+
+      const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
+      if (!isInfoIcon(target)) {
+        return;
+      }
+
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        enhanceInfoIcon(target);
+        toggleInfoIcon(target);
+      }
+    });
+
+    document.addEventListener('focusin', event => {
+      const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
+      if (!isInfoIcon(target)) {
+        closeActiveInfoIcon();
+      }
+    });
+
+    enhanceAllInfoIcons();
+
     let latestResults = [];
     let targetNetBasis = 'year';
     const PRICING_MODE_TARGET = 'target';
@@ -1879,11 +1992,12 @@
         <div class="card">
           <table>
             <caption>
-              Active day / week / month targets
+              Gross Revenue Needed To Achieve Net Income Targets
               <span
                 class="info-icon"
                 tabindex="0"
-                role="img"
+                role="button"
+                aria-expanded="false"
                 aria-label="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
                 data-tooltip="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
               >ℹ️</span>
@@ -2064,6 +2178,7 @@
       const { pricingData, bufferPercent, revenueNeeded, mode } = computeTables(inputs);
 
       updateModeStyles(inputs, mode);
+      closeActiveInfoIcon();
 
       if (!pricingData.length) {
         tablesContainer.innerHTML = `
@@ -2086,6 +2201,7 @@
         tablesContainer.innerHTML = pricingTable + targetsTable;
       }
 
+      enhanceAllInfoIcons();
       renderAssumptions(inputs, { mode });
     }
 
