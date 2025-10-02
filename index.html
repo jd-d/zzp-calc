@@ -1257,6 +1257,42 @@
       return `<pre>${escaped}</pre>`;
     }
 
+    const README_SOURCES = [
+      new URL('README.md', document.baseURI).toString(),
+      'https://raw.githubusercontent.com/jd-d/zzp/main/README.md'
+    ];
+
+    function fetchReadmeFromSources(sources, index = 0) {
+      if (!Array.isArray(sources) || index >= sources.length) {
+        return Promise.reject(new Error('No README sources available'));
+      }
+
+      const source = sources[index];
+
+      return fetch(source)
+        .then(response => {
+          if (!response || !response.ok) {
+            throw new Error(`Failed to load README from ${source} (status ${response ? response.status : 'unknown'})`);
+          }
+          return response.text();
+        })
+        .catch(error => {
+          if (index < sources.length - 1) {
+            if (console && typeof console.warn === 'function') {
+              console.warn(error);
+            }
+
+            if (readmeBody) {
+              readmeBody.innerHTML = '<p class="readme-status">Retrying with a backup instructions source…</p>';
+            }
+
+            return fetchReadmeFromSources(sources, index + 1);
+          }
+
+          throw error;
+        });
+    }
+
     function loadReadme() {
       if (readmeLoaded || readmeLoading || !readmeBody) {
         return;
@@ -1264,13 +1300,7 @@
 
       readmeLoading = true;
 
-      fetch('README.md')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Failed to load README (status ${response.status})`);
-          }
-          return response.text();
-        })
+      fetchReadmeFromSources(README_SOURCES)
         .then(text => {
           readmeBody.innerHTML = parseMarkdown(text);
           readmeLoaded = true;
