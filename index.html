@@ -5,13 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="assets/favicon.png" type="image/png" />
   <link rel="apple-touch-icon" href="assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
   <title>Course Pricing Calculator</title>
   <style>
     :root {
       color-scheme: dark;
       --bg-gradient: radial-gradient(circle at top left, #1e2330, #10131c 55%, #0a0c12 100%);
+      --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-heading: "Clash Display", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
       --card-bg: rgba(20, 24, 35, 0.85);
       --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-gradient: linear-gradient(
+        135deg,
+        rgba(77, 163, 255, 0.6),
+        rgba(149, 114, 255, 0.45)
+      );
+      --card-surface-gradient: linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.08),
+        rgba(255, 255, 255, 0.02)
+      );
       --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
       --accent: #4da3ff;
       --text-primary: #f5f7fb;
@@ -57,8 +75,20 @@
     body[data-theme="light"] {
       color-scheme: light;
       --bg-gradient: radial-gradient(circle at top left, #eff4ff, #dde7ff 55%, #d4e0ff 100%);
+      --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-heading: "Clash Display", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
       --card-bg: rgba(255, 255, 255, 0.92);
       --card-border: rgba(15, 23, 42, 0.08);
+      --card-border-gradient: linear-gradient(
+        135deg,
+        rgba(37, 99, 235, 0.35),
+        rgba(59, 130, 246, 0.15)
+      );
+      --card-surface-gradient: linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.95),
+        rgba(249, 250, 255, 0.85)
+      );
       --card-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
       --accent: #2563eb;
       --text-primary: #111827;
@@ -108,7 +138,8 @@
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-family: var(--font-body);
+      line-height: 1.65;
       background: var(--bg-gradient);
       color: var(--text-primary);
       display: flex;
@@ -124,8 +155,12 @@
       color-scheme: dark;
     }
 
-    h1, h2 {
-      font-weight: 600;
+    h1,
+    h2 {
+      font-family: var(--font-heading);
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      line-height: 1.15;
       margin: 0;
     }
 
@@ -320,11 +355,53 @@
     }
 
     .page {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
       flex: 1;
       display: flex;
       flex-direction: column;
       padding: clamp(16px, 3vw, 32px);
       gap: clamp(16px, 2vw, 24px);
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: -40% -20% -60%;
+      background: radial-gradient(
+          circle at 30% 20%,
+          rgba(77, 163, 255, 0.25),
+          transparent 55%
+        ),
+        radial-gradient(circle at 70% 30%, rgba(149, 114, 255, 0.2), transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(77, 163, 255, 0.18), transparent 55%);
+      opacity: 0.45;
+      filter: blur(0);
+      transform: scale(1.05);
+      animation: page-backdrop-drift 26s ease-in-out infinite;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @keyframes page-backdrop-drift {
+      0% {
+        transform: scale(1.05) translate3d(-6%, -3%, 0) rotate(0deg);
+      }
+
+      50% {
+        transform: scale(1.05) translate3d(8%, 6%, 0) rotate(5deg);
+      }
+
+      100% {
+        transform: scale(1.05) translate3d(-6%, -3%, 0) rotate(0deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .page::before {
+        animation: none;
+      }
     }
 
     header {
@@ -388,13 +465,60 @@
     }
 
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      position: relative;
+      z-index: 0;
       border-radius: 18px;
       padding: clamp(16px, 2vw, 24px);
       box-shadow: var(--card-shadow);
-      backdrop-filter: blur(12px);
-      transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+      transform: translateY(0);
+      transition: transform 0.35s ease, box-shadow 0.4s ease, color 0.4s ease, background 0.4s ease;
+    }
+
+    .card::before,
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .card::before {
+      padding: 1px;
+      background: var(--card-border-gradient);
+      opacity: 0.75;
+      z-index: -2;
+      transition: opacity 0.45s ease;
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+    }
+
+    .card::after {
+      z-index: -1;
+      background: var(--card-bg);
+      background-image: var(--card-surface-gradient);
+      opacity: 0.95;
+      transition: opacity 0.45s ease;
+    }
+
+    .card:hover,
+    .card:focus-within {
+      transform: translateY(-4px);
+      box-shadow: var(--card-shadow), 0 18px 36px rgba(77, 163, 255, 0.12);
+    }
+
+    .card:hover::before,
+    .card:focus-within::before {
+      opacity: 1;
+    }
+
+    .card:hover::after,
+    .card:focus-within::after {
+      opacity: 1;
     }
 
     .privacy-info {
