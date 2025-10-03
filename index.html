@@ -168,6 +168,18 @@
       color: inherit;
     }
 
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     .top-nav {
       display: flex;
       justify-content: flex-end;
@@ -557,13 +569,40 @@
       gap: 20px;
     }
 
-    .controls fieldset {
+    .controls .control-sections,
+    .controls .control-section {
       border: none;
       padding: 0;
       margin: 0;
+    }
+
+    .controls .control-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .controls .control-section {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      background: var(--card-surface-gradient);
+      padding: 16px 18px 18px;
+    }
+
+    .controls .control-section > legend {
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 0 6px;
+    }
+
+    .controls .control-section .section-body {
       display: flex;
       flex-direction: column;
       gap: 16px;
+      margin-top: 12px;
     }
 
     .control-group {
@@ -989,6 +1028,27 @@
       border-color: var(--price-buffer-border);
     }
 
+    .price-line.base {
+      display: none;
+      margin-top: 8px;
+      border-style: dashed;
+    }
+
+    .pricing-card.show-base-prices .price-line.base {
+      display: flex;
+    }
+
+    .price-toggle-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+
+    .price-reveal-toggle {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
     .sub-label {
       display: block;
       font-size: 0.75rem;
@@ -1050,7 +1110,7 @@
         order: 1;
       }
 
-      .controls fieldset {
+      .controls .control-sections {
         order: 2;
       }
 
@@ -1121,142 +1181,193 @@
     <div class="layout">
       <section class="card controls" aria-labelledby="inputs-heading">
         <h2 id="inputs-heading" style="font-size: 1.1rem;">Inputs</h2>
-        <fieldset>
-          <div class="control-group" id="target-net-group" aria-describedby="target-net-message">
-            <p class="group-message" id="target-net-message" aria-live="polite"></p>
-            <div class="control">
-              <label for="target-net">
-                <span class="label-text">Target net income per year</span>
-                <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
-              </label>
-              <input type="number" id="target-net" value="50000" min="0" step="100" inputmode="decimal" />
+        <fieldset class="control-sections">
+          <legend class="visually-hidden">Calculator inputs</legend>
+
+          <fieldset class="control-section">
+            <legend>Income targets</legend>
+            <div class="section-body">
+              <div class="control-group" id="target-net-group" aria-describedby="target-net-message">
+                <p class="group-message" id="target-net-message" aria-live="polite"></p>
+                <div class="control">
+                  <label for="target-net">
+                    <span class="label-text">Target net income per year</span>
+                    <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net" value="50000" min="0" step="100" inputmode="decimal" />
+                </div>
+                <div class="control">
+                  <label for="target-net-week">
+                    <span class="label-text">Target net income per active week</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button" aria-expanded="false"
+                      aria-label="Weeks you are actively teaching after factoring in planned time off."
+                      data-tooltip="Weeks you are actively teaching after factoring in planned time off."
+                    >ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net-week" value="2000" min="0" step="50" inputmode="decimal" />
+                </div>
+                <div class="control">
+                  <label for="target-net-month">
+                    <span class="label-text">Target net income per active month</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button" aria-expanded="false"
+                      aria-label="Active months exclude the time off set below."
+                      data-tooltip="Active months exclude the time off set below."
+                    >ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net-month" value="5000" min="0" step="100" inputmode="decimal" />
+                </div>
+              </div>
             </div>
-            <div class="control">
-              <label for="target-net-week">
-                <span class="label-text">Target net income per active week</span>
-                <span
-                  class="info-icon"
-                  tabindex="0"
-                  role="button" aria-expanded="false"
-                  aria-label="Weeks you are actively teaching after factoring in planned time off."
-                  data-tooltip="Weeks you are actively teaching after factoring in planned time off."
-                >ℹ️</span>
-              </label>
-              <input type="number" id="target-net-week" value="2000" min="0" step="50" inputmode="decimal" />
+          </fieldset>
+
+          <fieldset class="control-section">
+            <legend>Taxes and costs</legend>
+            <div class="section-body">
+              <div class="control">
+                <label for="tax-rate">
+                  <span class="label-text">Effective income tax rate (%)</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
+                </label>
+                <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="fixed-costs">
+                  <span class="label-text">Fixed annual costs</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Venue, insurance, marketing, materials, admin, etc." data-tooltip="Venue, insurance, marketing, materials, admin, etc.">ℹ️</span>
+                </label>
+                <input type="number" id="fixed-costs" value="16500" min="0" step="100" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="variable-cost-class">
+                  <span class="label-text">Variable cost per class</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Expenses that apply each time you run a class, such as room hire or transport." data-tooltip="Expenses that apply each time you run a class, such as room hire or transport.">ℹ️</span>
+                </label>
+                <input type="number" id="variable-cost-class" value="0" min="0" step="0.01" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="variable-cost-student">
+                  <span class="label-text">Variable cost per student</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Per-student expenses like materials or refreshments." data-tooltip="Per-student expenses like materials or refreshments.">ℹ️</span>
+                </label>
+                <input type="number" id="variable-cost-student" value="0" min="0" step="0.01" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="vat-rate">
+                  <span class="label-text">VAT rate (%)</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Modify if the services you offer fall into a lower VAT band." data-tooltip="Modify if the services you offer fall into a lower VAT band.">ℹ️</span>
+                </label>
+                <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
+              </div>
             </div>
-            <div class="control">
-              <label for="target-net-month">
-                <span class="label-text">Target net income per active month</span>
-                <span
-                  class="info-icon"
-                  tabindex="0"
-                  role="button" aria-expanded="false"
-                  aria-label="Active months exclude the time off set below."
-                  data-tooltip="Active months exclude the time off set below."
-                >ℹ️</span>
-              </label>
-              <input type="number" id="target-net-month" value="5000" min="0" step="100" inputmode="decimal" />
+          </fieldset>
+
+          <fieldset class="control-section">
+            <legend>Schedule and capacity</legend>
+            <div class="section-body">
+              <div class="control">
+                <label for="classes-per-week">
+                  <span class="label-text">Classes per week</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,5)." data-tooltip="Comma-separated integers (e.g. 4,5).">ℹ️</span>
+                </label>
+                <input type="text" id="classes-per-week" value="4,5" autocomplete="off" />
+              </div>
+              <div class="control">
+                <label for="students-per-class">
+                  <span class="label-text">Students per class</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,6,8)." data-tooltip="Comma-separated integers (e.g. 4,6,8).">ℹ️</span>
+                </label>
+                <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
+              </div>
             </div>
-          </div>
-          <div class="control">
-            <label for="tax-rate">
-              <span class="label-text">Effective income tax rate (%)</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
-            </label>
-            <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
-          </div>
-          <div class="control">
-            <label for="fixed-costs">
-              <span class="label-text">Fixed annual costs</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Venue, insurance, marketing, materials, admin, etc." data-tooltip="Venue, insurance, marketing, materials, admin, etc.">ℹ️</span>
-            </label>
-            <input type="number" id="fixed-costs" value="16500" min="0" step="100" inputmode="decimal" />
-          </div>
-          <div class="control">
-            <label for="vat-rate">
-              <span class="label-text">VAT rate (%)</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Modify if the services you offer fall into a lower VAT band." data-tooltip="Modify if the services you offer fall into a lower VAT band.">ℹ️</span>
-            </label>
-            <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
-          </div>
-          <div class="control">
-            <label for="classes-per-week">
-              <span class="label-text">Classes per week</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,5)." data-tooltip="Comma-separated integers (e.g. 4,5).">ℹ️</span>
-            </label>
-            <input type="text" id="classes-per-week" value="4,5" autocomplete="off" />
-          </div>
-          <div class="control">
-            <label for="students-per-class">
-              <span class="label-text">Students per class</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,6,8)." data-tooltip="Comma-separated integers (e.g. 4,6,8).">ℹ️</span>
-            </label>
-            <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
-          </div>
-          <div class="control mode-field" id="lesson-cost-wrapper">
-            <label for="lesson-cost">
-              <span class="label-text">Lesson cost (incl. VAT)</span>
-              <span
-                class="info-icon"
-                tabindex="0"
-                role="button" aria-expanded="false"
-                aria-label="Set a fixed per-student lesson price including VAT."
-                data-tooltip="Set a fixed per-student lesson price including VAT."
-              >ℹ️</span>
-            </label>
-            <input type="number" id="lesson-cost" min="0" step="0.01" inputmode="decimal" />
-            <p class="field-note">Entering an amount here will temporarily disable the target net income fields above and display projected income(s) in the table.</p>
-            <p class="field-message" id="lesson-cost-message" aria-live="polite"></p>
-          </div>
-          <div class="control">
-            <label for="months-off">
-              <span class="label-text">Months off per year</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Total months you plan to take completely off." data-tooltip="Total months you plan to take completely off.">ℹ️</span>
-            </label>
-            <input type="number" id="months-off" value="2" min="0" max="12" step="0.5" inputmode="decimal" />
-          </div>
-          <div class="control">
-            <label for="weeks-off-cycle">
-              <span class="label-text">Weeks off per 4-week cycle</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="For example, 1 week off means working 3 weeks out of every 4." data-tooltip="For example, 1 week off means working 3 weeks out of every 4.">ℹ️</span>
-            </label>
-            <input type="number" id="weeks-off-cycle" value="1" min="0" max="4" step="0.25" inputmode="decimal" />
-          </div>
-          <div class="control">
-            <label for="days-off-week">
-              <span class="label-text">Days off per working week</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Assumes a 5-day working week. Supports decimals for half-days." data-tooltip="Assumes a 5-day working week. Supports decimals for half-days.">ℹ️</span>
-            </label>
-            <input type="number" id="days-off-week" value="1" min="0" max="5" step="0.25" inputmode="decimal" />
-          </div>
-          <div class="control">
-            <label>
-              <span class="label-text">Estimated working weeks per year</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Calculated from the schedule above." data-tooltip="Calculated from the schedule above.">ℹ️</span>
-            </label>
-            <output id="working-weeks-display">32.5</output>
-          </div>
-          <div class="control">
-            <label>
-              <span class="label-text">Estimated working days per year</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Working weeks × working days per active week." data-tooltip="Working weeks × working days per active week.">ℹ️</span>
-            </label>
-            <output id="working-days-display">130</output>
-          </div>
-          <div class="control">
-            <label for="buffer">
-              <span class="label-text">Safety margin (%)</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Applied to cover no-shows, refunds, etc." data-tooltip="Applied to cover no-shows, refunds, etc.">ℹ️</span>
-            </label>
-            <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
-          </div>
-          <div class="control">
-            <label for="currency-symbol">
-              <span class="label-text">Currency symbol</span>
-              <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
-            </label>
-            <input type="text" id="currency-symbol" value="€" maxlength="3" />
-          </div>
+          </fieldset>
+
+          <fieldset class="control-section">
+            <legend>Manual lesson price override</legend>
+            <div class="section-body">
+              <div class="control mode-field" id="lesson-cost-wrapper">
+                <label for="lesson-cost">
+                  <span class="label-text">Lesson cost (incl. VAT)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button" aria-expanded="false"
+                    aria-label="Set a fixed per-student lesson price including VAT."
+                    data-tooltip="Set a fixed per-student lesson price including VAT."
+                  >ℹ️</span>
+                </label>
+                <input type="number" id="lesson-cost" min="0" step="0.01" inputmode="decimal" />
+                <p class="field-note">Entering an amount here will temporarily disable the target net income fields above and display projected income(s) in the table.</p>
+                <p class="field-message" id="lesson-cost-message" aria-live="polite"></p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section">
+            <legend>Time-off planner</legend>
+            <div class="section-body">
+              <div class="control">
+                <label for="months-off">
+                  <span class="label-text">Months off per year</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Total months you plan to take completely off." data-tooltip="Total months you plan to take completely off.">ℹ️</span>
+                </label>
+                <input type="number" id="months-off" value="2" min="0" max="12" step="0.5" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="weeks-off-cycle">
+                  <span class="label-text">Weeks off per 4-week cycle</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="For example, 1 week off means working 3 weeks out of every 4." data-tooltip="For example, 1 week off means working 3 weeks out of every 4.">ℹ️</span>
+                </label>
+                <input type="number" id="weeks-off-cycle" value="1" min="0" max="4" step="0.25" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="days-off-week">
+                  <span class="label-text">Days off per working week</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Assumes a 5-day working week. Supports decimals for half-days." data-tooltip="Assumes a 5-day working week. Supports decimals for half-days.">ℹ️</span>
+                </label>
+                <input type="number" id="days-off-week" value="1" min="0" max="5" step="0.25" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label>
+                  <span class="label-text">Estimated working weeks per year</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Calculated from the schedule above." data-tooltip="Calculated from the schedule above.">ℹ️</span>
+                </label>
+                <output id="working-weeks-display">32.5</output>
+              </div>
+              <div class="control">
+                <label>
+                  <span class="label-text">Estimated working days per year</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Working weeks × working days per active week." data-tooltip="Working weeks × working days per active week.">ℹ️</span>
+                </label>
+                <output id="working-days-display">130</output>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section">
+            <legend>Display preferences</legend>
+            <div class="section-body">
+              <div class="control">
+                <label for="buffer">
+                  <span class="label-text">Safety margin (%)</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Applied to cover no-shows, refunds, etc." data-tooltip="Applied to cover no-shows, refunds, etc.">ℹ️</span>
+                </label>
+                <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="currency-symbol">
+                  <span class="label-text">Currency symbol</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
+                </label>
+                <input type="text" id="currency-symbol" value="€" maxlength="3" />
+              </div>
+            </div>
+          </fieldset>
         </fieldset>
 
         <div class="button-row presets" role="group" aria-label="Preset targets">
@@ -1604,6 +1715,8 @@
       targetNetMonth: document.getElementById('target-net-month'),
       taxRate: document.getElementById('tax-rate'),
       fixedCosts: document.getElementById('fixed-costs'),
+      variableCostPerClass: document.getElementById('variable-cost-class'),
+      variableCostPerStudent: document.getElementById('variable-cost-student'),
       vatRate: document.getElementById('vat-rate'),
       classesPerWeek: document.getElementById('classes-per-week'),
       studentsPerClass: document.getElementById('students-per-class'),
@@ -1743,6 +1856,7 @@
     enhanceAllInfoIcons();
 
     let latestResults = [];
+    let showBasePrices = false;
     let targetNetBasis = 'year';
     const PRICING_MODE_TARGET = 'target';
     const PRICING_MODE_LESSON = 'lesson';
@@ -1794,6 +1908,8 @@
       const taxRatePercent = Math.min(Math.max(parseNumber(controls.taxRate.value, 40), 0), 99.9);
       const taxRate = taxRatePercent / 100;
       const fixedCosts = Math.max(parseNumber(controls.fixedCosts.value, 16500), 0);
+      const variableCostPerClass = Math.max(parseNumber(controls.variableCostPerClass.value, 0), 0);
+      const variableCostPerStudent = Math.max(parseNumber(controls.variableCostPerStudent.value, 0), 0);
       const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
       const classesPerWeek = parseList(controls.classesPerWeek.value);
       const studentsPerClass = parseList(controls.studentsPerClass.value);
@@ -1856,6 +1972,12 @@
 
       controls.taxRate.value = formatFixed(taxRate * 100, 1);
       controls.fixedCosts.value = fixedCosts;
+      if (controls.variableCostPerClass instanceof HTMLInputElement) {
+        controls.variableCostPerClass.value = formatFixed(variableCostPerClass, 2);
+      }
+      if (controls.variableCostPerStudent instanceof HTMLInputElement) {
+        controls.variableCostPerStudent.value = formatFixed(variableCostPerStudent, 2);
+      }
       controls.vatRate.value = formatFixed(vatRate * 100, 1);
       controls.monthsOff.value = formatFixed(monthsOff, 2);
       controls.weeksOffCycle.value = formatFixed(weeksOffPerCycle, 2);
@@ -1879,6 +2001,8 @@
         targetNetPerMonth,
         taxRate,
         fixedCosts,
+        variableCostPerClass,
+        variableCostPerStudent,
         vatRate,
         classesPerWeek,
         studentsPerClass,
@@ -1969,11 +2093,12 @@
       return rounded < 0 ? `-${symbol}${formatted}` : `${symbol}${formatted}`;
     }
 
-    function computeNetIncomeFromRevenue(revenue, fixedCosts, effectiveTaxRate) {
+    function computeNetIncomeFromRevenue(revenue, fixedCosts, effectiveTaxRate, variableCosts = 0) {
       if (!Number.isFinite(revenue)) {
         return null;
       }
-      const profitBeforeTax = revenue - fixedCosts;
+      const normalizedVariableCosts = Number.isFinite(variableCosts) ? variableCosts : 0;
+      const profitBeforeTax = revenue - fixedCosts - normalizedVariableCosts;
       return profitBeforeTax * (1 - effectiveTaxRate);
     }
 
@@ -1982,8 +2107,21 @@
         return `<div class="card"><p class="status-message">No valid combinations available.</p></div>`;
       }
 
-      const { mode = PRICING_MODE_TARGET } = options;
+      const { mode = PRICING_MODE_TARGET, showBasePrices: showBase = false } = options;
       const formattedBuffer = formatFixed(bufferPercent, 1);
+      const showBasePricesActive = mode === PRICING_MODE_TARGET && showBase;
+      const cardClasses = ['card', 'pricing-card'];
+      if (showBasePricesActive) {
+        cardClasses.push('show-base-prices');
+      }
+
+      const toggleMarkup = mode === PRICING_MODE_TARGET
+        ? `<div class="price-toggle-row">
+            <button type="button" class="price-reveal-toggle secondary" aria-expanded="${showBasePricesActive}">
+              ${showBasePricesActive ? 'Hide base price' : 'Show base price'}
+            </button>
+          </div>`
+        : '';
 
       const columnHeaders = data[0].columns
         .map(col => {
@@ -2029,12 +2167,19 @@
 
               const bufferedExVat = formatCurrency(symbol, col.buffered.priceExVat);
               const bufferedInclVat = formatCurrency(symbol, col.buffered.priceInclVat);
+              const baseExVat = formatCurrency(symbol, col.base.priceExVat);
+              const baseInclVat = formatCurrency(symbol, col.base.priceInclVat);
               return `
                 <td>
                   <div class="price-line buffered">
                     <span class="price-label">Buffered +${formattedBuffer}%</span>
                     <strong>${bufferedInclVat}</strong>
                     <span class="price-secondary">ex VAT ${bufferedExVat}</span>
+                  </div>
+                  <div class="price-line base" aria-hidden="${showBasePricesActive ? 'false' : 'true'}">
+                    <span class="price-label">Base (no buffer)</span>
+                    <strong>${baseInclVat}</strong>
+                    <span class="price-secondary">ex VAT ${baseExVat}</span>
                   </div>
                 </td>
               `;
@@ -2045,7 +2190,8 @@
         .join('');
 
       return `
-        <div class="card">
+        <div class="${cardClasses.join(' ')}">
+          ${toggleMarkup}
           <table>
             <caption>Per-student pricing (includes optional safety margin)</caption>
             <thead>
@@ -2146,6 +2292,8 @@
         targetNet,
         taxRate,
         fixedCosts,
+        variableCostPerClass,
+        variableCostPerStudent,
         vatRate,
         classesPerWeek,
         studentsPerClass,
@@ -2199,9 +2347,22 @@
             const classesPerYear = column.classesPerYear;
             const annualRevenue = priceExVatPerStudent * students * classesPerYear;
             const bufferedRevenue = annualRevenue * attendanceMultiplier;
+            const annualVariableCosts =
+              variableCostPerClass * classesPerYear +
+              variableCostPerStudent * students * classesPerYear;
 
-            const annualNet = computeNetIncomeFromRevenue(annualRevenue, fixedCosts, effectiveTaxRate);
-            const bufferedAnnualNet = computeNetIncomeFromRevenue(bufferedRevenue, fixedCosts, effectiveTaxRate);
+            const annualNet = computeNetIncomeFromRevenue(
+              annualRevenue,
+              fixedCosts,
+              effectiveTaxRate,
+              annualVariableCosts
+            );
+            const bufferedAnnualNet = computeNetIncomeFromRevenue(
+              bufferedRevenue,
+              fixedCosts,
+              effectiveTaxRate,
+              annualVariableCosts
+            );
 
             const monthlyNet = Number.isFinite(annualNet) && hasActiveMonths
               ? annualNet / activeMonths
@@ -2261,29 +2422,50 @@
         const row = { students, columns: [] };
 
         for (const column of columnsMeta) {
-          const revenuePerClass = revenueNeeded / Math.max(column.classesPerYear, 1);
-          const priceExVat = revenuePerClass / students;
+          const classesPerYear = column.classesPerYear;
+          const effectiveClassesPerYear = Math.max(classesPerYear, 1);
+          const annualVariableCosts =
+            variableCostPerClass * classesPerYear +
+            variableCostPerStudent * students * classesPerYear;
+          const revenueNeededForCombo = revenueNeeded + annualVariableCosts;
+          const revenuePerClass = revenueNeededForCombo / effectiveClassesPerYear;
+          const priceExVat = revenuePerClass / Math.max(students, 1);
           const bufferedExVat = priceExVat * (1 + buffer);
           const priceInclVat = priceExVat * (1 + vatRate);
           const bufferedInclVat = bufferedExVat * (1 + vatRate);
 
+          const roundedBaseExVat = Math.round(priceExVat);
+          const roundedBaseInclVat = Math.round(priceInclVat);
           const roundedBufferedExVat = Math.round(bufferedExVat);
           const roundedBufferedInclVat = Math.round(bufferedInclVat);
 
           row.columns.push({
             classesPerWeek: column.classesPerWeek,
-            classesPerYear: column.classesPerYear,
+            classesPerYear,
+            base: {
+              priceExVat,
+              priceInclVat
+            },
             buffered: {
-              priceExVat: roundedBufferedExVat,
-              priceInclVat: roundedBufferedInclVat
+              priceExVat: bufferedExVat,
+              priceInclVat: bufferedInclVat
             }
+          });
+
+          latestResults.push({
+            variant: 'Base (no buffer)',
+            students,
+            classesPerWeek: column.classesPerWeek,
+            classesPerYear: Math.round(classesPerYear),
+            priceExVat: roundedBaseExVat,
+            priceInclVat: roundedBaseInclVat
           });
 
           latestResults.push({
             variant: `Buffered +${bufferPercent}%`,
             students,
             classesPerWeek: column.classesPerWeek,
-            classesPerYear: Math.round(column.classesPerYear),
+            classesPerYear: Math.round(classesPerYear),
             priceExVat: roundedBufferedExVat,
             priceInclVat: roundedBufferedInclVat
           });
@@ -2311,7 +2493,10 @@
           </div>
         `;
       } else {
-        const pricingTable = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent, { mode });
+        const pricingTable = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent, {
+          mode,
+          showBasePrices
+        });
         const targetsTable = mode === PRICING_MODE_LESSON
           ? ''
           : buildActiveTargetsTable({
@@ -2336,6 +2521,8 @@
         targetNetPerMonth,
         taxRate,
         fixedCosts,
+        variableCostPerClass,
+        variableCostPerStudent,
         vatRate,
         classesPerWeek,
         studentsPerClass,
@@ -2375,6 +2562,8 @@
         manualLessonLine,
         `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
         `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
+        `Variable cost per class: ${formatCurrency(currencySymbol, variableCostPerClass)} (per scheduled class)`,
+        `Variable cost per student: ${formatCurrency(currencySymbol, variableCostPerStudent)} (per student per class)`,
         `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
         `Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`,
         `Days off per working week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
@@ -2459,7 +2648,7 @@
       URL.revokeObjectURL(url);
       controls.statusMessage.textContent = latestResultsMode === PRICING_MODE_LESSON
         ? 'CSV download started. File lists monthly and annual net income for each combination.'
-        : 'CSV download started. File lists buffered prices including and excluding VAT.';
+        : 'CSV download started. File lists base and buffered prices including and excluding VAT.';
       setTimeout(() => {
         controls.statusMessage.textContent = '';
       }, 2500);
@@ -2513,6 +2702,20 @@
           render();
         }
       });
+    });
+
+    tablesContainer.addEventListener('click', event => {
+      const toggleButton = event.target instanceof HTMLElement ? event.target.closest('.price-reveal-toggle') : null;
+      if (!toggleButton) {
+        return;
+      }
+      event.preventDefault();
+      showBasePrices = !showBasePrices;
+      render();
+      const refreshedToggle = tablesContainer.querySelector('.price-reveal-toggle');
+      if (refreshedToggle instanceof HTMLButtonElement) {
+        refreshedToggle.focus();
+      }
     });
 
     controls.recalcButton.addEventListener('click', render);
