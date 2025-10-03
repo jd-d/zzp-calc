@@ -713,6 +713,7 @@
       flex: 0 0 auto;
       transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
       touch-action: manipulation;
+      --tooltip-shift: 0px;
     }
 
     .info-icon:hover,
@@ -725,12 +726,11 @@
       box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
-    .info-icon::after {
-      content: attr(data-tooltip);
+    .info-icon__tooltip {
       position: absolute;
       bottom: calc(100% + 8px);
       left: 50%;
-      transform: translate(-50%, 4px);
+      transform: translate(calc(-50% + var(--tooltip-shift, 0px)), 4px);
       width: clamp(180px, calc(100vw - 32px), 260px);
       padding: 10px 12px;
       border-radius: 12px;
@@ -745,53 +745,27 @@
       z-index: 10;
     }
 
-    .info-icon::before {
-      content: '';
+    .info-icon__arrow {
       position: absolute;
       bottom: calc(100% + 4px);
       left: 50%;
-      transform: translate(-50%, 4px);
+      transform: translate(calc(-50% + var(--tooltip-shift, 0px)), 4px);
       border-width: 6px;
       border-style: solid;
       border-color: var(--tooltip-bg) transparent transparent transparent;
       opacity: 0;
       transition: opacity 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
     }
 
-    .info-icon:hover::after,
-    .info-icon:focus-visible::after,
-    .info-icon.is-active::after,
-    .info-icon:hover::before,
-    .info-icon:focus-visible::before,
-    .info-icon.is-active::before {
+    .info-icon:hover .info-icon__tooltip,
+    .info-icon:focus-visible .info-icon__tooltip,
+    .info-icon.is-active .info-icon__tooltip,
+    .info-icon:hover .info-icon__arrow,
+    .info-icon:focus-visible .info-icon__arrow,
+    .info-icon.is-active .info-icon__arrow {
       opacity: 1;
-      transform: translate(-50%, 0);
-    }
-
-    @media (max-width: 640px) {
-      .info-icon::after {
-        left: auto;
-        right: 0;
-        transform: translate(-8px, 4px);
-      }
-
-      .info-icon::before {
-        left: auto;
-        right: 12px;
-        transform: translate(0, 4px);
-      }
-
-      .info-icon:hover::after,
-      .info-icon:focus-visible::after,
-      .info-icon.is-active::after {
-        transform: translate(-8px, 0);
-      }
-
-      .info-icon:hover::before,
-      .info-icon:focus-visible::before,
-      .info-icon.is-active::before {
-        transform: translate(0, 0);
-      }
+      transform: translate(calc(-50% + var(--tooltip-shift, 0px)), 0);
     }
 
     input[type="number"],
@@ -1774,10 +1748,63 @@
     ].filter(input => input instanceof HTMLInputElement);
 
     const INFO_ICON_ACTIVE_CLASS = 'is-active';
+    const TOOLTIP_VIEWPORT_PADDING = 16;
     let activeInfoIcon = null;
+    let infoIconTooltipId = 0;
 
     function isInfoIcon(element) {
       return element instanceof HTMLElement && element.classList.contains('info-icon');
+    }
+
+    function ensureInfoIconTooltip(icon) {
+      if (!isInfoIcon(icon)) {
+        return null;
+      }
+      let tooltip = icon.querySelector('.info-icon__tooltip');
+      if (!(tooltip instanceof HTMLElement)) {
+        tooltip = document.createElement('span');
+        tooltip.className = 'info-icon__tooltip';
+        tooltip.setAttribute('role', 'tooltip');
+        icon.append(tooltip);
+      }
+      let arrow = icon.querySelector('.info-icon__arrow');
+      if (!(arrow instanceof HTMLElement)) {
+        arrow = document.createElement('span');
+        arrow.className = 'info-icon__arrow';
+        arrow.setAttribute('aria-hidden', 'true');
+        icon.append(arrow);
+      }
+      const tooltipText = icon.dataset.tooltip || icon.getAttribute('aria-label') || '';
+      tooltip.textContent = tooltipText;
+      if (!tooltip.id) {
+        infoIconTooltipId += 1;
+        tooltip.id = `info-icon-tooltip-${infoIconTooltipId}`;
+      }
+      if (!icon.hasAttribute('aria-describedby')) {
+        icon.setAttribute('aria-describedby', tooltip.id);
+      }
+      return { tooltip, arrow };
+    }
+
+    function positionInfoIconTooltip(icon) {
+      if (!isInfoIcon(icon)) {
+        return;
+      }
+      const parts = ensureInfoIconTooltip(icon);
+      if (!parts || !(parts.tooltip instanceof HTMLElement)) {
+        return;
+      }
+      icon.style.setProperty('--tooltip-shift', '0px');
+      const tooltipRect = parts.tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+      const padding = TOOLTIP_VIEWPORT_PADDING;
+      let shift = 0;
+      if (tooltipRect.left < padding) {
+        shift = padding - tooltipRect.left;
+      } else if (tooltipRect.right > viewportWidth - padding) {
+        shift = -(tooltipRect.right - (viewportWidth - padding));
+      }
+      icon.style.setProperty('--tooltip-shift', `${shift}px`);
     }
 
     function enhanceInfoIcon(icon) {
@@ -1792,6 +1819,7 @@
       if (!icon.hasAttribute('aria-label') && icon.dataset.tooltip) {
         icon.setAttribute('aria-label', icon.dataset.tooltip);
       }
+      ensureInfoIconTooltip(icon);
     }
 
     function enhanceAllInfoIcons() {
@@ -1816,6 +1844,7 @@
       icon.classList.add(INFO_ICON_ACTIVE_CLASS);
       icon.setAttribute('aria-expanded', 'true');
       activeInfoIcon = icon;
+      positionInfoIconTooltip(icon);
     }
 
     function toggleInfoIcon(icon) {
@@ -1843,6 +1872,7 @@
       event.preventDefault();
       enhanceInfoIcon(target);
       toggleInfoIcon(target);
+      positionInfoIconTooltip(target);
       if (typeof target.focus === 'function') {
         target.focus();
       }
@@ -1870,6 +1900,7 @@
         event.preventDefault();
         enhanceInfoIcon(target);
         toggleInfoIcon(target);
+        positionInfoIconTooltip(target);
       }
     });
 
@@ -1877,10 +1908,27 @@
       const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
       if (!isInfoIcon(target)) {
         closeActiveInfoIcon();
+        return;
       }
+      enhanceInfoIcon(target);
+      positionInfoIconTooltip(target);
     });
 
     enhanceAllInfoIcons();
+
+    document.addEventListener('mouseover', event => {
+      const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
+      if (!isInfoIcon(target)) {
+        return;
+      }
+      positionInfoIconTooltip(target);
+    });
+
+    window.addEventListener('resize', () => {
+      if (activeInfoIcon) {
+        positionInfoIconTooltip(activeInfoIcon);
+      }
+    });
 
     let latestResults = [];
     let showBasePrices = false;
