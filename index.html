@@ -731,7 +731,7 @@
       bottom: calc(100% + 8px);
       left: 50%;
       transform: translate(-50%, 4px);
-      width: clamp(180px, 32vw, 260px);
+      width: clamp(180px, calc(100vw - 32px), 260px);
       padding: 10px 12px;
       border-radius: 12px;
       background: var(--tooltip-bg);
@@ -766,6 +766,32 @@
     .info-icon.is-active::before {
       opacity: 1;
       transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 640px) {
+      .info-icon::after {
+        left: auto;
+        right: 0;
+        transform: translate(-8px, 4px);
+      }
+
+      .info-icon::before {
+        left: auto;
+        right: 12px;
+        transform: translate(0, 4px);
+      }
+
+      .info-icon:hover::after,
+      .info-icon:focus-visible::after,
+      .info-icon.is-active::after {
+        transform: translate(-8px, 0);
+      }
+
+      .info-icon:hover::before,
+      .info-icon:focus-visible::before,
+      .info-icon.is-active::before {
+        transform: translate(0, 0);
+      }
     }
 
     input[type="number"],
@@ -949,7 +975,7 @@
       border-collapse: collapse;
       font-variant-numeric: tabular-nums;
       border-radius: 14px;
-      overflow: hidden;
+      overflow: visible;
     }
 
     caption {
