@@ -863,33 +863,10 @@
       transition: border-color 0.3s ease, background-color 0.3s ease, padding 0.3s ease;
     }
 
-    .control-group.is-inactive {
-      border-color: var(--inactive-border);
-      background: var(--inactive-bg);
-      padding: 16px;
-    }
-
     .control {
       display: flex;
       flex-direction: column;
       gap: 6px;
-    }
-
-    .mode-field {
-      border: 1px solid transparent;
-      border-radius: 12px;
-      padding: 12px;
-      transition: border-color 0.3s ease, background-color 0.3s ease;
-    }
-
-    .mode-field.is-inactive {
-      border-color: var(--inactive-border);
-      background: var(--inactive-bg);
-    }
-
-    .mode-field.is-active {
-      border-color: var(--active-border);
-      background: var(--active-bg);
     }
 
     label {
@@ -902,7 +879,6 @@
       flex-wrap: wrap;
     }
 
-    .group-message,
     .field-note,
     .field-message {
       font-size: 0.85rem;
@@ -910,32 +886,8 @@
       color: var(--text-muted);
     }
 
-    .group-message:empty,
     .field-message:empty {
       display: none;
-    }
-
-    .control-group.is-inactive .group-message {
-      color: var(--inactive-text);
-    }
-
-    .mode-field.is-inactive label,
-    .mode-field.is-inactive .field-message {
-      color: var(--inactive-text);
-    }
-
-    .mode-field.is-active .field-message {
-      color: var(--accent);
-    }
-
-    .inactive-field {
-      color: var(--inactive-strong) !important;
-      border-color: var(--inactive-border) !important;
-    }
-
-    .control-group.is-inactive input.inactive-field::placeholder,
-    .mode-field.is-inactive input.inactive-field::placeholder {
-      color: var(--inactive-text);
     }
 
     .label-text {
@@ -1384,20 +1336,16 @@
         gap: 16px;
       }
 
-      .controls .presets {
+      .controls .control-sections {
         order: 1;
       }
 
-      .controls .control-sections {
+      .controls .actions {
         order: 2;
       }
 
-      .controls .actions {
-        order: 3;
-      }
-
       .controls .status-message {
-        order: 4;
+        order: 3;
       }
     }
 
@@ -1463,20 +1411,20 @@
           <legend class="visually-hidden">Calculator inputs</legend>
 
           <fieldset class="control-section">
-            <legend>Income targets</legend>
+            <legend>Net income</legend>
             <div class="section-body">
-              <div class="control-group" id="target-net-group" aria-describedby="target-net-message">
-                <p class="group-message" id="target-net-message" aria-live="polite"></p>
+              <div class="control-group">
+                <p class="field-note">Entering a net income value will update the lesson cost automatically.</p>
                 <div class="control">
                   <label for="target-net">
-                    <span class="label-text">Target net income per year</span>
+                    <span class="label-text">Net income per year</span>
                     <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
                   </label>
                   <input type="number" id="target-net" value="50000" min="0" step="100" inputmode="decimal" />
                 </div>
                 <div class="control">
                   <label for="target-net-week">
-                    <span class="label-text">Target net income per active week</span>
+                    <span class="label-text">Net income per active week</span>
                     <span
                       class="info-icon"
                       tabindex="0"
@@ -1489,7 +1437,7 @@
                 </div>
                 <div class="control">
                   <label for="target-net-month">
-                    <span class="label-text">Target net income per active month</span>
+                    <span class="label-text">Net income per active month</span>
                     <span
                       class="info-icon"
                       tabindex="0"
@@ -1568,9 +1516,9 @@
           <fieldset class="control-section">
             <legend>Manual lesson price override</legend>
             <div class="section-body">
-              <div class="control mode-field" id="lesson-cost-wrapper">
+              <div class="control">
                 <label for="lesson-cost">
-                  <span class="label-text">Lesson cost (incl. VAT)</span>
+                  <span class="label-text">Manual lesson cost (incl. VAT)</span>
                   <span
                     class="info-icon"
                     tabindex="0"
@@ -1580,8 +1528,7 @@
                   >ℹ️</span>
                 </label>
                 <input type="number" id="lesson-cost" min="0" step="0.01" inputmode="decimal" />
-                <p class="field-note">Entering an amount here will temporarily disable the target net income fields above and display projected income(s) in the table.</p>
-                <p class="field-message" id="lesson-cost-message" aria-live="polite"></p>
+                <p class="field-note">Entering a lesson cost updates the net income values above.</p>
               </div>
             </div>
           </fieldset>
@@ -1647,12 +1594,6 @@
             </div>
           </fieldset>
         </fieldset>
-
-        <div class="button-row presets" role="group" aria-label="Preset targets">
-          <button type="button" class="secondary" data-preset="50k">Preset: 50k target</button>
-          <button type="button" class="secondary" data-preset="100k">Preset: 100k target</button>
-        </div>
-
         <div class="button-row actions" role="group" aria-label="Actions">
           <button type="button" id="recalculate">Recalculate</button>
           <button type="button" id="download-csv" class="secondary">Download CSV</button>
@@ -1701,7 +1642,7 @@
           </li>
           <li>
             <strong>Watch for network requests.</strong> Keep the Network tab open with “Preserve log” enabled as you adjust
-            inputs, apply presets, and export CSV. You’ll see no additional requests after the initial page load because every
+            inputs and export CSV. You’ll see no additional requests after the initial page load because every
             calculation happens locally.
           </li>
           <li>
@@ -2112,11 +2053,6 @@
 
     const tablesContainer = document.getElementById('tables-container');
     const assumptionsList = document.getElementById('assumptions-list');
-    const presetButtons = document.querySelectorAll('button[data-preset]');
-    const targetNetGroup = document.getElementById('target-net-group');
-    const targetNetMessage = document.getElementById('target-net-message');
-    const lessonCostWrapper = document.getElementById('lesson-cost-wrapper');
-    const lessonCostMessage = document.getElementById('lesson-cost-message');
     const targetNetInputs = [
       controls.targetNet,
       controls.targetNetWeek,
@@ -2311,7 +2247,6 @@
     let targetNetBasis = 'year';
     const PRICING_MODE_TARGET = 'target';
     const PRICING_MODE_LESSON = 'lesson';
-    let pricingMode = PRICING_MODE_TARGET;
     let latestResultsMode = PRICING_MODE_TARGET;
     let latestPricingData = null;
     let latestCurrencySymbol = '€';
@@ -2475,68 +2410,6 @@
         activeMonthShare,
         weeksShare
       };
-    }
-
-    function updatePricingMode(nextMode) {
-      const normalized = nextMode === PRICING_MODE_LESSON ? PRICING_MODE_LESSON : PRICING_MODE_TARGET;
-      const changed = pricingMode !== normalized;
-      pricingMode = normalized;
-      return changed;
-    }
-
-    function updateModeStyles(inputs, computedMode) {
-      const hasLessonCost = Number.isFinite(inputs.lessonCostInclVat);
-      const manualActive = computedMode === PRICING_MODE_LESSON && hasLessonCost;
-      const manualInactive = hasLessonCost && computedMode !== PRICING_MODE_LESSON;
-
-      if (targetNetGroup) {
-        targetNetGroup.classList.toggle('is-inactive', manualActive);
-      }
-
-      targetNetInputs.forEach(input => {
-        input.classList.toggle('inactive-field', manualActive);
-        input.readOnly = manualActive;
-        if (manualActive) {
-          input.setAttribute('aria-describedby', 'target-net-message');
-        } else if (input.getAttribute('aria-describedby') === 'target-net-message') {
-          input.removeAttribute('aria-describedby');
-        }
-      });
-
-      if (targetNetMessage) {
-        targetNetMessage.textContent = manualActive
-          ? 'Fields inactive when lesson price filled, click a field to reactivate.'
-          : '';
-      }
-
-      const lessonCostInactive = computedMode !== PRICING_MODE_LESSON;
-
-      if (lessonCostWrapper) {
-        lessonCostWrapper.classList.toggle('is-active', manualActive);
-        lessonCostWrapper.classList.toggle('is-inactive', lessonCostInactive);
-      }
-
-      if (controls.lessonCost instanceof HTMLInputElement) {
-        controls.lessonCost.classList.toggle('inactive-field', manualInactive);
-        controls.lessonCost.readOnly = manualInactive;
-        if (manualActive || manualInactive || lessonCostInactive) {
-          controls.lessonCost.setAttribute('aria-describedby', 'lesson-cost-message');
-        } else if (controls.lessonCost.getAttribute('aria-describedby') === 'lesson-cost-message') {
-          controls.lessonCost.removeAttribute('aria-describedby');
-        }
-      }
-
-      if (lessonCostMessage) {
-        if (manualActive) {
-          lessonCostMessage.textContent = 'Lesson cost controls the calculation. Click a target income field to switch back.';
-        } else if (manualInactive) {
-          lessonCostMessage.textContent = 'Inactive when target income fields active—click to reactivate.';
-        } else if (computedMode !== PRICING_MODE_LESSON) {
-          lessonCostMessage.textContent = 'Enter a lesson cost to switch the calculator to manual pricing mode.';
-        } else {
-          lessonCostMessage.textContent = '';
-        }
-      }
     }
 
     function formatCurrency(symbol, value) {
@@ -3060,9 +2933,8 @@
 
       latestResults = [];
 
-      const manualCandidate = Number.isFinite(lessonCostInclVat);
-      const shouldUseLessonMode = pricingMode === PRICING_MODE_LESSON && manualCandidate;
-      let mode = shouldUseLessonMode ? PRICING_MODE_LESSON : PRICING_MODE_TARGET;
+      const manualMode = Number.isFinite(lessonCostInclVat);
+      const mode = manualMode ? PRICING_MODE_LESSON : PRICING_MODE_TARGET;
 
       const pricingData = [];
       const effectiveTaxRate = Math.min(taxRate, 0.99);
@@ -3072,10 +2944,15 @@
         Number.isFinite(workingWeeks) &&
         workingWeeks > 0;
 
+      const hasWorkingWeeks = Number.isFinite(workingWeeks) && workingWeeks > 0;
+      const hasActiveMonths = Number.isFinite(activeMonths) && activeMonths > 0;
+
+      let manualNetSummary = null;
+      let revenueNeeded = null;
+
       if (!hasSchedule) {
         latestResultsMode = mode;
-        pricingMode = mode;
-        return { pricingData, bufferPercent, revenueNeeded: null, mode };
+        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
       }
 
       const sortedStudents = [...studentsPerClass];
@@ -3085,8 +2962,6 @@
         const classesPerYear = classes * workingWeeks;
         return { classesPerWeek: classes, classesPerYear };
       });
-
-      const hasActiveMonths = Number.isFinite(activeMonths) && activeMonths > 0;
 
       function buildPriceBreakdown({ priceExVatValue, priceInclVatValue, studentCount, classesPerYearValue }) {
         const normalizedPriceExVat = Number.isFinite(priceExVatValue) ? priceExVatValue : 0;
@@ -3167,6 +3042,14 @@
               ? bufferedAnnualNet / activeMonths
               : null;
 
+            if (!manualNetSummary && Number.isFinite(annualNet)) {
+              manualNetSummary = {
+                annual: annualNet,
+                monthly: Number.isFinite(monthlyNet) ? monthlyNet : null,
+                weekly: hasWorkingWeeks ? annualNet / workingWeeks : null
+              };
+            }
+
             const baseBreakdown = buildPriceBreakdown({
               priceExVatValue: priceExVatPerStudent,
               priceInclVatValue: priceInclVatPerStudent,
@@ -3217,18 +3100,16 @@
         }
 
         latestResultsMode = mode;
-        pricingMode = mode;
-        return { pricingData, bufferPercent, revenueNeeded: null, mode };
+        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
       }
 
       const denominator = Math.max(1 - effectiveTaxRate, 0.0001);
       const profitBeforeTax = targetNet / denominator;
-      const revenueNeeded = profitBeforeTax + fixedCosts;
+      revenueNeeded = profitBeforeTax + fixedCosts;
 
       if (!Number.isFinite(revenueNeeded) || revenueNeeded <= 0) {
         latestResultsMode = mode;
-        pricingMode = mode;
-        return { pricingData, bufferPercent, revenueNeeded, mode };
+        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
       }
 
       for (const students of sortedStudents) {
@@ -3303,20 +3184,45 @@
       }
 
       latestResultsMode = mode;
-      pricingMode = mode;
-      return { pricingData, bufferPercent, revenueNeeded, mode };
+      return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
     }
 
     function render() {
       const inputs = getInputs();
-      const { pricingData, bufferPercent, revenueNeeded, mode } = computeTables(inputs);
+      const { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary } = computeTables(inputs);
+
+      if (mode === PRICING_MODE_LESSON && manualNetSummary) {
+        if (controls.targetNet instanceof HTMLInputElement && Number.isFinite(manualNetSummary.annual)) {
+          controls.targetNet.value = formatFixed(manualNetSummary.annual, 2);
+          inputs.targetNet = manualNetSummary.annual;
+        }
+
+        if (controls.targetNetWeek instanceof HTMLInputElement) {
+          if (Number.isFinite(manualNetSummary.weekly)) {
+            controls.targetNetWeek.value = formatFixed(manualNetSummary.weekly, 2);
+            inputs.targetNetPerWeek = manualNetSummary.weekly;
+          } else {
+            controls.targetNetWeek.value = '';
+            inputs.targetNetPerWeek = null;
+          }
+        }
+
+        if (controls.targetNetMonth instanceof HTMLInputElement) {
+          if (Number.isFinite(manualNetSummary.monthly)) {
+            controls.targetNetMonth.value = formatFixed(manualNetSummary.monthly, 2);
+            inputs.targetNetPerMonth = manualNetSummary.monthly;
+          } else {
+            controls.targetNetMonth.value = '';
+            inputs.targetNetPerMonth = null;
+          }
+        }
+      }
 
       latestCurrencySymbol = inputs.currencySymbol;
       latestPricingMode = mode;
       latestBufferPercent = bufferPercent;
       latestPricingData = pricingData.length ? pricingData : null;
 
-      updateModeStyles(inputs, mode);
       closeActiveInfoIcon();
 
       if (!pricingData.length) {
@@ -3394,13 +3300,13 @@
         : '—';
 
       const manualLessonLine = Number.isFinite(lessonCostInclVat)
-        ? `Manual lesson cost (incl. VAT): ${currencySymbol}${formatFixed(lessonCostInclVat, 2)} (${mode === PRICING_MODE_LESSON ? 'active' : 'inactive'})`
+        ? `Manual lesson cost (incl. VAT): ${currencySymbol}${formatFixed(lessonCostInclVat, 2)}`
         : 'Manual lesson cost (incl. VAT): not set';
 
       const listItems = [
-        `Target net income: ${formatCurrency(currencySymbol, targetNet)} per year`,
-        `Target net income per active week: ${targetPerWeekDisplay}`,
-        `Target net income per active month: ${targetPerMonthDisplay}`,
+        `Net income per year: ${formatCurrency(currencySymbol, targetNet)}`,
+        `Net income per active week: ${targetPerWeekDisplay}`,
+        `Net income per active month: ${targetPerMonthDisplay}`,
         manualLessonLine,
         `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
         `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
@@ -3420,23 +3326,6 @@
       ];
 
       assumptionsList.innerHTML = listItems.map(item => `<li>${item}</li>`).join('');
-    }
-
-    function applyPreset(preset) {
-      if (preset === '50k') {
-        controls.targetNet.value = 50000;
-        controls.taxRate.value = 40;
-      } else if (preset === '100k') {
-        controls.targetNet.value = 100000;
-        controls.taxRate.value = 45;
-      }
-      targetNetBasis = 'year';
-      updatePricingMode(PRICING_MODE_TARGET);
-      render();
-      controls.statusMessage.textContent = `Preset applied: ${preset === '100k' ? '100k target' : '50k target'}.`;
-      setTimeout(() => {
-        controls.statusMessage.textContent = '';
-      }, 2500);
     }
 
     function downloadCsv() {
@@ -3521,30 +3410,12 @@
 
     if (controls.lessonCost instanceof HTMLInputElement) {
       const handleLessonCostInput = () => {
-        const trimmed = controls.lessonCost.value.trim();
-        const desiredMode = trimmed === '' ? PRICING_MODE_TARGET : PRICING_MODE_LESSON;
-        updatePricingMode(desiredMode);
         render();
       };
 
       controls.lessonCost.addEventListener('input', handleLessonCostInput);
       controls.lessonCost.addEventListener('change', handleLessonCostInput);
-      controls.lessonCost.addEventListener('focus', () => {
-        if (controls.lessonCost.value.trim() !== '' && pricingMode !== PRICING_MODE_LESSON) {
-          updatePricingMode(PRICING_MODE_LESSON);
-          render();
-        }
-      });
     }
-
-    targetNetInputs.forEach(input => {
-      input.addEventListener('focus', () => {
-        if (pricingMode === PRICING_MODE_LESSON) {
-          updatePricingMode(PRICING_MODE_TARGET);
-          render();
-        }
-      });
-    });
 
     tablesContainer.addEventListener('click', event => {
       const priceButton = event.target instanceof HTMLElement
@@ -3576,10 +3447,6 @@
 
     controls.recalcButton.addEventListener('click', render);
     controls.downloadCsv.addEventListener('click', downloadCsv);
-    presetButtons.forEach(button => {
-      button.addEventListener('click', () => applyPreset(button.dataset.preset));
-    });
-
     render();
   </script>
 </body>
