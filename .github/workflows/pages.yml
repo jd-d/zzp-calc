@@ -85,18 +85,74 @@ jobs:
           publish_dir: dist
           destination_dir: ${{ steps.pr.outputs.dir }}
 
-      - name: Comment preview URL on PR
+      - name: Comment preview status on PR
+        id: preview_comment
         uses: actions/github-script@v7
         with:
           script: |
             const dir = process.env.DIR;
             const base = `https://${context.repo.owner}.github.io/${context.repo.repo}`;
             const url = `${base}/${dir}/`;
-            await github.rest.issues.createComment({
+            const { data } = await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `\uD83D\uDD0D Preview ready: ${url}`
+              body: `\u23F3 Preview is preparing. I'll post the ready link here once it's live.`
             });
+            return { commentId: data.id, url };
         env:
           DIR: ${{ steps.pr.outputs.dir }}
+
+      - name: Wait for preview deployment
+        id: wait_for_preview
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_INFO: ${{ steps.preview_comment.outputs.result }}
+          DELAY_MS: 3000
+          MAX_ATTEMPTS: 20
+        with:
+          script: |
+            const { commentId, url } = JSON.parse(process.env.PREVIEW_INFO);
+            const maxAttempts = Number(process.env.MAX_ATTEMPTS) || 20;
+            const delayMs = Number(process.env.DELAY_MS) || 3000;
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              try {
+                const checkUrl = `${url}?nocache=${Date.now()}`;
+                const response = await fetch(checkUrl, { method: 'GET', redirect: 'follow' });
+                if (response.ok) {
+                  core.info(`Preview became available after ${attempt} attempt(s).`);
+                  return { commentId, url, ready: true, attempts: attempt };
+                }
+                core.info(`Attempt ${attempt}: received status ${response.status}.`);
+              } catch (error) {
+                core.info(`Attempt ${attempt}: encountered error ${error}.`);
+              }
+
+              if (attempt < maxAttempts) {
+                await sleep(delayMs);
+              }
+            }
+
+            core.warning(`Preview was not ready after ${maxAttempts} attempt(s).`);
+            return { commentId, url, ready: false, attempts: maxAttempts };
+
+      - name: Update preview comment with final status
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_RESULT: ${{ steps.wait_for_preview.outputs.result }}
+        with:
+          script: |
+            const { commentId, url, ready } = JSON.parse(process.env.PREVIEW_RESULT);
+            const body = ready
+              ? `\uD83D\uDD0D Preview ready: ${url}`
+              : `\u26A0\uFE0F Preview is still preparing. You can check back soon: ${url}`;
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: commentId,
+              body
+            });
