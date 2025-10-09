@@ -402,7 +402,8 @@
       z-index: 1;
       width: min(960px, 100%);
       max-height: 92vh;
-      overflow: hidden;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 20px;
@@ -2570,11 +2571,17 @@
     function populateBreakdownDialog(context) {
       if (
         !context ||
-        latestPricingMode !== PRICING_MODE_TARGET ||
         !Array.isArray(latestPricingData) ||
         !breakdownDialog ||
         !breakdownSummary
       ) {
+        return false;
+      }
+
+      const isTargetMode = latestPricingMode === PRICING_MODE_TARGET;
+      const isLessonMode = latestPricingMode === PRICING_MODE_LESSON;
+
+      if (!isTargetMode && !isLessonMode) {
         return false;
       }
 
@@ -2613,9 +2620,16 @@
         ? numberFormatter.format(Math.round(column.classesPerYear))
         : '—';
 
-      const variantLabel = variant === 'base'
-        ? 'Base price (no buffer)'
-        : `Buffered price (+${formatFixed(latestBufferPercent, 1)}% safety margin)`;
+      let variantLabel;
+      if (isLessonMode) {
+        variantLabel = variant === 'base'
+          ? 'Full attendance at set lesson price'
+          : `Attendance shortfall (${formatFixed(latestBufferPercent, 1)}% less revenue)`;
+      } else {
+        variantLabel = variant === 'base'
+          ? 'Base price (no buffer)'
+          : `Buffered price (+${formatFixed(latestBufferPercent, 1)}% safety margin)`;
+      }
 
       if (breakdownVariant) {
         breakdownVariant.textContent = variantLabel;
@@ -2865,16 +2879,28 @@
                 return `
                 <td>
                   <div class="price-pair">
-                    <div class="price-line">
+                    <button
+                      type="button"
+                      class="price-line"
+                      data-row="${rowIndex}"
+                      data-column="${columnIndex}"
+                      data-variant="base"
+                    >
                       <span class="price-label">Monthly net</span>
                       <strong>${monthlyDisplay}</strong>
                       <span class="price-secondary">Annual net ${annualDisplay}</span>
-                    </div>
-                    <div class="price-line buffered">
+                    </button>
+                    <button
+                      type="button"
+                      class="price-line buffered"
+                      data-row="${rowIndex}"
+                      data-column="${columnIndex}"
+                      data-variant="buffered"
+                    >
                       <span class="price-label">Monthly net with ${formattedBuffer}% shortfall</span>
                       <strong>${bufferedMonthlyDisplay}</strong>
                       <span class="price-secondary">Annual net ${bufferedAnnualDisplay}</span>
-                    </div>
+                    </button>
                   </div>
                 </td>
               `;
@@ -3105,6 +3131,7 @@
 
       if (mode === PRICING_MODE_LESSON) {
         const vatDivisor = Math.max(1 + vatRate, 0.0001);
+        const priceInclVatPerStudent = lessonCostInclVat;
         const priceExVatPerStudent = lessonCostInclVat / vatDivisor;
         const attendanceMultiplier = Math.max(1 - buffer, 0);
         const formattedBuffer = formatFixed(bufferPercent, 1);
@@ -3140,6 +3167,13 @@
               ? bufferedAnnualNet / activeMonths
               : null;
 
+            const baseBreakdown = buildPriceBreakdown({
+              priceExVatValue: priceExVatPerStudent,
+              priceInclVatValue: priceInclVatPerStudent,
+              studentCount: students,
+              classesPerYearValue: classesPerYear
+            });
+
             row.columns.push({
               classesPerWeek: column.classesPerWeek,
               classesPerYear,
@@ -3148,6 +3182,16 @@
                 annual: annualNet,
                 bufferedMonthly: bufferedMonthlyNet,
                 bufferedAnnual: bufferedAnnualNet
+              },
+              base: {
+                priceExVat: priceExVatPerStudent,
+                priceInclVat: priceInclVatPerStudent,
+                breakdown: baseBreakdown
+              },
+              buffered: {
+                priceExVat: priceExVatPerStudent,
+                priceInclVat: priceInclVatPerStudent,
+                breakdown: baseBreakdown
               }
             });
 
@@ -3270,7 +3314,7 @@
       latestCurrencySymbol = inputs.currencySymbol;
       latestPricingMode = mode;
       latestBufferPercent = bufferPercent;
-      latestPricingData = mode === PRICING_MODE_TARGET && pricingData.length ? pricingData : null;
+      latestPricingData = pricingData.length ? pricingData : null;
 
       updateModeStyles(inputs, mode);
       closeActiveInfoIcon();
@@ -3508,14 +3552,12 @@
         : null;
 
       if (priceButton) {
-        if (latestPricingMode === PRICING_MODE_TARGET) {
-          const context = {
-            rowIndex: Number(priceButton.dataset.row),
-            columnIndex: Number(priceButton.dataset.column),
-            variant: priceButton.dataset.variant === 'base' ? 'base' : 'buffered'
-          };
-          openBreakdownDialog(context, priceButton);
-        }
+        const context = {
+          rowIndex: Number(priceButton.dataset.row),
+          columnIndex: Number(priceButton.dataset.column),
+          variant: priceButton.dataset.variant === 'base' ? 'base' : 'buffered'
+        };
+        openBreakdownDialog(context, priceButton);
         return;
       }
 
