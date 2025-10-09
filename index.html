@@ -45,6 +45,11 @@
       --price-line-border: rgba(255, 255, 255, 0.05);
       --price-buffer-bg: rgba(77, 163, 255, 0.08);
       --price-buffer-border: rgba(77, 163, 255, 0.25);
+      --breakdown-color-vat: #f97316;
+      --breakdown-color-variable: #8b5cf6;
+      --breakdown-color-fixed: #38bdf8;
+      --breakdown-color-tax: #ef4444;
+      --breakdown-color-net: #22c55e;
       --button-bg: #f1f5ff;
       --button-color: #0c111d;
       --button-shadow: rgba(0, 0, 0, 0.3);
@@ -104,6 +109,11 @@
       --price-line-border: rgba(15, 23, 42, 0.1);
       --price-buffer-bg: rgba(37, 99, 235, 0.12);
       --price-buffer-border: rgba(37, 99, 235, 0.28);
+      --breakdown-color-vat: #ea580c;
+      --breakdown-color-variable: #7c3aed;
+      --breakdown-color-fixed: #2563eb;
+      --breakdown-color-tax: #dc2626;
+      --breakdown-color-net: #16a34a;
       --button-bg: #1d4ed8;
       --button-color: #f8fafc;
       --button-shadow: rgba(29, 78, 216, 0.3);
@@ -363,6 +373,241 @@
       .readme-dialog__content {
         width: 92vw;
         max-height: 92vh;
+      }
+    }
+
+    .lesson-breakdown-dialog[hidden] {
+      display: none;
+    }
+
+    .lesson-breakdown-dialog {
+      position: fixed;
+      inset: 0;
+      z-index: 950;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 4vw, 32px);
+    }
+
+    .lesson-breakdown-dialog__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 11, 20, 0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    .lesson-breakdown-dialog__content {
+      position: relative;
+      z-index: 1;
+      width: min(960px, 100%);
+      max-height: 92vh;
+      overflow: hidden;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+      padding: clamp(20px, 3vw, 28px);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .lesson-breakdown-dialog__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .lesson-breakdown-dialog__header h2 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2vw, 1.65rem);
+    }
+
+    .lesson-breakdown-dialog__variant {
+      margin: 6px 0 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .lesson-breakdown-dialog__summary {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .lesson-breakdown-dialog__price {
+      margin: 0;
+      font-size: clamp(1.4rem, 2.4vw, 1.75rem);
+      font-weight: 600;
+    }
+
+    .lesson-breakdown-dialog__meta,
+    .lesson-breakdown-dialog__total {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .lesson-breakdown-dialog__body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+      gap: clamp(18px, 3vw, 28px);
+    }
+
+    .lesson-breakdown-dialog__table-wrapper {
+      overflow: auto;
+      border-radius: 16px;
+      border: 1px solid var(--table-row-border);
+      background: var(--field-output-bg);
+    }
+
+    .lesson-breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 320px;
+    }
+
+    .lesson-breakdown-table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--table-header-bg);
+      color: var(--table-header-text);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.75rem;
+      padding: 12px;
+    }
+
+    .lesson-breakdown-table th,
+    .lesson-breakdown-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--table-row-border);
+      font-size: 0.95rem;
+    }
+
+    .lesson-breakdown-table tbody th {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .lesson-breakdown-table tbody td {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lesson-breakdown-table tbody tr:last-child th,
+    .lesson-breakdown-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .lesson-breakdown-dialog__chart {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+    }
+
+    .lesson-breakdown-dialog__chart-graphic {
+      width: clamp(160px, 22vw, 200px);
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      background: var(--price-line-bg);
+      border: 1px solid var(--price-line-border);
+      margin: 0 auto;
+      position: relative;
+      transition: background 0.3s ease;
+    }
+
+    .lesson-breakdown-dialog__chart-graphic::after {
+      content: "";
+      position: absolute;
+      inset: 24%;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+    }
+
+    .lesson-breakdown-dialog__legend {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lesson-breakdown-dialog__legend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+    }
+
+    .lesson-breakdown-dialog__legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--swatch-color, var(--accent));
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+      flex: 0 0 auto;
+    }
+
+    .lesson-breakdown-dialog__legend-label {
+      flex: 1 1 auto;
+      color: var(--text-muted);
+    }
+
+    .lesson-breakdown-dialog__legend-value {
+      flex: 0 0 auto;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+
+    .lesson-breakdown-dialog__close {
+      appearance: none;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      line-height: 1;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .lesson-breakdown-dialog__close:hover,
+    .lesson-breakdown-dialog__close:focus-visible {
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      outline: none;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    @media (max-width: 900px) {
+      .lesson-breakdown-dialog__body {
+        grid-template-columns: 1fr;
+      }
+
+      .lesson-breakdown-dialog__chart {
+        align-items: center;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .lesson-breakdown-dialog__content {
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      .lesson-breakdown-dialog__body {
+        gap: 18px;
+      }
+
+      .lesson-breakdown-dialog__table-wrapper {
+        border-radius: 12px;
       }
     }
 
@@ -1006,6 +1251,9 @@
       border-radius: 10px;
       background: var(--price-line-bg);
       border: 1px solid var(--price-line-border);
+      color: inherit;
+      transition: border-color 0.2s ease, background-color 0.2s ease,
+        transform 0.2s ease, box-shadow 0.2s ease;
     }
 
     .price-line strong {
@@ -1033,6 +1281,34 @@
       display: none;
       margin-top: 8px;
       border-style: dashed;
+    }
+
+    button.price-line {
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      background: var(--price-line-bg);
+      border-radius: 10px;
+      border: 1px solid var(--price-line-border);
+      color: inherit;
+      font: inherit;
+      line-height: inherit;
+      padding: 8px 10px;
+    }
+
+    button.price-line:focus {
+      outline: none;
+    }
+
+    button.price-line:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    button.price-line:focus-visible {
+      outline: 2px solid var(--focus-outline);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .pricing-card.show-base-prices .price-line.base {
@@ -1441,6 +1717,56 @@
     </section>
   </div>
 
+  <div
+    class="lesson-breakdown-dialog"
+    id="lesson-breakdown-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="lesson-breakdown-title"
+    aria-describedby="lesson-breakdown-summary"
+    hidden
+  >
+    <div class="lesson-breakdown-dialog__backdrop" id="lesson-breakdown-backdrop" tabindex="-1"></div>
+    <div class="lesson-breakdown-dialog__content" role="document">
+      <div class="lesson-breakdown-dialog__header">
+        <div>
+          <h2 id="lesson-breakdown-title">Lesson breakdown</h2>
+          <p class="lesson-breakdown-dialog__variant" id="lesson-breakdown-variant"></p>
+        </div>
+        <button
+          type="button"
+          class="lesson-breakdown-dialog__close"
+          id="lesson-breakdown-close"
+          aria-label="Close lesson breakdown"
+        >×</button>
+      </div>
+      <div class="lesson-breakdown-dialog__summary" id="lesson-breakdown-summary">
+        <p class="lesson-breakdown-dialog__price" id="lesson-breakdown-price"></p>
+        <p class="lesson-breakdown-dialog__meta" id="lesson-breakdown-meta"></p>
+        <p class="lesson-breakdown-dialog__total" id="lesson-breakdown-total"></p>
+      </div>
+      <div class="lesson-breakdown-dialog__body">
+        <div class="lesson-breakdown-dialog__table-wrapper">
+          <table class="lesson-breakdown-table">
+            <caption class="visually-hidden">Per-student and per-lesson financial breakdown</caption>
+            <thead>
+              <tr>
+                <th scope="col">Line item</th>
+                <th scope="col">Per student</th>
+                <th scope="col">Per lesson</th>
+              </tr>
+            </thead>
+            <tbody id="lesson-breakdown-table-body"></tbody>
+          </table>
+        </div>
+        <div class="lesson-breakdown-dialog__chart">
+          <div class="lesson-breakdown-dialog__chart-graphic" id="lesson-breakdown-chart-graphic" aria-hidden="true"></div>
+          <ul class="lesson-breakdown-dialog__legend" id="lesson-breakdown-legend"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="readme-dialog" id="readme-dialog" role="dialog" aria-modal="true" aria-labelledby="readme-title" hidden>
     <div class="readme-dialog__backdrop" id="readme-backdrop" tabindex="-1"></div>
     <div class="readme-dialog__content" role="document">
@@ -1454,6 +1780,17 @@
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
+    const breakdownDialog = document.getElementById('lesson-breakdown-dialog');
+    const breakdownBackdrop = document.getElementById('lesson-breakdown-backdrop');
+    const breakdownClose = document.getElementById('lesson-breakdown-close');
+    const breakdownSummary = document.getElementById('lesson-breakdown-summary');
+    const breakdownVariant = document.getElementById('lesson-breakdown-variant');
+    const breakdownPrice = document.getElementById('lesson-breakdown-price');
+    const breakdownMeta = document.getElementById('lesson-breakdown-meta');
+    const breakdownTotal = document.getElementById('lesson-breakdown-total');
+    const breakdownTableBody = document.getElementById('lesson-breakdown-table-body');
+    const breakdownChartGraphic = document.getElementById('lesson-breakdown-chart-graphic');
+    const breakdownLegend = document.getElementById('lesson-breakdown-legend');
     const howToLink = document.getElementById('how-to-link');
     const readmeDialog = document.getElementById('readme-dialog');
     const readmeBody = document.getElementById('readme-body');
@@ -1462,6 +1799,8 @@
     let readmeLoaded = false;
     let readmeLoading = false;
     let previouslyFocusedElement = null;
+    let breakdownTriggerElement = null;
+    let activeBreakdownContext = null;
 
     function getFocusableElements(container) {
       if (!container) {
@@ -1484,6 +1823,26 @@
         const rect = element.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0;
       });
+    }
+
+    const activeDialogLocks = new Set();
+
+    function setBodyScrollLock(source, locked) {
+      if (!source) {
+        return;
+      }
+
+      if (locked) {
+        activeDialogLocks.add(source);
+      } else {
+        activeDialogLocks.delete(source);
+      }
+
+      if (activeDialogLocks.size > 0) {
+        document.body.classList.add('dialog-open');
+      } else {
+        document.body.classList.remove('dialog-open');
+      }
     }
 
     function parseMarkdown(text) {
@@ -1564,7 +1923,7 @@
 
       previouslyFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       readmeDialog.hidden = false;
-      document.body.classList.add('dialog-open');
+      setBodyScrollLock('readme', true);
 
       if (!readmeLoaded) {
         readmeBody.innerHTML = '<p class="readme-status">Loading instructions…</p>';
@@ -1586,7 +1945,7 @@
       }
 
       readmeDialog.hidden = true;
-      document.body.classList.remove('dialog-open');
+      setBodyScrollLock('readme', false);
       document.removeEventListener('keydown', handleReadmeKeydown);
 
       if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
@@ -1636,6 +1995,22 @@
       readmeDialog.addEventListener('click', event => {
         if (event.target === readmeDialog) {
           closeReadme();
+        }
+      });
+    }
+
+    if (breakdownClose) {
+      breakdownClose.addEventListener('click', closeBreakdownDialog);
+    }
+
+    if (breakdownBackdrop) {
+      breakdownBackdrop.addEventListener('click', closeBreakdownDialog);
+    }
+
+    if (breakdownDialog) {
+      breakdownDialog.addEventListener('click', event => {
+        if (event.target === breakdownDialog) {
+          closeBreakdownDialog();
         }
       });
     }
@@ -1937,6 +2312,10 @@
     const PRICING_MODE_LESSON = 'lesson';
     let pricingMode = PRICING_MODE_TARGET;
     let latestResultsMode = PRICING_MODE_TARGET;
+    let latestPricingData = null;
+    let latestCurrencySymbol = '€';
+    let latestPricingMode = PRICING_MODE_TARGET;
+    let latestBufferPercent = 0;
 
     const WEEKS_PER_YEAR = 52;
     const BASE_WORK_DAYS_PER_WEEK = 5;
@@ -2168,6 +2547,267 @@
       return rounded < 0 ? `-${symbol}${formatted}` : `${symbol}${formatted}`;
     }
 
+    function findBreakdownButton(context) {
+      if (!context || !tablesContainer) {
+        return null;
+      }
+
+      const { rowIndex, columnIndex, variant } = context;
+      if (!Number.isFinite(rowIndex) || !Number.isFinite(columnIndex)) {
+        return null;
+      }
+      const variantValue = variant === 'base' ? 'base' : 'buffered';
+
+      return tablesContainer.querySelector(
+        `button.price-line[data-row="${rowIndex}"][data-column="${columnIndex}"][data-variant="${variantValue}"]`
+      );
+    }
+
+    function formatBreakdownCurrency(value) {
+      return Number.isFinite(value) ? formatCurrency(latestCurrencySymbol, value) : '—';
+    }
+
+    function populateBreakdownDialog(context) {
+      if (
+        !context ||
+        latestPricingMode !== PRICING_MODE_TARGET ||
+        !Array.isArray(latestPricingData) ||
+        !breakdownDialog ||
+        !breakdownSummary
+      ) {
+        return false;
+      }
+
+      const { rowIndex, columnIndex, variant } = context;
+      const row = latestPricingData[rowIndex];
+      if (!row || !Array.isArray(row.columns)) {
+        return false;
+      }
+
+      const column = row.columns[columnIndex];
+      if (!column) {
+        return false;
+      }
+
+      const pricingVariant = variant === 'base' ? column.base : column.buffered;
+      if (!pricingVariant || !pricingVariant.breakdown) {
+        return false;
+      }
+
+      const breakdown = pricingVariant.breakdown;
+      const perStudentInclVat = formatCurrency(latestCurrencySymbol, pricingVariant.priceInclVat);
+      const perStudentExVat = formatCurrency(latestCurrencySymbol, pricingVariant.priceExVat);
+      const perLessonInclVat = formatCurrency(latestCurrencySymbol, breakdown.totals.priceInclVatPerLesson);
+      const perLessonExVat = formatCurrency(latestCurrencySymbol, breakdown.totals.priceExVatPerLesson);
+
+      const studentsDisplay = Number.isFinite(row.students)
+        ? numberFormatter.format(row.students)
+        : '—';
+      const classesPerWeekValue = column.classesPerWeek;
+      const classesPerWeekDisplay = Number.isFinite(classesPerWeekValue)
+        ? (Number.isInteger(classesPerWeekValue)
+            ? numberFormatter.format(classesPerWeekValue)
+            : formatFixed(classesPerWeekValue, 2))
+        : '—';
+      const classesPerYearDisplay = Number.isFinite(column.classesPerYear)
+        ? numberFormatter.format(Math.round(column.classesPerYear))
+        : '—';
+
+      const variantLabel = variant === 'base'
+        ? 'Base price (no buffer)'
+        : `Buffered price (+${formatFixed(latestBufferPercent, 1)}% safety margin)`;
+
+      if (breakdownVariant) {
+        breakdownVariant.textContent = variantLabel;
+      }
+
+      if (breakdownPrice) {
+        breakdownPrice.textContent = `${perStudentInclVat} per student (${perStudentExVat} ex VAT)`;
+      }
+
+      if (breakdownMeta) {
+        breakdownMeta.textContent = `${studentsDisplay} students · ${classesPerWeekDisplay} classes/week (≈ ${classesPerYearDisplay} / yr)`;
+      }
+
+      if (breakdownTotal) {
+        breakdownTotal.textContent = `Total collected per lesson: ${perLessonInclVat} (${perLessonExVat} ex VAT)`;
+      }
+
+      const tableRows = [
+        { key: 'vat', label: 'VAT remitted' },
+        { key: 'variableCosts', label: 'Variable costs' },
+        { key: 'fixedCostAllocation', label: 'Fixed cost allocation' },
+        { key: 'incomeTax', label: 'Income tax' },
+        { key: 'netIncome', label: 'Net income after tax' }
+      ];
+
+      if (breakdownTableBody) {
+        const rowsMarkup = tableRows
+          .map(item => {
+            const perStudentValue = breakdown.perStudent[item.key];
+            const perLessonValue = breakdown.perLesson[item.key];
+            return `
+              <tr>
+                <th scope="row">${item.label}</th>
+                <td>${formatBreakdownCurrency(perStudentValue)}</td>
+                <td>${formatBreakdownCurrency(perLessonValue)}</td>
+              </tr>
+            `;
+          })
+          .join('');
+        breakdownTableBody.innerHTML = rowsMarkup;
+      }
+
+      const legendItems = [
+        { key: 'vat', label: 'VAT remitted', value: breakdown.perLesson.vat, color: 'var(--breakdown-color-vat)' },
+        { key: 'variableCosts', label: 'Variable costs', value: breakdown.perLesson.variableCosts, color: 'var(--breakdown-color-variable)' },
+        { key: 'fixedCostAllocation', label: 'Fixed cost allocation', value: breakdown.perLesson.fixedCostAllocation, color: 'var(--breakdown-color-fixed)' },
+        { key: 'incomeTax', label: 'Income tax', value: breakdown.perLesson.incomeTax, color: 'var(--breakdown-color-tax)' },
+        { key: 'netIncome', label: 'Net income after tax', value: breakdown.perLesson.netIncome, color: 'var(--breakdown-color-net)' }
+      ];
+
+      if (breakdownLegend) {
+        const legendMarkup = legendItems
+          .map(item => `
+            <li class="lesson-breakdown-dialog__legend-item">
+              <span class="lesson-breakdown-dialog__legend-swatch" style="--swatch-color:${item.color};"></span>
+              <span class="lesson-breakdown-dialog__legend-label">${item.label}</span>
+              <span class="lesson-breakdown-dialog__legend-value">${formatBreakdownCurrency(item.value)}</span>
+            </li>
+          `)
+          .join('');
+        breakdownLegend.innerHTML = legendMarkup;
+      }
+
+      if (breakdownChartGraphic) {
+        const positiveSegments = legendItems.map(item => Math.max(item.value, 0));
+        const total = positiveSegments.reduce((sum, value) => sum + value, 0);
+
+        if (total > 0) {
+          let currentAngle = 0;
+          const segments = legendItems
+            .map((item, index) => {
+              const value = positiveSegments[index];
+              if (value <= 0) {
+                return null;
+              }
+              const start = currentAngle;
+              const end = start + (value / total) * 360;
+              currentAngle = end;
+              return `${item.color} ${start}deg ${end}deg`;
+            })
+            .filter(Boolean);
+
+          breakdownChartGraphic.style.background = segments.length
+            ? `conic-gradient(${segments.join(', ')})`
+            : 'radial-gradient(circle at 50% 50%, var(--price-line-bg), var(--row-header-bg))';
+        } else {
+          breakdownChartGraphic.style.background = 'radial-gradient(circle at 50% 50%, var(--price-line-bg), var(--row-header-bg))';
+        }
+
+      }
+
+      return true;
+    }
+
+    function openBreakdownDialog(context, triggerElement) {
+      if (!breakdownDialog) {
+        return;
+      }
+
+      const normalizedContext = {
+        rowIndex: Number(context?.rowIndex),
+        columnIndex: Number(context?.columnIndex),
+        variant: context?.variant === 'base' ? 'base' : 'buffered'
+      };
+
+      if (!populateBreakdownDialog(normalizedContext)) {
+        return;
+      }
+
+      activeBreakdownContext = normalizedContext;
+      breakdownTriggerElement = triggerElement instanceof HTMLElement ? triggerElement : null;
+      breakdownDialog.hidden = false;
+      breakdownDialog.scrollTop = 0;
+      setBodyScrollLock('breakdown', true);
+
+      window.requestAnimationFrame(() => {
+        const focusable = getFocusableElements(breakdownDialog);
+        if (focusable.length) {
+          focusable[0].focus();
+        } else if (breakdownClose) {
+          breakdownClose.focus();
+        }
+      });
+
+      document.addEventListener('keydown', handleBreakdownKeydown);
+    }
+
+    function closeBreakdownDialog() {
+      if (!breakdownDialog || breakdownDialog.hidden) {
+        return;
+      }
+
+      breakdownDialog.hidden = true;
+      setBodyScrollLock('breakdown', false);
+      document.removeEventListener('keydown', handleBreakdownKeydown);
+
+      const trigger = breakdownTriggerElement;
+      breakdownTriggerElement = null;
+      activeBreakdownContext = null;
+
+      if (trigger instanceof HTMLElement && trigger.isConnected && typeof trigger.focus === 'function') {
+        trigger.focus();
+      }
+    }
+
+    function handleBreakdownKeydown(event) {
+      if (!breakdownDialog || breakdownDialog.hidden) {
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeBreakdownDialog();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusable = getFocusableElements(breakdownDialog);
+        if (!focusable.length) {
+          event.preventDefault();
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      }
+    }
+
+    function refreshBreakdownDialog() {
+      if (!breakdownDialog || breakdownDialog.hidden || !activeBreakdownContext) {
+        return false;
+      }
+
+      const refreshed = populateBreakdownDialog(activeBreakdownContext);
+      if (refreshed) {
+        const updatedTrigger = findBreakdownButton(activeBreakdownContext);
+        if (updatedTrigger) {
+          breakdownTriggerElement = updatedTrigger;
+        }
+      }
+
+      return refreshed;
+    }
+
     function computeNetIncomeFromRevenue(revenue, fixedCosts, effectiveTaxRate, variableCosts = 0) {
       if (!Number.isFinite(revenue)) {
         return null;
@@ -2205,9 +2845,9 @@
         .join('');
 
       const rowsHtml = data
-        .map(row => {
+        .map((row, rowIndex) => {
           const cells = row.columns
-            .map(col => {
+            .map((col, columnIndex) => {
               if (mode === PRICING_MODE_LESSON && col.manualNet) {
                 const monthlyDisplay = Number.isFinite(col.manualNet.monthly)
                   ? formatCurrency(symbol, col.manualNet.monthly)
@@ -2246,16 +2886,29 @@
               const baseInclVat = formatCurrency(symbol, col.base.priceInclVat);
               return `
                 <td>
-                  <div class="price-line buffered">
+                  <button
+                    type="button"
+                    class="price-line buffered"
+                    data-row="${rowIndex}"
+                    data-column="${columnIndex}"
+                    data-variant="buffered"
+                  >
                     <span class="price-label">Buffered +${formattedBuffer}%</span>
                     <strong>${bufferedInclVat}</strong>
                     <span class="price-secondary">ex VAT ${bufferedExVat}</span>
-                  </div>
-                  <div class="price-line base" aria-hidden="${showBasePricesActive ? 'false' : 'true'}">
+                  </button>
+                  <button
+                    type="button"
+                    class="price-line base"
+                    aria-hidden="${showBasePricesActive ? 'false' : 'true'}"
+                    data-row="${rowIndex}"
+                    data-column="${columnIndex}"
+                    data-variant="base"
+                  >
                     <span class="price-label">Base (no buffer)</span>
                     <strong>${baseInclVat}</strong>
                     <span class="price-secondary">ex VAT ${baseExVat}</span>
-                  </div>
+                  </button>
                 </td>
               `;
             })
@@ -2409,6 +3062,47 @@
 
       const hasActiveMonths = Number.isFinite(activeMonths) && activeMonths > 0;
 
+      function buildPriceBreakdown({ priceExVatValue, priceInclVatValue, studentCount, classesPerYearValue }) {
+        const normalizedPriceExVat = Number.isFinite(priceExVatValue) ? priceExVatValue : 0;
+        const normalizedPriceInclVat = Number.isFinite(priceInclVatValue) ? priceInclVatValue : 0;
+        const actualStudents = Number.isFinite(studentCount) ? studentCount : 0;
+        const actualClassesPerYear = Number.isFinite(classesPerYearValue) ? classesPerYearValue : 0;
+        const safeStudents = actualStudents > 0 ? actualStudents : 1;
+        const fixedAllocationPerLesson = actualClassesPerYear > 0 ? fixedCosts / actualClassesPerYear : 0;
+        const vatPerStudent = normalizedPriceInclVat - normalizedPriceExVat;
+        const vatPerLesson = vatPerStudent * actualStudents;
+        const variableCostsPerLesson = variableCostPerClass + variableCostPerStudent * actualStudents;
+        const revenueExVatPerLesson = normalizedPriceExVat * actualStudents;
+        const profitBeforeTaxPerLesson = revenueExVatPerLesson - variableCostsPerLesson - fixedAllocationPerLesson;
+        const incomeTaxPerLesson = profitBeforeTaxPerLesson > 0 ? profitBeforeTaxPerLesson * effectiveTaxRate : 0;
+        const netIncomePerLesson = profitBeforeTaxPerLesson - incomeTaxPerLesson;
+
+        return {
+          perLesson: {
+            vat: vatPerLesson,
+            variableCosts: variableCostsPerLesson,
+            fixedCostAllocation: fixedAllocationPerLesson,
+            incomeTax: incomeTaxPerLesson,
+            netIncome: netIncomePerLesson
+          },
+          perStudent: {
+            vat: vatPerStudent,
+            variableCosts: variableCostsPerLesson / safeStudents,
+            fixedCostAllocation: fixedAllocationPerLesson / safeStudents,
+            incomeTax: incomeTaxPerLesson / safeStudents,
+            netIncome: netIncomePerLesson / safeStudents
+          },
+          totals: {
+            priceInclVatPerStudent: normalizedPriceInclVat,
+            priceExVatPerStudent: normalizedPriceExVat,
+            priceInclVatPerLesson: normalizedPriceInclVat * actualStudents,
+            priceExVatPerLesson: revenueExVatPerLesson,
+            students: actualStudents,
+            classesPerYear: actualClassesPerYear
+          }
+        };
+      }
+
       if (mode === PRICING_MODE_LESSON) {
         const vatDivisor = Math.max(1 + vatRate, 0.0001);
         const priceExVatPerStudent = lessonCostInclVat / vatDivisor;
@@ -2514,16 +3208,31 @@
           const roundedBufferedExVat = Math.round(bufferedExVat);
           const roundedBufferedInclVat = Math.round(bufferedInclVat);
 
+          const baseBreakdown = buildPriceBreakdown({
+            priceExVatValue: priceExVat,
+            priceInclVatValue: priceInclVat,
+            studentCount: students,
+            classesPerYearValue: classesPerYear
+          });
+          const bufferedBreakdown = buildPriceBreakdown({
+            priceExVatValue: bufferedExVat,
+            priceInclVatValue: bufferedInclVat,
+            studentCount: students,
+            classesPerYearValue: classesPerYear
+          });
+
           row.columns.push({
             classesPerWeek: column.classesPerWeek,
             classesPerYear,
             base: {
               priceExVat,
-              priceInclVat
+              priceInclVat,
+              breakdown: baseBreakdown
             },
             buffered: {
               priceExVat: bufferedExVat,
-              priceInclVat: bufferedInclVat
+              priceInclVat: bufferedInclVat,
+              breakdown: bufferedBreakdown
             }
           });
 
@@ -2558,6 +3267,11 @@
       const inputs = getInputs();
       const { pricingData, bufferPercent, revenueNeeded, mode } = computeTables(inputs);
 
+      latestCurrencySymbol = inputs.currencySymbol;
+      latestPricingMode = mode;
+      latestBufferPercent = bufferPercent;
+      latestPricingData = mode === PRICING_MODE_TARGET && pricingData.length ? pricingData : null;
+
       updateModeStyles(inputs, mode);
       closeActiveInfoIcon();
 
@@ -2583,6 +3297,15 @@
             });
 
         tablesContainer.innerHTML = pricingTable + targetsTable;
+      }
+
+      if (breakdownDialog && !breakdownDialog.hidden) {
+        if (!latestPricingData || !refreshBreakdownDialog()) {
+          closeBreakdownDialog();
+        }
+      } else if (!latestPricingData) {
+        activeBreakdownContext = null;
+        breakdownTriggerElement = null;
       }
 
       enhanceAllInfoIcons();
@@ -2780,6 +3503,22 @@
     });
 
     tablesContainer.addEventListener('click', event => {
+      const priceButton = event.target instanceof HTMLElement
+        ? event.target.closest('button.price-line[data-row][data-column][data-variant]')
+        : null;
+
+      if (priceButton) {
+        if (latestPricingMode === PRICING_MODE_TARGET) {
+          const context = {
+            rowIndex: Number(priceButton.dataset.row),
+            columnIndex: Number(priceButton.dataset.column),
+            variant: priceButton.dataset.variant === 'base' ? 'base' : 'buffered'
+          };
+          openBreakdownDialog(context, priceButton);
+        }
+        return;
+      }
+
       const toggleButton = event.target instanceof HTMLElement ? event.target.closest('.price-reveal-toggle') : null;
       if (!toggleButton) {
         return;
