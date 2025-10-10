@@ -837,12 +837,68 @@
     }
 
     .controls .control-section > legend {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 6px;
+      width: 100%;
+    }
+
+    .section-title {
       font-size: 0.9rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--text-muted);
-      padding: 0 6px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .section-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      border: 1px solid var(--secondary-button-border);
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      box-shadow: none;
+      transform: none;
+      white-space: nowrap;
+    }
+
+    .section-toggle:hover,
+    .section-toggle:focus-visible {
+      background: var(--secondary-button-hover-bg);
+      border-color: var(--secondary-button-border);
+      color: var(--text-primary);
+      box-shadow: none;
+      transform: none;
+    }
+
+    .section-toggle--top {
+      flex: 0 0 auto;
+    }
+
+    .section-toggle--bottom {
+      margin-top: 8px;
+    }
+
+    .section-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .control-section.collapsed .section-body {
+      display: none;
     }
 
     .controls .control-section .section-body {
@@ -894,7 +950,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      align-items: flex-end;
+      align-items: flex-start;
     }
 
     .fixed-cost-label {
@@ -904,7 +960,7 @@
 
     .fixed-cost-inputs {
       display: grid;
-      grid-template-columns: repeat(2, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 12px;
       flex: 2 1 280px;
     }
@@ -1434,8 +1490,13 @@
         gap: 10px;
       }
 
+      .fixed-cost-row {
+        gap: 10px;
+      }
+
       .fixed-cost-inputs {
-        grid-template-columns: minmax(140px, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
       }
     }
 
@@ -1443,11 +1504,33 @@
       .fixed-cost-row {
         flex-direction: column;
         align-items: stretch;
+        gap: 8px;
+      }
+
+      .fixed-cost-label,
+      .fixed-cost-inputs {
+        flex: 1 1 auto;
+        min-height: auto;
+        width: 100%;
+      }
+
+      .fixed-cost-inputs {
+        grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 520px) {
-      button {
+      .controls .control-section > legend {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .section-toggle--top {
+        align-self: flex-end;
+      }
+
+      button:not(.section-toggle) {
         width: 100%;
         justify-content: center;
       }
@@ -1489,9 +1572,21 @@
         <fieldset class="control-sections">
           <legend class="visually-hidden">Calculator inputs</legend>
 
-          <fieldset class="control-section">
-            <legend>Net income</legend>
-            <div class="section-body">
+          <fieldset class="control-section" data-collapsible>
+            <legend>
+              <span class="section-title">Net income</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-net-income"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </legend>
+            <div class="section-body" id="section-net-income">
               <div class="control-group">
                 <p class="field-note">Entering a net income value will update the lesson cost automatically.</p>
                 <div class="control">
@@ -1528,12 +1623,36 @@
                   <input type="number" id="target-net-month" value="5000" min="0" step="100" inputmode="decimal" />
                 </div>
               </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-net-income"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
             </div>
           </fieldset>
 
-          <fieldset class="control-section">
-            <legend>Taxes and costs</legend>
-            <div class="section-body">
+          <fieldset class="control-section" data-collapsible>
+            <legend>
+              <span class="section-title">Taxes and costs</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-taxes-costs"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </legend>
+            <div class="section-body" id="section-taxes-costs">
               <div class="control">
                 <label for="tax-rate">
                   <span class="label-text">Effective income tax rate (%)</span>
@@ -1650,12 +1769,36 @@
                 </label>
                 <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
               </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-taxes-costs"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
             </div>
           </fieldset>
 
-          <fieldset class="control-section">
-            <legend>Schedule and capacity</legend>
-            <div class="section-body">
+          <fieldset class="control-section" data-collapsible>
+            <legend>
+              <span class="section-title">Schedule and capacity</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-schedule-capacity"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </legend>
+            <div class="section-body" id="section-schedule-capacity">
               <div class="control">
                 <label for="classes-per-week">
                   <span class="label-text">Classes per week</span>
@@ -1670,12 +1813,36 @@
                 </label>
                 <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
               </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-schedule-capacity"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
             </div>
           </fieldset>
 
-          <fieldset class="control-section">
-            <legend>Manual lesson price override</legend>
-            <div class="section-body">
+          <fieldset class="control-section" data-collapsible>
+            <legend>
+              <span class="section-title">Manual lesson price override</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-manual-override"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </legend>
+            <div class="section-body" id="section-manual-override">
               <div class="control">
                 <label for="lesson-cost">
                   <span class="label-text">Manual lesson cost (incl. VAT)</span>
@@ -1690,12 +1857,36 @@
                 <input type="number" id="lesson-cost" min="0" step="0.01" inputmode="decimal" />
                 <p class="field-note">Entering a lesson cost updates the net income values above.</p>
               </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-manual-override"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
             </div>
           </fieldset>
 
-          <fieldset class="control-section">
-            <legend>Time-off planner</legend>
-            <div class="section-body">
+          <fieldset class="control-section" data-collapsible>
+            <legend>
+              <span class="section-title">Time-off planner</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-time-off"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </legend>
+            <div class="section-body" id="section-time-off">
               <div class="control">
                 <label for="months-off">
                   <span class="label-text">Months off per year</span>
@@ -1731,12 +1922,36 @@
                 </label>
                 <output id="working-days-display">130</output>
               </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-time-off"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
             </div>
           </fieldset>
 
-          <fieldset class="control-section">
-            <legend>Display preferences</legend>
-            <div class="section-body">
+          <fieldset class="control-section" data-collapsible>
+            <legend>
+              <span class="section-title">Display preferences</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-display-preferences"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </legend>
+            <div class="section-body" id="section-display-preferences">
               <div class="control">
                 <label for="buffer">
                   <span class="label-text">Safety margin (%)</span>
@@ -1750,6 +1965,18 @@
                   <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
                 </label>
                 <input type="text" id="currency-symbol" value="€" maxlength="3" />
+              </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-display-preferences"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
               </div>
             </div>
           </fieldset>
@@ -1903,6 +2130,132 @@
     let previouslyFocusedElement = null;
     let breakdownTriggerElement = null;
     let activeBreakdownContext = null;
+
+    const collapsibleSections = Array.from(document.querySelectorAll('.control-section[data-collapsible]'));
+
+    function getSectionLabel(section, index) {
+      if (!section) {
+        return `Section ${index + 1}`;
+      }
+
+      if (section.dataset.sectionLabel) {
+        return section.dataset.sectionLabel;
+      }
+
+      const title = section.querySelector('.section-title');
+      if (title && title.textContent.trim()) {
+        const label = title.textContent.trim();
+        section.dataset.sectionLabel = label;
+        return label;
+      }
+
+      const fallback = `Section ${index + 1}`;
+      section.dataset.sectionLabel = fallback;
+      return fallback;
+    }
+
+    function updateToggleButtonState(toggle, collapsed, sectionLabel) {
+      if (!toggle) {
+        return;
+      }
+
+      const expandedText = toggle.getAttribute('data-expanded-text') || 'Collapse section';
+      const collapsedText = toggle.getAttribute('data-collapsed-text') || 'Expand section';
+      const labelElement = toggle.querySelector('.toggle-label');
+      const nextText = collapsed ? collapsedText : expandedText;
+
+      if (labelElement) {
+        labelElement.textContent = nextText;
+      } else {
+        toggle.textContent = nextText;
+      }
+
+      const actionText = collapsed ? collapsedText : expandedText;
+      const normalizedAction = actionText.replace(/\s+section$/i, '');
+      const normalizedLabel = sectionLabel || 'section';
+
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      toggle.setAttribute('aria-label', `${normalizedAction} ${normalizedLabel} section`);
+      toggle.setAttribute('title', `${normalizedAction} ${normalizedLabel} section`);
+    }
+
+    function toggleCollapsibleSection(section, triggerButton, explicitState) {
+      if (!section) {
+        return;
+      }
+
+      const isCollapsed = section.classList.contains('collapsed');
+      const nextCollapsed = typeof explicitState === 'boolean' ? explicitState : !isCollapsed;
+
+      if (nextCollapsed === isCollapsed) {
+        requestAnimationFrame(() => {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        return;
+      }
+
+      section.classList.toggle('collapsed', nextCollapsed);
+      const sectionLabel = section.dataset.sectionLabel || '';
+      const toggles = section.querySelectorAll('.section-toggle');
+
+      toggles.forEach(toggle => {
+        updateToggleButtonState(toggle, nextCollapsed, sectionLabel);
+      });
+
+      if (nextCollapsed && triggerButton && triggerButton.classList.contains('section-toggle--bottom')) {
+        const topToggle = section.querySelector('.section-toggle--top');
+        if (topToggle && typeof topToggle.focus === 'function') {
+          try {
+            topToggle.focus({ preventScroll: true });
+          } catch (error) {
+            topToggle.focus();
+          }
+        }
+      }
+
+      requestAnimationFrame(() => {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    function initializeCollapsibleSections() {
+      collapsibleSections.forEach((section, index) => {
+        const sectionLabel = getSectionLabel(section, index);
+        const body = section ? section.querySelector('.section-body') : null;
+
+        if (!section || !body) {
+          return;
+        }
+
+        if (!body.id) {
+          const baseId = sectionLabel
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '') || `section-${index + 1}`;
+
+          let uniqueId = baseId;
+          let attempt = 1;
+          while (document.getElementById(uniqueId)) {
+            attempt += 1;
+            uniqueId = `${baseId}-${attempt}`;
+          }
+
+          body.id = uniqueId;
+        }
+
+        const toggles = section.querySelectorAll('.section-toggle');
+        toggles.forEach(toggle => {
+          toggle.setAttribute('aria-controls', body.id);
+          updateToggleButtonState(toggle, section.classList.contains('collapsed'), sectionLabel);
+          toggle.addEventListener('click', event => {
+            event.preventDefault();
+            toggleCollapsibleSection(section, toggle);
+          });
+        });
+      });
+    }
+
+    initializeCollapsibleSections();
 
     function getFocusableElements(container) {
       if (!container) {
