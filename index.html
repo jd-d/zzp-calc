@@ -869,6 +869,74 @@
       gap: 6px;
     }
 
+    .control--fixed-costs {
+      gap: 12px;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--field-border);
+      background: var(--field-output-bg);
+    }
+
+    .fixed-costs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .fixed-costs-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .fixed-cost-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .fixed-cost-label {
+      flex: 1 1 180px;
+      font-weight: 500;
+    }
+
+    .fixed-cost-inputs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
+      gap: 12px;
+      flex: 2 1 280px;
+    }
+
+    .fixed-cost-inputs label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .input-label {
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+
+    .fixed-cost-total {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid var(--field-border);
+    }
+
+    .fixed-cost-total input[readonly] {
+      cursor: default;
+      background: var(--field-output-bg);
+    }
+
     label {
       font-size: 0.95rem;
       font-weight: 500;
@@ -1365,6 +1433,17 @@
         justify-content: center;
         gap: 10px;
       }
+
+      .fixed-cost-inputs {
+        grid-template-columns: minmax(140px, 1fr);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .fixed-cost-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
 
     @media (max-width: 520px) {
@@ -1462,12 +1541,93 @@
                 </label>
                 <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
               </div>
-              <div class="control">
-                <label for="fixed-costs">
-                  <span class="label-text">Fixed annual costs</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Venue, insurance, marketing, materials, admin, etc." data-tooltip="Venue, insurance, marketing, materials, admin, etc.">ℹ️</span>
-                </label>
-                <input type="number" id="fixed-costs" value="16500" min="0" step="100" inputmode="decimal" />
+              <div class="control control--fixed-costs">
+                <div class="fixed-costs-header">
+                  <span class="label-text">Fixed costs</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Break down ongoing expenses like venue, insurance, marketing, materials, and admin."
+                    data-tooltip="Break down ongoing expenses like venue, insurance, marketing, materials, and admin."
+                  >ℹ️</span>
+                </div>
+                <p class="field-note">Enter either the monthly or annual amount for each category. The other column updates automatically.</p>
+                <div class="fixed-costs-grid">
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Location / venue</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-location-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-location-monthly" value="650" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-location-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-location-annual" value="7800" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Insurance</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-insurance-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-insurance-monthly" value="100" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-insurance-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-insurance-annual" value="1200" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Marketing</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-marketing-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-marketing-monthly" value="300" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-marketing-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-marketing-annual" value="3600" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Materials</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-materials-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-materials-monthly" value="150" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-materials-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-materials-annual" value="1800" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Admin / software</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-admin-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-admin-monthly" value="175" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-admin-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-admin-annual" value="2100" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="fixed-cost-total">
+                  <label for="fixed-costs">
+                    <span class="label-text">Total fixed annual costs</span>
+                  </label>
+                  <input type="number" id="fixed-costs" value="16500" min="0" step="0.01" inputmode="decimal" readonly />
+                  <p class="field-note">Calculated automatically from the breakdown above.</p>
+                </div>
               </div>
               <div class="control">
                 <label for="variable-cost-class">
@@ -2051,6 +2211,31 @@
       workingDaysDisplay: document.getElementById('working-days-display')
     };
 
+    const fixedCostFields = {
+      location: {
+        monthly: document.getElementById('fixed-cost-location-monthly'),
+        annual: document.getElementById('fixed-cost-location-annual')
+      },
+      insurance: {
+        monthly: document.getElementById('fixed-cost-insurance-monthly'),
+        annual: document.getElementById('fixed-cost-insurance-annual')
+      },
+      marketing: {
+        monthly: document.getElementById('fixed-cost-marketing-monthly'),
+        annual: document.getElementById('fixed-cost-marketing-annual')
+      },
+      materials: {
+        monthly: document.getElementById('fixed-cost-materials-monthly'),
+        annual: document.getElementById('fixed-cost-materials-annual')
+      },
+      admin: {
+        monthly: document.getElementById('fixed-cost-admin-monthly'),
+        annual: document.getElementById('fixed-cost-admin-annual')
+      }
+    };
+
+    controls.fixedCostFields = fixedCostFields;
+
     const tablesContainer = document.getElementById('tables-container');
     const assumptionsList = document.getElementById('assumptions-list');
     const targetNetInputs = [
@@ -2290,6 +2475,83 @@
         .map(num => Math.round(num));
     }
 
+    function getFixedCostTotal() {
+      return Object.values(fixedCostFields).reduce((sum, fieldSet) => {
+        if (!(fieldSet.annual instanceof HTMLInputElement)) {
+          return sum;
+        }
+        const annualValue = Math.max(parseNumber(fieldSet.annual.value, 0), 0);
+        return sum + annualValue;
+      }, 0);
+    }
+
+    function updateFixedCostTotalDisplay() {
+      const total = getFixedCostTotal();
+      if (controls.fixedCosts instanceof HTMLInputElement) {
+        controls.fixedCosts.value = formatFixed(total, 2);
+      }
+      return total;
+    }
+
+    function syncFixedCostPair(key, sourceType) {
+      const fieldSet = fixedCostFields[key];
+      if (!fieldSet) {
+        return;
+      }
+      const source = sourceType === 'monthly' ? fieldSet.monthly : fieldSet.annual;
+      const target = sourceType === 'monthly' ? fieldSet.annual : fieldSet.monthly;
+      if (!(source instanceof HTMLInputElement) || !(target instanceof HTMLInputElement)) {
+        return;
+      }
+
+      if (source.value === '') {
+        target.value = '';
+        updateFixedCostTotalDisplay();
+        return;
+      }
+
+      const parsed = Math.max(parseNumber(source.value, 0), 0);
+      const derived = sourceType === 'monthly' ? parsed * 12 : parsed / 12;
+
+      if (Number.isFinite(derived)) {
+        target.value = formatFixed(derived, 2);
+      }
+
+      updateFixedCostTotalDisplay();
+    }
+
+    Object.entries(fixedCostFields).forEach(([key, fieldSet]) => {
+      const { monthly, annual } = fieldSet;
+      if (monthly instanceof HTMLInputElement) {
+        monthly.addEventListener('input', () => {
+          syncFixedCostPair(key, 'monthly');
+          render();
+        });
+        monthly.addEventListener('change', () => {
+          syncFixedCostPair(key, 'monthly');
+          if (monthly.value !== '') {
+            const normalized = Math.max(parseNumber(monthly.value, 0), 0);
+            monthly.value = formatFixed(normalized, 2);
+          }
+          render();
+        });
+      }
+      if (annual instanceof HTMLInputElement) {
+        annual.addEventListener('input', () => {
+          syncFixedCostPair(key, 'annual');
+          render();
+        });
+        annual.addEventListener('change', () => {
+          syncFixedCostPair(key, 'annual');
+          if (annual.value !== '') {
+            const normalized = Math.max(parseNumber(annual.value, 0), 0);
+            annual.value = formatFixed(normalized, 2);
+          }
+          render();
+        });
+      }
+    });
+
     function getInputs() {
       const monthsOff = parseNumber(controls.monthsOff.value, 2, { min: 0, max: 12 });
       const weeksOffPerCycle = parseNumber(controls.weeksOffCycle.value, 1, { min: 0, max: 4 });
@@ -2297,7 +2559,7 @@
 
       const taxRatePercent = Math.min(Math.max(parseNumber(controls.taxRate.value, 40), 0), 99.9);
       const taxRate = taxRatePercent / 100;
-      const fixedCosts = Math.max(parseNumber(controls.fixedCosts.value, 16500), 0);
+      const fixedCosts = updateFixedCostTotalDisplay();
       const variableCostPerClass = Math.max(parseNumber(controls.variableCostPerClass.value, 0), 0);
       const variableCostPerStudent = Math.max(parseNumber(controls.variableCostPerStudent.value, 0), 0);
       const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
@@ -2361,7 +2623,7 @@
         : formatFixed(monthDisplayValue, 2);
 
       controls.taxRate.value = formatFixed(taxRate * 100, 1);
-      controls.fixedCosts.value = fixedCosts;
+      controls.fixedCosts.value = formatFixed(fixedCosts, 2);
       if (controls.variableCostPerClass instanceof HTMLInputElement) {
         controls.variableCostPerClass.value = formatFixed(variableCostPerClass, 2);
       }
