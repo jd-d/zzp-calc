@@ -1622,6 +1622,32 @@
                   </label>
                   <input type="number" id="target-net-month" value="5000" min="0" step="100" inputmode="decimal" />
                 </div>
+                <div class="control">
+                  <label for="target-net-average-week">
+                    <span class="label-text">Average weekly net income</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button" aria-expanded="false"
+                      aria-label="Average over every week in the year, including planned time off."
+                      data-tooltip="Average over every week in the year, including planned time off."
+                    >ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net-average-week" value="961.54" min="0" step="10" inputmode="decimal" />
+                </div>
+                <div class="control">
+                  <label for="target-net-average-month">
+                    <span class="label-text">Average monthly net income</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button" aria-expanded="false"
+                      aria-label="Average over every month in the year, including planned time off."
+                      data-tooltip="Average over every month in the year, including planned time off."
+                    >ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net-average-month" value="4166.67" min="0" step="50" inputmode="decimal" />
+                </div>
               </div>
               <div class="section-footer">
                 <button
@@ -2544,6 +2570,8 @@
       targetNet: document.getElementById('target-net'),
       targetNetWeek: document.getElementById('target-net-week'),
       targetNetMonth: document.getElementById('target-net-month'),
+      targetNetAverageWeek: document.getElementById('target-net-average-week'),
+      targetNetAverageMonth: document.getElementById('target-net-average-month'),
       taxRate: document.getElementById('tax-rate'),
       fixedCosts: document.getElementById('fixed-costs'),
       variableCostPerClass: document.getElementById('variable-cost-class'),
@@ -2792,6 +2820,7 @@
     let latestBufferPercent = 0;
 
     const WEEKS_PER_YEAR = 52;
+    const MONTHS_PER_YEAR = 12;
     const BASE_WORK_DAYS_PER_WEEK = 5;
     const TARGET_NET_DEFAULT = 50000;
 
@@ -2941,10 +2970,20 @@
 
       const defaultTargetNetWeek = workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT;
       const defaultTargetNetMonth = activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT;
+      const defaultTargetNetAverageWeek = TARGET_NET_DEFAULT / WEEKS_PER_YEAR;
+      const defaultTargetNetAverageMonth = TARGET_NET_DEFAULT / MONTHS_PER_YEAR;
 
       const targetNetYearInput = Math.max(parseNumber(controls.targetNet.value, TARGET_NET_DEFAULT), 0);
       const targetNetWeekInput = Math.max(parseNumber(controls.targetNetWeek.value, defaultTargetNetWeek), 0);
       const targetNetMonthInput = Math.max(parseNumber(controls.targetNetMonth.value, defaultTargetNetMonth), 0);
+      const targetNetAverageWeekInput = Math.max(
+        parseNumber(controls.targetNetAverageWeek.value, defaultTargetNetAverageWeek),
+        0
+      );
+      const targetNetAverageMonthInput = Math.max(
+        parseNumber(controls.targetNetAverageMonth.value, defaultTargetNetAverageMonth),
+        0
+      );
 
       const hasWorkingWeeks = workingWeeks > 0;
       const hasActiveMonths = activeMonths > 0;
@@ -2954,6 +2993,10 @@
         targetNet = hasWorkingWeeks ? targetNetWeekInput * workingWeeks : targetNetYearInput;
       } else if (targetNetBasis === 'month') {
         targetNet = hasActiveMonths ? targetNetMonthInput * activeMonths : targetNetYearInput;
+      } else if (targetNetBasis === 'avgWeek') {
+        targetNet = targetNetAverageWeekInput * WEEKS_PER_YEAR;
+      } else if (targetNetBasis === 'avgMonth') {
+        targetNet = targetNetAverageMonthInput * MONTHS_PER_YEAR;
       } else {
         targetNet = targetNetYearInput;
       }
@@ -2962,6 +3005,8 @@
 
       const targetNetPerWeek = hasWorkingWeeks ? targetNet / workingWeeks : null;
       const targetNetPerMonth = hasActiveMonths ? targetNet / activeMonths : null;
+      const targetNetAveragePerWeek = targetNet / WEEKS_PER_YEAR;
+      const targetNetAveragePerMonth = targetNet / MONTHS_PER_YEAR;
 
       controls.targetNet.value = formatFixed(targetNet, 2);
 
@@ -2974,6 +3019,20 @@
       controls.targetNetMonth.value = monthDisplayValue == null || !Number.isFinite(monthDisplayValue)
         ? ''
         : formatFixed(monthDisplayValue, 2);
+
+      const averageWeekDisplayValue = targetNetBasis === 'avgWeek'
+        ? targetNetAverageWeekInput
+        : targetNetAveragePerWeek;
+      controls.targetNetAverageWeek.value = averageWeekDisplayValue == null || !Number.isFinite(averageWeekDisplayValue)
+        ? ''
+        : formatFixed(averageWeekDisplayValue, 2);
+
+      const averageMonthDisplayValue = targetNetBasis === 'avgMonth'
+        ? targetNetAverageMonthInput
+        : targetNetAveragePerMonth;
+      controls.targetNetAverageMonth.value = averageMonthDisplayValue == null || !Number.isFinite(averageMonthDisplayValue)
+        ? ''
+        : formatFixed(averageMonthDisplayValue, 2);
 
       controls.taxRate.value = formatFixed(taxRate * 100, 1);
       controls.fixedCosts.value = formatFixed(fixedCosts, 2);
@@ -3004,6 +3063,8 @@
         targetNet,
         targetNetPerWeek,
         targetNetPerMonth,
+        targetNetAveragePerWeek,
+        targetNetAveragePerMonth,
         taxRate,
         fixedCosts,
         variableCostPerClass,
@@ -3661,7 +3722,9 @@
               manualNetSummary = {
                 annual: annualNet,
                 monthly: Number.isFinite(monthlyNet) ? monthlyNet : null,
-                weekly: hasWorkingWeeks ? annualNet / workingWeeks : null
+                weekly: hasWorkingWeeks ? annualNet / workingWeeks : null,
+                averageWeekly: annualNet / WEEKS_PER_YEAR,
+                averageMonthly: annualNet / MONTHS_PER_YEAR
               };
             }
 
@@ -3831,6 +3894,26 @@
             inputs.targetNetPerMonth = null;
           }
         }
+
+        if (controls.targetNetAverageWeek instanceof HTMLInputElement) {
+          if (Number.isFinite(manualNetSummary.averageWeekly)) {
+            controls.targetNetAverageWeek.value = formatFixed(manualNetSummary.averageWeekly, 2);
+            inputs.targetNetAveragePerWeek = manualNetSummary.averageWeekly;
+          } else {
+            controls.targetNetAverageWeek.value = '';
+            inputs.targetNetAveragePerWeek = null;
+          }
+        }
+
+        if (controls.targetNetAverageMonth instanceof HTMLInputElement) {
+          if (Number.isFinite(manualNetSummary.averageMonthly)) {
+            controls.targetNetAverageMonth.value = formatFixed(manualNetSummary.averageMonthly, 2);
+            inputs.targetNetAveragePerMonth = manualNetSummary.averageMonthly;
+          } else {
+            controls.targetNetAverageMonth.value = '';
+            inputs.targetNetAveragePerMonth = null;
+          }
+        }
       }
 
       latestCurrencySymbol = inputs.currencySymbol;
@@ -3882,6 +3965,8 @@
         targetNet,
         targetNetPerWeek,
         targetNetPerMonth,
+        targetNetAveragePerWeek,
+        targetNetAveragePerMonth,
         taxRate,
         fixedCosts,
         variableCostPerClass,
@@ -3913,6 +3998,12 @@
       const targetPerMonthDisplay = Number.isFinite(targetNetPerMonth)
         ? formatCurrency(currencySymbol, targetNetPerMonth)
         : '—';
+      const targetAveragePerWeekDisplay = Number.isFinite(targetNetAveragePerWeek)
+        ? formatCurrency(currencySymbol, targetNetAveragePerWeek)
+        : '—';
+      const targetAveragePerMonthDisplay = Number.isFinite(targetNetAveragePerMonth)
+        ? formatCurrency(currencySymbol, targetNetAveragePerMonth)
+        : '—';
 
       const manualLessonLine = Number.isFinite(lessonCostInclVat)
         ? `Manual lesson cost (incl. VAT): ${currencySymbol}${formatFixed(lessonCostInclVat, 2)}`
@@ -3922,6 +4013,8 @@
         `Net income per year: ${formatCurrency(currencySymbol, targetNet)}`,
         `Net income per active week: ${targetPerWeekDisplay}`,
         `Net income per active month: ${targetPerMonthDisplay}`,
+        `Average weekly net income: ${targetAveragePerWeekDisplay}`,
+        `Average monthly net income: ${targetAveragePerMonthDisplay}`,
         manualLessonLine,
         `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
         `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
@@ -4003,7 +4096,9 @@
     [
       { control: controls.targetNet, basis: 'year' },
       { control: controls.targetNetWeek, basis: 'week' },
-      { control: controls.targetNetMonth, basis: 'month' }
+      { control: controls.targetNetMonth, basis: 'month' },
+      { control: controls.targetNetAverageWeek, basis: 'avgWeek' },
+      { control: controls.targetNetAverageMonth, basis: 'avgMonth' }
     ].forEach(({ control, basis }) => {
       if (!(control instanceof HTMLInputElement)) return;
       const updateBasis = () => {
