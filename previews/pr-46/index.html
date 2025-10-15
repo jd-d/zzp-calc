@@ -1,0 +1,4288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <title>Course Pricing Calculator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-gradient: radial-gradient(circle at top left, #1e2330, #10131c 55%, #0a0c12 100%);
+      --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-heading: "Clash Display", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --card-bg: rgba(20, 24, 35, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-gradient: linear-gradient(
+        135deg,
+        rgba(77, 163, 255, 0.6),
+        rgba(149, 114, 255, 0.45)
+      );
+      --card-surface-gradient: linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.08),
+        rgba(255, 255, 255, 0.02)
+      );
+      --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      --accent: #4da3ff;
+      --text-primary: #f5f7fb;
+      --text-muted: #b1b7c7;
+      --field-bg: rgba(7, 9, 14, 0.75);
+      --field-border: rgba(255, 255, 255, 0.15);
+      --field-output-bg: rgba(7, 9, 14, 0.45);
+      --table-header-bg: rgba(255, 255, 255, 0.04);
+      --table-header-text: var(--text-muted);
+      --table-row-border: rgba(255, 255, 255, 0.07);
+      --row-header-bg: rgba(255, 255, 255, 0.02);
+      --price-line-bg: rgba(255, 255, 255, 0.03);
+      --price-line-border: rgba(255, 255, 255, 0.05);
+      --price-buffer-bg: rgba(77, 163, 255, 0.08);
+      --price-buffer-border: rgba(77, 163, 255, 0.25);
+      --breakdown-color-vat: #f97316;
+      --breakdown-color-variable: #8b5cf6;
+      --breakdown-color-fixed: #38bdf8;
+      --breakdown-color-tax: #ef4444;
+      --breakdown-color-net: #22c55e;
+      --button-bg: #f1f5ff;
+      --button-color: #0c111d;
+      --button-shadow: rgba(0, 0, 0, 0.3);
+      --secondary-button-bg: rgba(77, 163, 255, 0.15);
+      --secondary-button-border: rgba(77, 163, 255, 0.45);
+      --secondary-button-hover-bg: rgba(77, 163, 255, 0.25);
+      --info-bg: rgba(77, 163, 255, 0.15);
+      --info-border: rgba(77, 163, 255, 0.35);
+      --info-hover-bg: rgba(77, 163, 255, 0.25);
+      --info-hover-border: rgba(77, 163, 255, 0.55);
+      --tooltip-bg: rgba(12, 16, 26, 0.95);
+      --tooltip-color: var(--text-primary);
+      --tooltip-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+      --toggle-track: rgba(255, 255, 255, 0.25);
+      --toggle-track-border: rgba(255, 255, 255, 0.35);
+      --toggle-thumb: var(--accent);
+      --toggle-thumb-shadow: rgba(0, 0, 0, 0.35);
+      --focus-ring: rgba(77, 163, 255, 0.25);
+      --focus-outline: rgba(77, 163, 255, 0.55);
+      --inactive-bg: rgba(255, 76, 96, 0.12);
+      --inactive-border: rgba(255, 76, 96, 0.45);
+      --inactive-text: #ff93a6;
+      --inactive-strong: #ffb7c3;
+      --active-bg: rgba(77, 163, 255, 0.12);
+      --active-border: rgba(77, 163, 255, 0.45);
+    }
+
+    body[data-theme="light"] {
+      color-scheme: light;
+      --bg-gradient: radial-gradient(circle at top left, #eff4ff, #dde7ff 55%, #d4e0ff 100%);
+      --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-heading: "Clash Display", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --card-bg: rgba(255, 255, 255, 0.92);
+      --card-border: rgba(15, 23, 42, 0.08);
+      --card-border-gradient: linear-gradient(
+        135deg,
+        rgba(37, 99, 235, 0.35),
+        rgba(59, 130, 246, 0.15)
+      );
+      --card-surface-gradient: linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.95),
+        rgba(249, 250, 255, 0.85)
+      );
+      --card-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+      --accent: #2563eb;
+      --text-primary: #111827;
+      --text-muted: #4b5563;
+      --field-bg: rgba(255, 255, 255, 0.85);
+      --field-border: rgba(15, 23, 42, 0.14);
+      --field-output-bg: rgba(241, 245, 249, 0.9);
+      --table-header-bg: rgba(37, 99, 235, 0.08);
+      --table-header-text: #1f2937;
+      --table-row-border: rgba(15, 23, 42, 0.08);
+      --row-header-bg: rgba(226, 232, 240, 0.6);
+      --price-line-bg: rgba(15, 23, 42, 0.04);
+      --price-line-border: rgba(15, 23, 42, 0.1);
+      --price-buffer-bg: rgba(37, 99, 235, 0.12);
+      --price-buffer-border: rgba(37, 99, 235, 0.28);
+      --breakdown-color-vat: #ea580c;
+      --breakdown-color-variable: #7c3aed;
+      --breakdown-color-fixed: #2563eb;
+      --breakdown-color-tax: #dc2626;
+      --breakdown-color-net: #16a34a;
+      --button-bg: #1d4ed8;
+      --button-color: #f8fafc;
+      --button-shadow: rgba(29, 78, 216, 0.3);
+      --secondary-button-bg: rgba(37, 99, 235, 0.12);
+      --secondary-button-border: rgba(37, 99, 235, 0.3);
+      --secondary-button-hover-bg: rgba(37, 99, 235, 0.22);
+      --info-bg: rgba(37, 99, 235, 0.12);
+      --info-border: rgba(37, 99, 235, 0.32);
+      --info-hover-bg: rgba(37, 99, 235, 0.2);
+      --info-hover-border: rgba(37, 99, 235, 0.45);
+      --tooltip-bg: rgba(15, 23, 42, 0.95);
+      --tooltip-color: #f8fafc;
+      --tooltip-shadow: 0 18px 36px rgba(15, 23, 42, 0.24);
+      --toggle-track: rgba(15, 23, 42, 0.12);
+      --toggle-track-border: rgba(15, 23, 42, 0.22);
+      --toggle-thumb: #1d4ed8;
+      --toggle-thumb-shadow: rgba(15, 23, 42, 0.25);
+      --focus-ring: rgba(37, 99, 235, 0.28);
+      --focus-outline: rgba(37, 99, 235, 0.55);
+      --inactive-bg: rgba(239, 68, 68, 0.12);
+      --inactive-border: rgba(220, 38, 38, 0.35);
+      --inactive-text: #c53030;
+      --inactive-strong: #e53e3e;
+      --active-bg: rgba(37, 99, 235, 0.12);
+      --active-border: rgba(37, 99, 235, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      line-height: 1.65;
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    body.dialog-open {
+      overflow: hidden;
+    }
+
+    body[data-theme="dark"] {
+      color-scheme: dark;
+    }
+
+    h1,
+    h2 {
+      font-family: var(--font-heading);
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+      margin: 0;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .top-nav {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 0 0;
+    }
+
+    .top-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--secondary-button-border);
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .top-link::before {
+      content: "📘";
+      font-size: 1rem;
+    }
+
+    .top-link:hover,
+    .top-link:focus-visible {
+      background: var(--secondary-button-hover-bg);
+      border-color: var(--secondary-button-border);
+      transform: translateY(-1px);
+      outline: none;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .readme-dialog[hidden] {
+      display: none;
+    }
+
+    .readme-dialog {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .readme-dialog__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    .readme-dialog__content {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      box-shadow: 0 35px 70px var(--card-shadow);
+      max-width: min(960px, 92vw);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .readme-dialog__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--table-row-border);
+      background: var(--row-header-bg);
+    }
+
+    .readme-dialog__close {
+      appearance: none;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      line-height: 1;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .readme-dialog__close:hover,
+    .readme-dialog__close:focus-visible {
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      outline: none;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .readme-dialog__body {
+      padding: 24px;
+      overflow-y: auto;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: var(--field-output-bg);
+    }
+
+    .readme-dialog__body h1,
+    .readme-dialog__body h2,
+    .readme-dialog__body h3,
+    .readme-dialog__body h4,
+    .readme-dialog__body h5,
+    .readme-dialog__body h6 {
+      color: var(--text-primary);
+      margin-top: 1.4em;
+    }
+
+    .readme-dialog__body p,
+    .readme-dialog__body li {
+      color: var(--text-muted);
+    }
+
+    .readme-dialog__body pre {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 12px 14px;
+      border-radius: 12px;
+      overflow-x: auto;
+      border: 1px solid var(--table-row-border);
+    }
+
+    .readme-dialog__body code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    .readme-dialog__body a {
+      color: var(--accent);
+    }
+
+    .readme-dialog__body ul,
+    .readme-dialog__body ol {
+      padding-left: 1.25em;
+    }
+
+    .readme-dialog__body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5em 0;
+    }
+
+    .readme-dialog__body th,
+    .readme-dialog__body td {
+      border: 1px solid var(--table-row-border);
+      padding: 8px 12px;
+    }
+
+    .readme-dialog__body blockquote {
+      border-left: 3px solid var(--accent);
+      margin: 1.2em 0;
+      padding: 0.5em 1em;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+    }
+
+    .readme-status {
+      margin: 0;
+      color: var(--text-muted);
+    }
+
+    .readme-status--error {
+      color: var(--inactive-strong);
+    }
+
+    @media (max-width: 720px) {
+      .top-nav {
+        justify-content: center;
+      }
+
+      .top-link {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .readme-dialog__content {
+        width: 92vw;
+        max-height: 92vh;
+      }
+    }
+
+    .lesson-breakdown-dialog[hidden] {
+      display: none;
+    }
+
+    .lesson-breakdown-dialog {
+      position: fixed;
+      inset: 0;
+      z-index: 950;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 4vw, 32px);
+    }
+
+    .lesson-breakdown-dialog__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 11, 20, 0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    .lesson-breakdown-dialog__content {
+      position: relative;
+      z-index: 1;
+      width: min(960px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+      padding: clamp(20px, 3vw, 28px);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .lesson-breakdown-dialog__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .lesson-breakdown-dialog__header h2 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2vw, 1.65rem);
+    }
+
+    .lesson-breakdown-dialog__variant {
+      margin: 6px 0 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .lesson-breakdown-dialog__summary {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .lesson-breakdown-dialog__price {
+      margin: 0;
+      font-size: clamp(1.4rem, 2.4vw, 1.75rem);
+      font-weight: 600;
+    }
+
+    .lesson-breakdown-dialog__meta,
+    .lesson-breakdown-dialog__total {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .lesson-breakdown-dialog__body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+      gap: clamp(18px, 3vw, 28px);
+    }
+
+    .lesson-breakdown-dialog__table-wrapper {
+      overflow: auto;
+      border-radius: 16px;
+      border: 1px solid var(--table-row-border);
+      background: var(--field-output-bg);
+    }
+
+    .lesson-breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 320px;
+    }
+
+    .lesson-breakdown-table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--table-header-bg);
+      color: var(--table-header-text);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.75rem;
+      padding: 12px;
+    }
+
+    .lesson-breakdown-table th,
+    .lesson-breakdown-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--table-row-border);
+      font-size: 0.95rem;
+    }
+
+    .lesson-breakdown-table tbody th {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .lesson-breakdown-table tbody td {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lesson-breakdown-table tbody tr:last-child th,
+    .lesson-breakdown-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .lesson-breakdown-dialog__chart {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+    }
+
+    .lesson-breakdown-dialog__chart-graphic {
+      width: clamp(160px, 22vw, 200px);
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      background: var(--price-line-bg);
+      border: 1px solid var(--price-line-border);
+      margin: 0 auto;
+      position: relative;
+      transition: background 0.3s ease;
+    }
+
+    .lesson-breakdown-dialog__chart-graphic::after {
+      content: "";
+      position: absolute;
+      inset: 24%;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+    }
+
+    .lesson-breakdown-dialog__legend {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lesson-breakdown-dialog__legend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+    }
+
+    .lesson-breakdown-dialog__legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--swatch-color, var(--accent));
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+      flex: 0 0 auto;
+    }
+
+    .lesson-breakdown-dialog__legend-label {
+      flex: 1 1 auto;
+      color: var(--text-muted);
+    }
+
+    .lesson-breakdown-dialog__legend-value {
+      flex: 0 0 auto;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+
+    .lesson-breakdown-dialog__close {
+      appearance: none;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      line-height: 1;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .lesson-breakdown-dialog__close:hover,
+    .lesson-breakdown-dialog__close:focus-visible {
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      outline: none;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    @media (max-width: 900px) {
+      .lesson-breakdown-dialog__body {
+        grid-template-columns: 1fr;
+      }
+
+      .lesson-breakdown-dialog__chart {
+        align-items: center;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .lesson-breakdown-dialog__content {
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      .lesson-breakdown-dialog__body {
+        gap: 18px;
+      }
+
+      .lesson-breakdown-dialog__table-wrapper {
+        border-radius: 12px;
+      }
+    }
+
+    .page {
+      position: relative;
+      overflow: visible;
+      isolation: isolate;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: clamp(16px, 3vw, 32px);
+      gap: clamp(16px, 2vw, 24px);
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: -40% -20% -60%;
+      background: radial-gradient(
+          circle at 30% 20%,
+          rgba(77, 163, 255, 0.25),
+          transparent 55%
+        ),
+        radial-gradient(circle at 70% 30%, rgba(149, 114, 255, 0.2), transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(77, 163, 255, 0.18), transparent 55%);
+      opacity: 0.45;
+      filter: blur(0);
+      transform: scale(1.05);
+      animation: page-backdrop-drift 26s ease-in-out infinite;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @keyframes page-backdrop-drift {
+      0% {
+        transform: scale(1.05) translate3d(-6%, -3%, 0) rotate(0deg);
+      }
+
+      50% {
+        transform: scale(1.05) translate3d(8%, 6%, 0) rotate(5deg);
+      }
+
+      100% {
+        transform: scale(1.05) translate3d(-6%, -3%, 0) rotate(0deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .page::before {
+        animation: none;
+      }
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .header-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--secondary-button-border);
+      background: var(--secondary-button-bg);
+      color: inherit;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+    }
+
+    .header-link:hover,
+    .header-link:focus-visible {
+      background: var(--secondary-button-hover-bg);
+      border-color: var(--secondary-button-border);
+      transform: translateY(-1px);
+    }
+
+    .header-link:focus-visible {
+      outline: 3px solid var(--focus-outline);
+      outline-offset: 2px;
+    }
+
+    .header-text {
+      flex: 1 1 340px;
+      min-width: 240px;
+      max-width: 720px;
+    }
+
+    .header-text p {
+      color: var(--text-muted);
+      margin: 8px 0 0;
+    }
+
+    .layout {
+      display: flex;
+      gap: 24px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .card {
+      position: relative;
+      z-index: 0;
+      border-radius: 18px;
+      padding: clamp(16px, 2vw, 24px);
+      box-shadow: var(--card-shadow);
+      backdrop-filter: blur(16px);
+      overflow: visible;
+      transform: translateY(0);
+      transition: transform 0.35s ease, box-shadow 0.4s ease, color 0.4s ease, background 0.4s ease;
+    }
+
+    .card::before,
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .card::before {
+      padding: 1px;
+      background: var(--card-border-gradient);
+      opacity: 0.75;
+      z-index: -2;
+      transition: opacity 0.45s ease;
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+    }
+
+    .card::after {
+      z-index: -1;
+      background: var(--card-bg);
+      background-image: var(--card-surface-gradient);
+      opacity: 0.95;
+      transition: opacity 0.45s ease;
+    }
+
+    .card:hover,
+    .card:focus-within {
+      transform: translateY(-4px);
+      box-shadow: var(--card-shadow), 0 18px 36px rgba(77, 163, 255, 0.12);
+      z-index: 2;
+    }
+
+    .card:hover::before,
+    .card:focus-within::before {
+      opacity: 1;
+    }
+
+    .card:hover::after,
+    .card:focus-within::after {
+      opacity: 1;
+    }
+
+    .privacy-info {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      line-height: 1.6;
+    }
+
+    .privacy-info h2,
+    .privacy-info h3 {
+      margin: 0;
+    }
+
+    .privacy-info h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .privacy-info ol {
+      margin: 0;
+      padding-left: 1.2rem;
+      display: grid;
+      gap: 12px;
+    }
+
+    .privacy-info li {
+      padding-left: 4px;
+    }
+
+    .controls {
+      flex: 0 0 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .controls .control-sections,
+    .controls .control-section {
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .controls .control-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .controls .control-section {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      background: var(--card-surface-gradient);
+      padding: 16px 18px 18px;
+    }
+
+    .section-legend {
+      margin: 0;
+      padding: 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 6px;
+      width: 100%;
+    }
+
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .section-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      border: 1px solid var(--secondary-button-border);
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      box-shadow: none;
+      transform: none;
+      white-space: nowrap;
+    }
+
+    .section-toggle:hover,
+    .section-toggle:focus-visible {
+      background: var(--secondary-button-hover-bg);
+      border-color: var(--secondary-button-border);
+      color: var(--text-primary);
+      box-shadow: none;
+      transform: none;
+    }
+
+    .section-toggle--top {
+      flex: 0 0 auto;
+    }
+
+    .section-toggle--bottom {
+      margin-top: 8px;
+    }
+
+    .section-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .control-section.collapsed .section-body {
+      display: none;
+    }
+
+    .controls .control-section .section-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 0;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: border-color 0.3s ease, background-color 0.3s ease, padding 0.3s ease;
+    }
+
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control--fixed-costs {
+      gap: 12px;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--field-border);
+      background: var(--field-output-bg);
+    }
+
+    .fixed-costs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .fixed-costs-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .fixed-cost-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .fixed-cost-label {
+      flex: 1 1 180px;
+      font-weight: 500;
+    }
+
+    .fixed-cost-inputs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      flex: 2 1 280px;
+    }
+
+    .fixed-cost-inputs label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .input-label {
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+
+    .fixed-cost-total {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid var(--field-border);
+    }
+
+    .fixed-cost-total input[readonly] {
+      cursor: default;
+      background: var(--field-output-bg);
+    }
+
+    label {
+      font-size: 0.95rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .field-note,
+    .field-message {
+      font-size: 0.85rem;
+      margin: 0;
+      color: var(--text-muted);
+    }
+
+    .field-message:empty {
+      display: none;
+    }
+
+    .label-text {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .info-icon {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      background: var(--info-bg);
+      color: var(--accent);
+      cursor: pointer;
+      border: 1px solid var(--info-border);
+      flex: 0 0 auto;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      touch-action: manipulation;
+      --tooltip-shift: 0px;
+    }
+
+    .info-icon:hover,
+    .info-icon:focus-visible,
+    .info-icon.is-active {
+      background: var(--info-hover-bg);
+      border-color: var(--info-hover-border);
+      outline: none;
+      color: #fff;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .info-icon__tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translate(calc(-50% + var(--tooltip-shift, 0px)), 4px);
+      width: clamp(180px, calc(100vw - 32px), 260px);
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--tooltip-bg);
+      color: var(--tooltip-color);
+      font-size: 0.8rem;
+      line-height: 1.35;
+      box-shadow: var(--tooltip-shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 10;
+    }
+
+    .info-icon__arrow {
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translate(calc(-50% + var(--tooltip-shift, 0px)), 4px);
+      border-width: 6px;
+      border-style: solid;
+      border-color: var(--tooltip-bg) transparent transparent transparent;
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
+    }
+
+    .info-icon:hover .info-icon__tooltip,
+    .info-icon:focus-visible .info-icon__tooltip,
+    .info-icon.is-active .info-icon__tooltip,
+    .info-icon:hover .info-icon__arrow,
+    .info-icon:focus-visible .info-icon__arrow,
+    .info-icon.is-active .info-icon__arrow {
+      opacity: 1;
+      transform: translate(calc(-50% + var(--tooltip-shift, 0px)), 0);
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--field-border);
+      background: var(--field-bg);
+      color: inherit;
+      font-size: 1rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .control output {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--field-border);
+      background: var(--field-output-bg);
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease, color 0.2s ease;
+      color: var(--button-color);
+      background: var(--button-bg);
+    }
+
+    button:focus-visible {
+      outline: 3px solid var(--focus-outline);
+      outline-offset: 2px;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px var(--button-shadow);
+    }
+
+    button.secondary {
+      background: var(--secondary-button-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--secondary-button-border);
+    }
+
+    button.secondary:hover {
+      background: var(--secondary-button-hover-bg);
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px 6px 10px;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transform: none;
+      box-shadow: none;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .theme-toggle:hover,
+    .theme-toggle:focus-visible {
+      transform: none;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+      background: var(--secondary-button-bg);
+      border-color: var(--secondary-button-border);
+    }
+
+    .theme-toggle .toggle-track {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--toggle-track);
+      border: 1px solid var(--toggle-track-border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .theme-toggle .toggle-track::before,
+    .theme-toggle .toggle-track::after {
+      font-size: 0.7rem;
+      line-height: 1;
+      opacity: 0.65;
+    }
+
+    .theme-toggle .toggle-track::before {
+      content: '🌙';
+    }
+
+    .theme-toggle .toggle-track::after {
+      content: '☀️';
+    }
+
+    body[data-theme="dark"] .theme-toggle .toggle-track::before {
+      opacity: 1;
+    }
+
+    body[data-theme="dark"] .theme-toggle .toggle-track::after {
+      opacity: 0.45;
+    }
+
+    body[data-theme="light"] .theme-toggle .toggle-track::before {
+      opacity: 0.45;
+    }
+
+    body[data-theme="light"] .theme-toggle .toggle-track::after {
+      opacity: 1;
+    }
+
+    .theme-toggle .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: var(--toggle-thumb);
+      box-shadow: 0 2px 6px var(--toggle-thumb-shadow);
+      transition: transform 0.3s ease;
+    }
+
+    body[data-theme="dark"] .theme-toggle .toggle-thumb {
+      transform: translateX(0);
+    }
+
+    body[data-theme="light"] .theme-toggle .toggle-thumb {
+      transform: translateX(20px);
+    }
+
+    .theme-toggle .toggle-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .tables {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      min-width: 0;
+    }
+
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+      border-radius: 14px;
+      overflow: visible;
+    }
+
+    caption {
+      text-align: left;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    thead th {
+      background: var(--table-header-bg);
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.9rem;
+      color: var(--table-header-text);
+    }
+
+    thead th:not(:first-child) {
+      text-align: center;
+    }
+
+    tbody th,
+    tbody td {
+      padding: 10px 12px;
+      border-top: 1px solid var(--table-row-border);
+    }
+
+    tbody th {
+      text-align: left;
+      font-weight: 600;
+      background: var(--row-header-bg);
+      color: var(--text-primary);
+    }
+
+    tbody td {
+      text-align: center;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+
+    .price-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .price-line {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--price-line-bg);
+      border: 1px solid var(--price-line-border);
+      color: inherit;
+      transition: border-color 0.2s ease, background-color 0.2s ease,
+        transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .price-line strong {
+      font-size: 1.05rem;
+    }
+
+    .price-line .price-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .price-line .price-secondary {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .price-line.buffered {
+      background: var(--price-buffer-bg);
+      border-color: var(--price-buffer-border);
+    }
+
+    .price-line.base {
+      display: none;
+      margin-top: 8px;
+      border-style: dashed;
+    }
+
+    button.price-line {
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      background: var(--price-line-bg);
+      border-radius: 10px;
+      border: 1px solid var(--price-line-border);
+      color: inherit;
+      font: inherit;
+      line-height: inherit;
+      padding: 8px 10px;
+    }
+
+    button.price-line:focus {
+      outline: none;
+    }
+
+    button.price-line:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    button.price-line:focus-visible {
+      outline: 2px solid var(--focus-outline);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .pricing-card.show-base-prices .price-line.base {
+      display: flex;
+    }
+
+    .price-toggle-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+
+    .price-reveal-toggle {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .sub-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .tables .card {
+      min-height: 100%;
+    }
+
+    ul.assumptions {
+      margin: 0;
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .tables-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .status-message {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 720px) {
+      header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+      }
+
+      .header-text {
+        flex: 1 1 auto;
+        text-align: center;
+      }
+
+      .theme-toggle {
+        align-self: center;
+      }
+
+      .layout {
+        gap: 16px;
+      }
+
+      .controls {
+        gap: 16px;
+      }
+
+      .controls .control-sections {
+        order: 1;
+      }
+
+      .controls .actions {
+        order: 2;
+      }
+
+      .controls .status-message {
+        order: 3;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        flex-direction: column;
+      }
+
+      .controls {
+        flex-basis: auto;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .header-actions {
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .fixed-cost-row {
+        gap: 10px;
+      }
+
+      .fixed-cost-inputs {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .fixed-cost-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+
+      .fixed-cost-label,
+      .fixed-cost-inputs {
+        flex: 1 1 auto;
+        min-height: auto;
+        width: 100%;
+      }
+
+      .fixed-cost-inputs {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .section-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .section-toggle--top {
+        align-self: flex-end;
+      }
+
+      button:not(.section-toggle) {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .button-row {
+        flex-direction: column;
+      }
+
+      tbody td {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="page">
+    <nav class="top-nav">
+      <a href="#" id="how-to-link" class="top-link">How To Use This Tool</a>
+    </nav>
+    <header>
+      <div class="header-text">
+        <h1>Course Pricing Calculator</h1>
+        <p>Estimate per-student pricing to reach your target income. All calculations stay on this page.</p>
+      </div>
+      <div class="header-actions">
+        <a class="header-link" href="#privacy-info">Your Info Is Safe</a>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="true">
+          <span class="toggle-track" aria-hidden="true">
+            <span class="toggle-thumb"></span>
+          </span>
+          <span class="toggle-label">Dark mode</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="card controls" aria-labelledby="inputs-heading">
+        <h2 id="inputs-heading" style="font-size: 1.1rem;">Inputs</h2>
+        <fieldset class="control-sections">
+          <legend class="visually-hidden">Calculator inputs</legend>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-net-income-legend">Net income</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Net income</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-net-income"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-net-income">
+              <div class="control-group">
+                <p class="field-note">Entering a net income value will update the lesson cost automatically.</p>
+                <div class="control">
+                  <label for="target-net">
+                    <span class="label-text">Net income per year</span>
+                    <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net" value="50000" min="0" step="100" inputmode="decimal" />
+                </div>
+                <div class="control">
+                  <label for="target-net-week">
+                    <span class="label-text">Net income per active week</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button" aria-expanded="false"
+                      aria-label="Weeks you are actively teaching after factoring in planned time off."
+                      data-tooltip="Weeks you are actively teaching after factoring in planned time off."
+                    >ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net-week" value="2000" min="0" step="50" inputmode="decimal" />
+                </div>
+                <div class="control">
+                  <label for="target-net-month">
+                    <span class="label-text">Net income per active month</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button" aria-expanded="false"
+                      aria-label="Active months exclude the time off set below."
+                      data-tooltip="Active months exclude the time off set below."
+                    >ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net-month" value="5000" min="0" step="100" inputmode="decimal" />
+                </div>
+                <div class="control">
+                  <label for="target-net-average-week">
+                    <span class="label-text">Average weekly net income</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button" aria-expanded="false"
+                      aria-label="Average over every week in the year, including planned time off."
+                      data-tooltip="Average over every week in the year, including planned time off."
+                    >ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net-average-week" value="961.54" min="0" step="10" inputmode="decimal" />
+                </div>
+                <div class="control">
+                  <label for="target-net-average-month">
+                    <span class="label-text">Average monthly net income</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button" aria-expanded="false"
+                      aria-label="Average over every month in the year, including planned time off."
+                      data-tooltip="Average over every month in the year, including planned time off."
+                    >ℹ️</span>
+                  </label>
+                  <input type="number" id="target-net-average-month" value="4166.67" min="0" step="50" inputmode="decimal" />
+                </div>
+              </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-net-income"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-taxes-costs-legend">Taxes and costs</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Taxes and costs</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-taxes-costs"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-taxes-costs">
+              <div class="control">
+                <label for="tax-rate">
+                  <span class="label-text">Effective income tax rate (%)</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
+                </label>
+                <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
+              </div>
+              <div class="control control--fixed-costs">
+                <div class="fixed-costs-header">
+                  <span class="label-text">Fixed costs</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Break down ongoing expenses like venue, insurance, marketing, materials, and admin."
+                    data-tooltip="Break down ongoing expenses like venue, insurance, marketing, materials, and admin."
+                  >ℹ️</span>
+                </div>
+                <p class="field-note">Enter either the monthly or annual amount for each category. The other column updates automatically.</p>
+                <div class="fixed-costs-grid">
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Location / venue</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-location-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-location-monthly" value="650" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-location-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-location-annual" value="7800" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Insurance</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-insurance-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-insurance-monthly" value="100" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-insurance-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-insurance-annual" value="1200" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Marketing</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-marketing-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-marketing-monthly" value="300" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-marketing-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-marketing-annual" value="3600" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Materials</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-materials-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-materials-monthly" value="150" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-materials-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-materials-annual" value="1800" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="fixed-cost-row">
+                    <div class="fixed-cost-label">Admin / software</div>
+                    <div class="fixed-cost-inputs">
+                      <label for="fixed-cost-admin-monthly">
+                        <span class="input-label">Monthly</span>
+                        <input type="number" id="fixed-cost-admin-monthly" value="175" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                      <label for="fixed-cost-admin-annual">
+                        <span class="input-label">Annual</span>
+                        <input type="number" id="fixed-cost-admin-annual" value="2100" min="0" step="0.01" inputmode="decimal" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="fixed-cost-total">
+                  <label for="fixed-costs">
+                    <span class="label-text">Total fixed annual costs</span>
+                  </label>
+                  <input type="number" id="fixed-costs" value="16500" min="0" step="0.01" inputmode="decimal" readonly />
+                  <p class="field-note">Calculated automatically from the breakdown above.</p>
+                </div>
+              </div>
+              <div class="control">
+                <label for="variable-cost-class">
+                  <span class="label-text">Variable cost per class</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Expenses that apply each time you run a class, such as room hire or transport." data-tooltip="Expenses that apply each time you run a class, such as room hire or transport.">ℹ️</span>
+                </label>
+                <input type="number" id="variable-cost-class" value="0" min="0" step="0.01" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="variable-cost-student">
+                  <span class="label-text">Variable cost per student</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Per-student expenses like materials or refreshments." data-tooltip="Per-student expenses like materials or refreshments.">ℹ️</span>
+                </label>
+                <input type="number" id="variable-cost-student" value="0" min="0" step="0.01" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="vat-rate">
+                  <span class="label-text">VAT rate (%)</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Modify if the services you offer fall into a lower VAT band." data-tooltip="Modify if the services you offer fall into a lower VAT band.">ℹ️</span>
+                </label>
+                <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
+              </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-taxes-costs"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-schedule-capacity-legend">Schedule and capacity</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Schedule and capacity</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-schedule-capacity"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-schedule-capacity">
+              <div class="control">
+                <label for="classes-per-week">
+                  <span class="label-text">Classes per week</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,5)." data-tooltip="Comma-separated integers (e.g. 4,5).">ℹ️</span>
+                </label>
+                <input type="text" id="classes-per-week" value="4,5" autocomplete="off" />
+              </div>
+              <div class="control">
+                <label for="students-per-class">
+                  <span class="label-text">Students per class</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,6,8)." data-tooltip="Comma-separated integers (e.g. 4,6,8).">ℹ️</span>
+                </label>
+                <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
+              </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-schedule-capacity"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-manual-override-legend">
+              Manual lesson price override
+            </legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Manual lesson price override</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-manual-override"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-manual-override">
+              <div class="control">
+                <label for="lesson-cost">
+                  <span class="label-text">Manual lesson cost (incl. VAT)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button" aria-expanded="false"
+                    aria-label="Set a fixed per-student lesson price including VAT."
+                    data-tooltip="Set a fixed per-student lesson price including VAT."
+                  >ℹ️</span>
+                </label>
+                <input type="number" id="lesson-cost" min="0" step="0.01" inputmode="decimal" />
+                <p class="field-note">Entering a lesson cost updates the net income values above.</p>
+              </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-manual-override"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-time-off-legend">Time-off planner</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Time-off planner</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-time-off"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-time-off">
+              <div class="control">
+                <label for="months-off">
+                  <span class="label-text">Months off per year</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Total months you plan to take completely off." data-tooltip="Total months you plan to take completely off.">ℹ️</span>
+                </label>
+                <input type="number" id="months-off" value="2" min="0" max="12" step="0.5" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="weeks-off-cycle">
+                  <span class="label-text">Weeks off per 4-week cycle</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="For example, 1 week off means working 3 weeks out of every 4." data-tooltip="For example, 1 week off means working 3 weeks out of every 4.">ℹ️</span>
+                </label>
+                <input type="number" id="weeks-off-cycle" value="1" min="0" max="4" step="0.25" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="days-off-week">
+                  <span class="label-text">Days off per working week</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Assumes a 5-day working week. Supports decimals for half-days." data-tooltip="Assumes a 5-day working week. Supports decimals for half-days.">ℹ️</span>
+                </label>
+                <input type="number" id="days-off-week" value="1" min="0" max="5" step="0.25" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label>
+                  <span class="label-text">Estimated working weeks per year</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Calculated from the schedule above." data-tooltip="Calculated from the schedule above.">ℹ️</span>
+                </label>
+                <output id="working-weeks-display">32.5</output>
+              </div>
+              <div class="control">
+                <label>
+                  <span class="label-text">Estimated working days per year</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Working weeks × working days per active week." data-tooltip="Working weeks × working days per active week.">ℹ️</span>
+                </label>
+                <output id="working-days-display">130</output>
+              </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-time-off"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-display-preferences-legend">Display preferences</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Display preferences</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-display-preferences"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-display-preferences">
+              <div class="control">
+                <label for="buffer">
+                  <span class="label-text">Safety margin (%)</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Applied to cover no-shows, refunds, etc." data-tooltip="Applied to cover no-shows, refunds, etc.">ℹ️</span>
+                </label>
+                <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
+              </div>
+              <div class="control">
+                <label for="currency-symbol">
+                  <span class="label-text">Currency symbol</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
+                </label>
+                <input type="text" id="currency-symbol" value="€" maxlength="3" />
+              </div>
+              <div class="section-footer">
+                <button
+                  type="button"
+                  class="section-toggle section-toggle--bottom"
+                  data-expanded-text="Collapse section"
+                  data-collapsed-text="Expand section"
+                  aria-expanded="true"
+                  aria-controls="section-display-preferences"
+                >
+                  <span class="toggle-label">Collapse section</span>
+                </button>
+              </div>
+            </div>
+          </fieldset>
+        </fieldset>
+        <div class="button-row actions" role="group" aria-label="Actions">
+          <button type="button" id="recalculate">Recalculate</button>
+          <button type="button" id="download-csv" class="secondary">Download CSV</button>
+        </div>
+        <p class="status-message" id="status-message" aria-live="polite"></p>
+      </section>
+
+      <section class="tables" aria-live="polite">
+        <div class="table-grid" id="tables-container">
+          <!-- Tables injected here -->
+        </div>
+        <div class="tables-footer">
+          <h2 style="font-size: 1.05rem; margin: 0;">Assumptions</h2>
+          <ul class="assumptions" id="assumptions-list"></ul>
+        </div>
+      </section>
+    </div>
+
+    <section class="card privacy-info" id="privacy-info" aria-labelledby="privacy-heading">
+      <div>
+        <h2 id="privacy-heading">Your Info Is Safe</h2>
+        <p>
+          This calculator runs entirely in your browser. There are no sign-ins, accounts, or background network calls. Everything
+          you type stays on this page. The only thing saved between visits is your light/dark mode preference, which lives in
+          local storage under the key <code>course-pricing-theme</code> so the interface reopens in your chosen theme.
+        </p>
+        <p>
+          When you export results, the CSV file is generated on your device: the app assembles the rows, wraps them in a
+          <code>Blob</code>, spawns a temporary download link, clicks it for you, and immediately cleans it up again, so nothing
+          leaves your device. Want to dig deeper? The full source code is available on
+          <a href="https://github.com/jd-d/course-pricing-calculator" target="_blank" rel="noreferrer noopener">GitHub</a>, review it yourself or with a
+          developer you trust to confirm exactly how the site works.
+        </p>
+      </div>
+      <div>
+        <h3>Easy ways to verify this yourself</h3>
+        <ol>
+          <li>
+            <strong>Check that no cookies are created.</strong> Open DevTools → Application/Storage → Cookies, reload the page,
+            and interact with the calculator. The cookies list will stay empty.
+          </li>
+          <li>
+            <strong>Inspect local storage.</strong> In the same panel, open “Local Storage,” select the site origin, and confirm
+            the only entry is <code>course-pricing-theme</code>. Delete it and reload to see the theme reset, nothing else is
+            persisted.
+          </li>
+          <li>
+            <strong>Watch for network requests.</strong> Keep the Network tab open with “Preserve log” enabled as you adjust
+            inputs and export CSV. You’ll see no additional requests after the initial page load because every
+            calculation happens locally.
+          </li>
+          <li>
+            <strong>Review the page source.</strong> Search for calls like <code>fetch</code>, <code>XMLHttpRequest</code>, or
+            <code>navigator.sendBeacon</code>. You’ll only find the theme-related
+            <code>localStorage.getItem</code>/<code>setItem</code> calls.
+          </li>
+          <li>
+            <strong>Browse the GitHub repository.</strong> Inspect the project files directly on <a href="https://github.com/jd-d/course-pricing-calculator" target="_blank" rel="noreferrer noopener">GitHub</a> to confirm exactly what
+            the site ships and how it behaves.
+          </li>
+        </ol>
+      </div>
+    </section>
+  </div>
+
+  <div
+    class="lesson-breakdown-dialog"
+    id="lesson-breakdown-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="lesson-breakdown-title"
+    aria-describedby="lesson-breakdown-summary"
+    hidden
+  >
+    <div class="lesson-breakdown-dialog__backdrop" id="lesson-breakdown-backdrop" tabindex="-1"></div>
+    <div class="lesson-breakdown-dialog__content" role="document">
+      <div class="lesson-breakdown-dialog__header">
+        <div>
+          <h2 id="lesson-breakdown-title">Lesson breakdown</h2>
+          <p class="lesson-breakdown-dialog__variant" id="lesson-breakdown-variant"></p>
+        </div>
+        <button
+          type="button"
+          class="lesson-breakdown-dialog__close"
+          id="lesson-breakdown-close"
+          aria-label="Close lesson breakdown"
+        >×</button>
+      </div>
+      <div class="lesson-breakdown-dialog__summary" id="lesson-breakdown-summary">
+        <p class="lesson-breakdown-dialog__price" id="lesson-breakdown-price"></p>
+        <p class="lesson-breakdown-dialog__meta" id="lesson-breakdown-meta"></p>
+        <p class="lesson-breakdown-dialog__total" id="lesson-breakdown-total"></p>
+      </div>
+      <div class="lesson-breakdown-dialog__body">
+        <div class="lesson-breakdown-dialog__table-wrapper">
+          <table class="lesson-breakdown-table">
+            <caption class="visually-hidden">Per-student and per-lesson financial breakdown</caption>
+            <thead>
+              <tr>
+                <th scope="col">Line item</th>
+                <th scope="col">Per student</th>
+                <th scope="col">Per lesson</th>
+              </tr>
+            </thead>
+            <tbody id="lesson-breakdown-table-body"></tbody>
+          </table>
+        </div>
+        <div class="lesson-breakdown-dialog__chart">
+          <div class="lesson-breakdown-dialog__chart-graphic" id="lesson-breakdown-chart-graphic" aria-hidden="true"></div>
+          <ul class="lesson-breakdown-dialog__legend" id="lesson-breakdown-legend"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="readme-dialog" id="readme-dialog" role="dialog" aria-modal="true" aria-labelledby="readme-title" hidden>
+    <div class="readme-dialog__backdrop" id="readme-backdrop" tabindex="-1"></div>
+    <div class="readme-dialog__content" role="document">
+      <div class="readme-dialog__header">
+        <h2 id="readme-title">How To Use This Tool</h2>
+        <button type="button" class="readme-dialog__close" id="readme-close" aria-label="Close instructions">×</button>
+      </div>
+      <div class="readme-dialog__body" id="readme-body" tabindex="0"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const breakdownDialog = document.getElementById('lesson-breakdown-dialog');
+    const breakdownBackdrop = document.getElementById('lesson-breakdown-backdrop');
+    const breakdownClose = document.getElementById('lesson-breakdown-close');
+    const breakdownSummary = document.getElementById('lesson-breakdown-summary');
+    const breakdownVariant = document.getElementById('lesson-breakdown-variant');
+    const breakdownPrice = document.getElementById('lesson-breakdown-price');
+    const breakdownMeta = document.getElementById('lesson-breakdown-meta');
+    const breakdownTotal = document.getElementById('lesson-breakdown-total');
+    const breakdownTableBody = document.getElementById('lesson-breakdown-table-body');
+    const breakdownChartGraphic = document.getElementById('lesson-breakdown-chart-graphic');
+    const breakdownLegend = document.getElementById('lesson-breakdown-legend');
+    const howToLink = document.getElementById('how-to-link');
+    const readmeDialog = document.getElementById('readme-dialog');
+    const readmeBody = document.getElementById('readme-body');
+    const readmeClose = document.getElementById('readme-close');
+    const readmeBackdrop = document.getElementById('readme-backdrop');
+    let readmeLoaded = false;
+    let readmeLoading = false;
+    let previouslyFocusedElement = null;
+    let breakdownTriggerElement = null;
+    let activeBreakdownContext = null;
+
+    const COLLAPSIBLE_SECTION_SELECTOR = '.control-section[data-collapsible]';
+
+    function getSectionLabel(section, index = 0) {
+      if (!section) {
+        return `Section ${index + 1}`;
+      }
+
+      const title = section.querySelector('.section-title');
+      const labelText = title && title.textContent ? title.textContent.trim() : '';
+
+      if (labelText) {
+        section.dataset.sectionLabel = labelText;
+        return labelText;
+      }
+
+      if (section.dataset.sectionLabel) {
+        return section.dataset.sectionLabel;
+      }
+
+      const fallback = `Section ${index + 1}`;
+      section.dataset.sectionLabel = fallback;
+      return fallback;
+    }
+
+    function updateToggleButtonState(toggle, collapsed, sectionLabel) {
+      if (!toggle) {
+        return;
+      }
+
+      const expandedText = toggle.getAttribute('data-expanded-text') || 'Collapse section';
+      const collapsedText = toggle.getAttribute('data-collapsed-text') || 'Expand section';
+      const labelElement = toggle.querySelector('.toggle-label');
+      const nextText = collapsed ? collapsedText : expandedText;
+
+      if (labelElement) {
+        labelElement.textContent = nextText;
+      } else {
+        toggle.textContent = nextText;
+      }
+
+      const actionText = collapsed ? collapsedText : expandedText;
+      const normalizedAction = actionText.replace(/\s+section$/i, '');
+      const normalizedLabel = sectionLabel || 'section';
+
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      toggle.setAttribute('aria-label', `${normalizedAction} ${normalizedLabel} section`);
+      toggle.setAttribute('title', `${normalizedAction} ${normalizedLabel} section`);
+    }
+
+    class CollapsibleController {
+      constructor(root = document) {
+        this.root = root;
+        this.sections = new Map();
+        this.handleToggleClick = this.handleToggleClick.bind(this);
+        this.handleMutations = this.handleMutations.bind(this);
+
+        this.refreshSections(Array.from(this.root.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR)));
+        this.root.addEventListener('click', this.handleToggleClick);
+
+        if (typeof MutationObserver === 'function') {
+          const observerTarget = this.root === document ? document.body : this.root;
+          if (observerTarget) {
+            this.observer = new MutationObserver(this.handleMutations);
+            this.observer.observe(observerTarget, { childList: true, subtree: true });
+          }
+        }
+      }
+
+      refreshSections(sectionElements) {
+        if (!sectionElements) {
+          return;
+        }
+
+        Array.from(sectionElements).forEach(section => this.registerSection(section));
+      }
+
+      registerSection(section) {
+        if (!(section instanceof HTMLElement)) {
+          return;
+        }
+
+        const body = section.querySelector('.section-body');
+        if (!body) {
+          return;
+        }
+
+        const fallbackIndex = this.sections.size;
+        const sectionLabel = getSectionLabel(section, fallbackIndex);
+
+        if (!body.id) {
+          const baseId = sectionLabel
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '') || `section-${fallbackIndex + 1}`;
+
+          let uniqueId = baseId;
+          let attempt = 1;
+          while (document.getElementById(uniqueId)) {
+            attempt += 1;
+            uniqueId = `${baseId}-${attempt}`;
+          }
+
+          body.id = uniqueId;
+        }
+
+        const collapsed = section.classList.contains('collapsed');
+        section.dataset.sectionLabel = sectionLabel;
+
+        section.querySelectorAll('.section-toggle').forEach(toggle => {
+          toggle.setAttribute('aria-controls', body.id);
+          updateToggleButtonState(toggle, collapsed, sectionLabel);
+        });
+
+        this.sections.set(section, { body });
+      }
+
+      unregisterSection(section) {
+        if (this.sections.has(section)) {
+          this.sections.delete(section);
+        }
+      }
+
+      handleToggleClick(event) {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+          return;
+        }
+
+        const toggle = target.closest('.section-toggle');
+        if (!toggle) {
+          return;
+        }
+
+        const section = toggle.closest(COLLAPSIBLE_SECTION_SELECTOR);
+        if (!section) {
+          return;
+        }
+
+        event.preventDefault();
+        this.ensureSection(section);
+        this.toggleSection(section, toggle);
+      }
+
+      ensureSection(section) {
+        if (!this.sections.has(section)) {
+          this.registerSection(section);
+          return;
+        }
+
+        const label = getSectionLabel(section, 0);
+        section.dataset.sectionLabel = label;
+        const collapsed = section.classList.contains('collapsed');
+        section.querySelectorAll('.section-toggle').forEach(toggle => {
+          updateToggleButtonState(toggle, collapsed, label);
+        });
+      }
+
+      toggleSection(section, triggerButton, explicitState) {
+        if (!(section instanceof HTMLElement)) {
+          return;
+        }
+
+        const isCollapsed = section.classList.contains('collapsed');
+        const nextCollapsed = typeof explicitState === 'boolean' ? explicitState : !isCollapsed;
+
+        if (nextCollapsed === isCollapsed) {
+          requestAnimationFrame(() => {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+          return;
+        }
+
+        section.classList.toggle('collapsed', nextCollapsed);
+        const sectionLabel = getSectionLabel(section, 0);
+
+        section.querySelectorAll('.section-toggle').forEach(toggle => {
+          updateToggleButtonState(toggle, nextCollapsed, sectionLabel);
+        });
+
+        if (nextCollapsed && triggerButton && triggerButton.classList.contains('section-toggle--bottom')) {
+          const topToggle = section.querySelector('.section-toggle--top');
+          if (topToggle && typeof topToggle.focus === 'function') {
+            try {
+              topToggle.focus({ preventScroll: true });
+            } catch (error) {
+              topToggle.focus();
+            }
+          }
+        }
+
+        requestAnimationFrame(() => {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+
+      handleMutations(mutations) {
+        if (!mutations) {
+          return;
+        }
+
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes || []) {
+            if (!(node instanceof HTMLElement)) {
+              continue;
+            }
+
+            if (node.matches && node.matches(COLLAPSIBLE_SECTION_SELECTOR)) {
+              this.registerSection(node);
+            }
+
+            if (typeof node.querySelectorAll === 'function') {
+              node.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR).forEach(section => {
+                this.registerSection(section);
+              });
+            }
+          }
+
+          for (const node of mutation.removedNodes || []) {
+            if (!(node instanceof HTMLElement)) {
+              continue;
+            }
+
+            if (this.sections.has(node)) {
+              this.unregisterSection(node);
+            }
+
+            if (typeof node.querySelectorAll === 'function') {
+              node.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR).forEach(section => {
+                this.unregisterSection(section);
+              });
+            }
+          }
+        }
+      }
+    }
+
+    const collapsibleController = new CollapsibleController(document);
+
+    function getFocusableElements(container) {
+      if (!container) {
+        return [];
+      }
+
+      const selectors = [
+        'a[href]',
+        'button:not([disabled])',
+        'textarea:not([disabled])',
+        'input:not([disabled])',
+        'select:not([disabled])',
+        '[tabindex]:not([tabindex="-1"])'
+      ].join(',');
+
+      return Array.from(container.querySelectorAll(selectors)).filter(element => {
+        if (element.hasAttribute('hidden') || element.getAttribute('aria-hidden') === 'true') {
+          return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+    }
+
+    const activeDialogLocks = new Set();
+
+    function setBodyScrollLock(source, locked) {
+      if (!source) {
+        return;
+      }
+
+      if (locked) {
+        activeDialogLocks.add(source);
+      } else {
+        activeDialogLocks.delete(source);
+      }
+
+      if (activeDialogLocks.size > 0) {
+        document.body.classList.add('dialog-open');
+      } else {
+        document.body.classList.remove('dialog-open');
+      }
+    }
+
+    function parseMarkdown(text) {
+      if (window.marked && typeof window.marked.parse === 'function') {
+        return window.marked.parse(text);
+      }
+      const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return `<pre>${escaped}</pre>`;
+    }
+
+    const README_SOURCES = [
+      new URL('README.md', document.baseURI).toString(),
+      'https://raw.githubusercontent.com/jd-d/course-pricing-calculator/main/README.md'
+    ];
+
+    function fetchReadmeFromSources(sources, index = 0) {
+      if (!Array.isArray(sources) || index >= sources.length) {
+        return Promise.reject(new Error('No README sources available'));
+      }
+
+      const source = sources[index];
+
+      return fetch(source)
+        .then(response => {
+          if (!response || !response.ok) {
+            throw new Error(`Failed to load README from ${source} (status ${response ? response.status : 'unknown'})`);
+          }
+          return response.text();
+        })
+        .catch(error => {
+          if (index < sources.length - 1) {
+            if (console && typeof console.warn === 'function') {
+              console.warn(error);
+            }
+
+            if (readmeBody) {
+              readmeBody.innerHTML = '<p class="readme-status">Retrying with a backup instructions source…</p>';
+            }
+
+            return fetchReadmeFromSources(sources, index + 1);
+          }
+
+          throw error;
+        });
+    }
+
+    function loadReadme() {
+      if (readmeLoaded || readmeLoading || !readmeBody) {
+        return;
+      }
+
+      readmeLoading = true;
+
+      fetchReadmeFromSources(README_SOURCES)
+        .then(text => {
+          readmeBody.innerHTML = parseMarkdown(text);
+          readmeLoaded = true;
+        })
+        .catch(() => {
+          readmeBody.innerHTML = '<p class="readme-status readme-status--error">Unable to load instructions. Please check the README file directly.</p>';
+        })
+        .finally(() => {
+          readmeLoading = false;
+        });
+    }
+
+    function openReadme(event) {
+      if (event) {
+        event.preventDefault();
+      }
+
+      if (!readmeDialog || !readmeBody) {
+        return;
+      }
+
+      previouslyFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      readmeDialog.hidden = false;
+      setBodyScrollLock('readme', true);
+
+      if (!readmeLoaded) {
+        readmeBody.innerHTML = '<p class="readme-status">Loading instructions…</p>';
+        loadReadme();
+      }
+
+      window.requestAnimationFrame(() => {
+        if (readmeClose) {
+          readmeClose.focus();
+        }
+      });
+
+      document.addEventListener('keydown', handleReadmeKeydown);
+    }
+
+    function closeReadme() {
+      if (!readmeDialog) {
+        return;
+      }
+
+      readmeDialog.hidden = true;
+      setBodyScrollLock('readme', false);
+      document.removeEventListener('keydown', handleReadmeKeydown);
+
+      if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+        previouslyFocusedElement.focus();
+      }
+    }
+
+    function handleReadmeKeydown(event) {
+      if (event.key === 'Escape') {
+        closeReadme();
+        return;
+      }
+
+      if (event.key === 'Tab' && readmeDialog && !readmeDialog.hidden) {
+        const focusable = getFocusableElements(readmeDialog);
+        if (focusable.length === 0) {
+          event.preventDefault();
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      }
+    }
+
+    if (howToLink) {
+      howToLink.addEventListener('click', openReadme);
+    }
+
+    if (readmeClose) {
+      readmeClose.addEventListener('click', closeReadme);
+    }
+
+    if (readmeBackdrop) {
+      readmeBackdrop.addEventListener('click', closeReadme);
+    }
+
+    if (readmeDialog) {
+      readmeDialog.addEventListener('click', event => {
+        if (event.target === readmeDialog) {
+          closeReadme();
+        }
+      });
+    }
+
+    if (breakdownClose) {
+      breakdownClose.addEventListener('click', closeBreakdownDialog);
+    }
+
+    if (breakdownBackdrop) {
+      breakdownBackdrop.addEventListener('click', closeBreakdownDialog);
+    }
+
+    if (breakdownDialog) {
+      breakdownDialog.addEventListener('click', event => {
+        if (event.target === breakdownDialog) {
+          closeBreakdownDialog();
+        }
+      });
+    }
+
+    const themeToggleButton = document.getElementById('theme-toggle');
+    const themeToggleLabel = themeToggleButton ? themeToggleButton.querySelector('.toggle-label') : null;
+    const THEME_STORAGE_KEY = 'course-pricing-theme';
+    const prefersDarkScheme = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-color-scheme: dark)')
+      : { matches: true };
+
+    function getStoredTheme() {
+      try {
+        const stored = localStorage.getItem(THEME_STORAGE_KEY);
+        if (stored === 'light' || stored === 'dark') {
+          return stored;
+        }
+      } catch (error) {
+        // Ignore storage access errors (e.g. private browsing restrictions)
+      }
+      return null;
+    }
+
+    function applyThemePreference(theme, { save = true } = {}) {
+      const normalized = theme === 'light' ? 'light' : 'dark';
+      document.body.dataset.theme = normalized;
+
+      if (save) {
+        try {
+          localStorage.setItem(THEME_STORAGE_KEY, normalized);
+        } catch (error) {
+          // Ignore storage access errors
+        }
+      }
+
+      if (themeToggleButton && themeToggleLabel) {
+        const isDark = normalized === 'dark';
+        const actionLabel = `Switch to ${isDark ? 'light' : 'dark'} mode`;
+        themeToggleButton.setAttribute('aria-pressed', String(isDark));
+        themeToggleButton.setAttribute('aria-label', actionLabel);
+        themeToggleButton.setAttribute('title', actionLabel);
+        themeToggleLabel.textContent = isDark ? 'Dark mode' : 'Light mode';
+      }
+    }
+
+    const storedTheme = getStoredTheme();
+    let respectSystemPreference = !storedTheme;
+
+    applyThemePreference(storedTheme || (prefersDarkScheme.matches ? 'dark' : 'light'), {
+      save: Boolean(storedTheme)
+    });
+
+    function handlePreferenceChange(event) {
+      if (respectSystemPreference) {
+        applyThemePreference(event.matches ? 'dark' : 'light', { save: false });
+      }
+    }
+
+    if (typeof prefersDarkScheme.addEventListener === 'function') {
+      prefersDarkScheme.addEventListener('change', handlePreferenceChange);
+    } else if (typeof prefersDarkScheme.addListener === 'function') {
+      prefersDarkScheme.addListener(handlePreferenceChange);
+    }
+
+    if (themeToggleButton) {
+      themeToggleButton.addEventListener('click', () => {
+        const nextTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+        respectSystemPreference = false;
+        applyThemePreference(nextTheme);
+      });
+    }
+
+    const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+
+    const controls = {
+      targetNet: document.getElementById('target-net'),
+      targetNetWeek: document.getElementById('target-net-week'),
+      targetNetMonth: document.getElementById('target-net-month'),
+      targetNetAverageWeek: document.getElementById('target-net-average-week'),
+      targetNetAverageMonth: document.getElementById('target-net-average-month'),
+      taxRate: document.getElementById('tax-rate'),
+      fixedCosts: document.getElementById('fixed-costs'),
+      variableCostPerClass: document.getElementById('variable-cost-class'),
+      variableCostPerStudent: document.getElementById('variable-cost-student'),
+      vatRate: document.getElementById('vat-rate'),
+      classesPerWeek: document.getElementById('classes-per-week'),
+      studentsPerClass: document.getElementById('students-per-class'),
+      lessonCost: document.getElementById('lesson-cost'),
+      monthsOff: document.getElementById('months-off'),
+      weeksOffCycle: document.getElementById('weeks-off-cycle'),
+      daysOffWeek: document.getElementById('days-off-week'),
+      buffer: document.getElementById('buffer'),
+      currencySymbol: document.getElementById('currency-symbol'),
+      recalcButton: document.getElementById('recalculate'),
+      downloadCsv: document.getElementById('download-csv'),
+      statusMessage: document.getElementById('status-message'),
+      workingWeeksDisplay: document.getElementById('working-weeks-display'),
+      workingDaysDisplay: document.getElementById('working-days-display')
+    };
+
+    const fixedCostFields = {
+      location: {
+        monthly: document.getElementById('fixed-cost-location-monthly'),
+        annual: document.getElementById('fixed-cost-location-annual')
+      },
+      insurance: {
+        monthly: document.getElementById('fixed-cost-insurance-monthly'),
+        annual: document.getElementById('fixed-cost-insurance-annual')
+      },
+      marketing: {
+        monthly: document.getElementById('fixed-cost-marketing-monthly'),
+        annual: document.getElementById('fixed-cost-marketing-annual')
+      },
+      materials: {
+        monthly: document.getElementById('fixed-cost-materials-monthly'),
+        annual: document.getElementById('fixed-cost-materials-annual')
+      },
+      admin: {
+        monthly: document.getElementById('fixed-cost-admin-monthly'),
+        annual: document.getElementById('fixed-cost-admin-annual')
+      }
+    };
+
+    controls.fixedCostFields = fixedCostFields;
+
+    const tablesContainer = document.getElementById('tables-container');
+    const assumptionsList = document.getElementById('assumptions-list');
+    const targetNetInputs = [
+      controls.targetNet,
+      controls.targetNetWeek,
+      controls.targetNetMonth
+    ].filter(input => input instanceof HTMLInputElement);
+
+    const INFO_ICON_ACTIVE_CLASS = 'is-active';
+    const TOOLTIP_VIEWPORT_PADDING = 16;
+    let activeInfoIcon = null;
+    let infoIconTooltipId = 0;
+
+    function isInfoIcon(element) {
+      return element instanceof HTMLElement && element.classList.contains('info-icon');
+    }
+
+    function ensureInfoIconTooltip(icon) {
+      if (!isInfoIcon(icon)) {
+        return null;
+      }
+      let tooltip = icon.querySelector('.info-icon__tooltip');
+      if (!(tooltip instanceof HTMLElement)) {
+        tooltip = document.createElement('span');
+        tooltip.className = 'info-icon__tooltip';
+        tooltip.setAttribute('role', 'tooltip');
+        icon.append(tooltip);
+      }
+      let arrow = icon.querySelector('.info-icon__arrow');
+      if (!(arrow instanceof HTMLElement)) {
+        arrow = document.createElement('span');
+        arrow.className = 'info-icon__arrow';
+        arrow.setAttribute('aria-hidden', 'true');
+        icon.append(arrow);
+      }
+      const tooltipText = icon.dataset.tooltip || icon.getAttribute('aria-label') || '';
+      tooltip.textContent = tooltipText;
+      if (!tooltip.id) {
+        infoIconTooltipId += 1;
+        tooltip.id = `info-icon-tooltip-${infoIconTooltipId}`;
+      }
+      if (!icon.hasAttribute('aria-describedby')) {
+        icon.setAttribute('aria-describedby', tooltip.id);
+      }
+      return { tooltip, arrow };
+    }
+
+    function positionInfoIconTooltip(icon) {
+      if (!isInfoIcon(icon)) {
+        return;
+      }
+      const parts = ensureInfoIconTooltip(icon);
+      if (!parts || !(parts.tooltip instanceof HTMLElement)) {
+        return;
+      }
+      icon.style.setProperty('--tooltip-shift', '0px');
+      const tooltipRect = parts.tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+      const padding = TOOLTIP_VIEWPORT_PADDING;
+      let shift = 0;
+      if (tooltipRect.left < padding) {
+        shift = padding - tooltipRect.left;
+      } else if (tooltipRect.right > viewportWidth - padding) {
+        shift = -(tooltipRect.right - (viewportWidth - padding));
+      }
+      icon.style.setProperty('--tooltip-shift', `${shift}px`);
+    }
+
+    function enhanceInfoIcon(icon) {
+      if (!isInfoIcon(icon)) {
+        return;
+      }
+      if (!icon.hasAttribute('tabindex')) {
+        icon.setAttribute('tabindex', '0');
+      }
+      icon.setAttribute('role', 'button');
+      icon.setAttribute('aria-expanded', icon.classList.contains(INFO_ICON_ACTIVE_CLASS) ? 'true' : 'false');
+      if (!icon.hasAttribute('aria-label') && icon.dataset.tooltip) {
+        icon.setAttribute('aria-label', icon.dataset.tooltip);
+      }
+      ensureInfoIconTooltip(icon);
+    }
+
+    function enhanceAllInfoIcons() {
+      document.querySelectorAll('.info-icon').forEach(enhanceInfoIcon);
+    }
+
+    function closeActiveInfoIcon() {
+      if (activeInfoIcon instanceof HTMLElement) {
+        activeInfoIcon.classList.remove(INFO_ICON_ACTIVE_CLASS);
+        activeInfoIcon.setAttribute('aria-expanded', 'false');
+      }
+      activeInfoIcon = null;
+    }
+
+    function openInfoIcon(icon) {
+      if (!isInfoIcon(icon)) {
+        return;
+      }
+      if (activeInfoIcon && activeInfoIcon !== icon) {
+        closeActiveInfoIcon();
+      }
+      icon.classList.add(INFO_ICON_ACTIVE_CLASS);
+      icon.setAttribute('aria-expanded', 'true');
+      activeInfoIcon = icon;
+      positionInfoIconTooltip(icon);
+    }
+
+    function toggleInfoIcon(icon) {
+      if (!isInfoIcon(icon)) {
+        return;
+      }
+      if (icon.classList.contains(INFO_ICON_ACTIVE_CLASS)) {
+        if (activeInfoIcon === icon) {
+          closeActiveInfoIcon();
+        } else {
+          icon.classList.remove(INFO_ICON_ACTIVE_CLASS);
+          icon.setAttribute('aria-expanded', 'false');
+        }
+      } else {
+        openInfoIcon(icon);
+      }
+    }
+
+    document.addEventListener('click', event => {
+      const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
+      if (!isInfoIcon(target)) {
+        closeActiveInfoIcon();
+        return;
+      }
+      event.preventDefault();
+      enhanceInfoIcon(target);
+      toggleInfoIcon(target);
+      positionInfoIconTooltip(target);
+      if (typeof target.focus === 'function') {
+        target.focus();
+      }
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        if (activeInfoIcon) {
+          event.preventDefault();
+          const current = activeInfoIcon;
+          closeActiveInfoIcon();
+          if (current instanceof HTMLElement && typeof current.focus === 'function') {
+            current.focus();
+          }
+        }
+        return;
+      }
+
+      const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
+      if (!isInfoIcon(target)) {
+        return;
+      }
+
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        enhanceInfoIcon(target);
+        toggleInfoIcon(target);
+        positionInfoIconTooltip(target);
+      }
+    });
+
+    document.addEventListener('focusin', event => {
+      const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
+      if (!isInfoIcon(target)) {
+        closeActiveInfoIcon();
+        return;
+      }
+      enhanceInfoIcon(target);
+      positionInfoIconTooltip(target);
+    });
+
+    enhanceAllInfoIcons();
+
+    document.addEventListener('mouseover', event => {
+      const target = event.target instanceof HTMLElement ? event.target.closest('.info-icon') : null;
+      if (!isInfoIcon(target)) {
+        return;
+      }
+      positionInfoIconTooltip(target);
+    });
+
+    window.addEventListener('resize', () => {
+      if (activeInfoIcon) {
+        positionInfoIconTooltip(activeInfoIcon);
+      }
+    });
+
+    let latestResults = [];
+    let showBasePrices = false;
+    let targetNetBasis = 'year';
+    const PRICING_MODE_TARGET = 'target';
+    const PRICING_MODE_LESSON = 'lesson';
+    let latestResultsMode = PRICING_MODE_TARGET;
+    let latestPricingData = null;
+    let latestCurrencySymbol = '€';
+    let latestPricingMode = PRICING_MODE_TARGET;
+    let latestBufferPercent = 0;
+
+    const WEEKS_PER_YEAR = 52;
+    const MONTHS_PER_YEAR = 12;
+    const BASE_WORK_DAYS_PER_WEEK = 5;
+    const TARGET_NET_DEFAULT = 50000;
+
+    function formatFixed(value, fractionDigits = 1) {
+      const fixed = value.toFixed(fractionDigits);
+      return fixed
+        .replace(/\.0+$/, '')
+        .replace(/(\.[0-9]*[1-9])0+$/, '$1');
+    }
+
+    function parseNumber(value, fallback = 0, { min = -Infinity, max = Infinity } = {}) {
+      if (value === null || value === undefined) {
+        return fallback;
+      }
+      const normalized = typeof value === 'string' ? value.trim() : value;
+      if (normalized === '') {
+        return fallback;
+      }
+      const parsed = Number(normalized);
+      if (!Number.isFinite(parsed)) {
+        return fallback;
+      }
+      return Math.min(Math.max(parsed, min), max);
+    }
+
+    function parseList(value) {
+      if (!value) {
+        return [];
+      }
+      return value
+        .split(',')
+        .map(token => Number(token.trim()))
+        .filter(num => Number.isFinite(num) && num > 0)
+        .map(num => Math.round(num));
+    }
+
+    function getFixedCostTotal() {
+      return Object.values(fixedCostFields).reduce((sum, fieldSet) => {
+        if (!(fieldSet.annual instanceof HTMLInputElement)) {
+          return sum;
+        }
+        const annualValue = Math.max(parseNumber(fieldSet.annual.value, 0), 0);
+        return sum + annualValue;
+      }, 0);
+    }
+
+    function updateFixedCostTotalDisplay() {
+      const total = getFixedCostTotal();
+      if (controls.fixedCosts instanceof HTMLInputElement) {
+        controls.fixedCosts.value = formatFixed(total, 2);
+      }
+      return total;
+    }
+
+    function syncFixedCostPair(key, sourceType) {
+      const fieldSet = fixedCostFields[key];
+      if (!fieldSet) {
+        return;
+      }
+      const source = sourceType === 'monthly' ? fieldSet.monthly : fieldSet.annual;
+      const target = sourceType === 'monthly' ? fieldSet.annual : fieldSet.monthly;
+      if (!(source instanceof HTMLInputElement) || !(target instanceof HTMLInputElement)) {
+        return;
+      }
+
+      if (source.value === '') {
+        target.value = '';
+        updateFixedCostTotalDisplay();
+        return;
+      }
+
+      const parsed = Math.max(parseNumber(source.value, 0), 0);
+      const derived = sourceType === 'monthly' ? parsed * 12 : parsed / 12;
+
+      if (Number.isFinite(derived)) {
+        target.value = formatFixed(derived, 2);
+      }
+
+      updateFixedCostTotalDisplay();
+    }
+
+    Object.entries(fixedCostFields).forEach(([key, fieldSet]) => {
+      const { monthly, annual } = fieldSet;
+      if (monthly instanceof HTMLInputElement) {
+        monthly.addEventListener('input', () => {
+          syncFixedCostPair(key, 'monthly');
+          render();
+        });
+        monthly.addEventListener('change', () => {
+          syncFixedCostPair(key, 'monthly');
+          if (monthly.value !== '') {
+            const normalized = Math.max(parseNumber(monthly.value, 0), 0);
+            monthly.value = formatFixed(normalized, 2);
+          }
+          render();
+        });
+      }
+      if (annual instanceof HTMLInputElement) {
+        annual.addEventListener('input', () => {
+          syncFixedCostPair(key, 'annual');
+          render();
+        });
+        annual.addEventListener('change', () => {
+          syncFixedCostPair(key, 'annual');
+          if (annual.value !== '') {
+            const normalized = Math.max(parseNumber(annual.value, 0), 0);
+            annual.value = formatFixed(normalized, 2);
+          }
+          render();
+        });
+      }
+    });
+
+    function getInputs() {
+      const monthsOff = parseNumber(controls.monthsOff.value, 2, { min: 0, max: 12 });
+      const weeksOffPerCycle = parseNumber(controls.weeksOffCycle.value, 1, { min: 0, max: 4 });
+      const daysOffPerWeek = parseNumber(controls.daysOffWeek.value, 1, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
+
+      const taxRatePercent = Math.min(Math.max(parseNumber(controls.taxRate.value, 40), 0), 99.9);
+      const taxRate = taxRatePercent / 100;
+      const fixedCosts = updateFixedCostTotalDisplay();
+      const variableCostPerClass = Math.max(parseNumber(controls.variableCostPerClass.value, 0), 0);
+      const variableCostPerStudent = Math.max(parseNumber(controls.variableCostPerStudent.value, 0), 0);
+      const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
+      const classesPerWeek = parseList(controls.classesPerWeek.value);
+      const studentsPerClass = parseList(controls.studentsPerClass.value);
+      const bufferPercent = Math.max(parseNumber(controls.buffer.value, 15), 0);
+      const buffer = bufferPercent / 100;
+      const currencySymbol = controls.currencySymbol.value.trim() || '€';
+      let lessonCostInclVat = null;
+      if (controls.lessonCost instanceof HTMLInputElement) {
+        const rawLessonCost = controls.lessonCost.value;
+        if (typeof rawLessonCost === 'string' && rawLessonCost.trim() !== '') {
+          const parsedLessonCost = Number(rawLessonCost);
+          if (Number.isFinite(parsedLessonCost) && parsedLessonCost >= 0) {
+            lessonCostInclVat = parsedLessonCost;
+          }
+        }
+      }
+
+      const activeMonthShare = Math.min(Math.max((12 - monthsOff) / 12, 0), 1);
+      const activeMonths = 12 * activeMonthShare;
+      const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
+      const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
+      const workingDaysPerWeek = Math.max(BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek, 0);
+      const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
+
+      const defaultTargetNetWeek = workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT;
+      const defaultTargetNetMonth = activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT;
+      const defaultTargetNetAverageWeek = TARGET_NET_DEFAULT / WEEKS_PER_YEAR;
+      const defaultTargetNetAverageMonth = TARGET_NET_DEFAULT / MONTHS_PER_YEAR;
+
+      const targetNetYearInput = Math.max(parseNumber(controls.targetNet.value, TARGET_NET_DEFAULT), 0);
+      const targetNetWeekInput = Math.max(parseNumber(controls.targetNetWeek.value, defaultTargetNetWeek), 0);
+      const targetNetMonthInput = Math.max(parseNumber(controls.targetNetMonth.value, defaultTargetNetMonth), 0);
+      const targetNetAverageWeekInput = Math.max(
+        parseNumber(controls.targetNetAverageWeek.value, defaultTargetNetAverageWeek),
+        0
+      );
+      const targetNetAverageMonthInput = Math.max(
+        parseNumber(controls.targetNetAverageMonth.value, defaultTargetNetAverageMonth),
+        0
+      );
+
+      const hasWorkingWeeks = workingWeeks > 0;
+      const hasActiveMonths = activeMonths > 0;
+
+      let targetNet;
+      if (targetNetBasis === 'week') {
+        targetNet = hasWorkingWeeks ? targetNetWeekInput * workingWeeks : targetNetYearInput;
+      } else if (targetNetBasis === 'month') {
+        targetNet = hasActiveMonths ? targetNetMonthInput * activeMonths : targetNetYearInput;
+      } else if (targetNetBasis === 'avgWeek') {
+        targetNet = targetNetAverageWeekInput * WEEKS_PER_YEAR;
+      } else if (targetNetBasis === 'avgMonth') {
+        targetNet = targetNetAverageMonthInput * MONTHS_PER_YEAR;
+      } else {
+        targetNet = targetNetYearInput;
+      }
+
+      targetNet = Math.max(targetNet, 0);
+
+      const targetNetPerWeek = hasWorkingWeeks ? targetNet / workingWeeks : null;
+      const targetNetPerMonth = hasActiveMonths ? targetNet / activeMonths : null;
+      const targetNetAveragePerWeek = targetNet / WEEKS_PER_YEAR;
+      const targetNetAveragePerMonth = targetNet / MONTHS_PER_YEAR;
+
+      controls.targetNet.value = formatFixed(targetNet, 2);
+
+      const weekDisplayValue = targetNetBasis === 'week' ? targetNetWeekInput : targetNetPerWeek;
+      controls.targetNetWeek.value = weekDisplayValue == null || !Number.isFinite(weekDisplayValue)
+        ? ''
+        : formatFixed(weekDisplayValue, 2);
+
+      const monthDisplayValue = targetNetBasis === 'month' ? targetNetMonthInput : targetNetPerMonth;
+      controls.targetNetMonth.value = monthDisplayValue == null || !Number.isFinite(monthDisplayValue)
+        ? ''
+        : formatFixed(monthDisplayValue, 2);
+
+      const averageWeekDisplayValue = targetNetBasis === 'avgWeek'
+        ? targetNetAverageWeekInput
+        : targetNetAveragePerWeek;
+      controls.targetNetAverageWeek.value = averageWeekDisplayValue == null || !Number.isFinite(averageWeekDisplayValue)
+        ? ''
+        : formatFixed(averageWeekDisplayValue, 2);
+
+      const averageMonthDisplayValue = targetNetBasis === 'avgMonth'
+        ? targetNetAverageMonthInput
+        : targetNetAveragePerMonth;
+      controls.targetNetAverageMonth.value = averageMonthDisplayValue == null || !Number.isFinite(averageMonthDisplayValue)
+        ? ''
+        : formatFixed(averageMonthDisplayValue, 2);
+
+      controls.taxRate.value = formatFixed(taxRate * 100, 1);
+      controls.fixedCosts.value = formatFixed(fixedCosts, 2);
+      if (controls.variableCostPerClass instanceof HTMLInputElement) {
+        controls.variableCostPerClass.value = formatFixed(variableCostPerClass, 2);
+      }
+      if (controls.variableCostPerStudent instanceof HTMLInputElement) {
+        controls.variableCostPerStudent.value = formatFixed(variableCostPerStudent, 2);
+      }
+      controls.vatRate.value = formatFixed(vatRate * 100, 1);
+      controls.monthsOff.value = formatFixed(monthsOff, 2);
+      controls.weeksOffCycle.value = formatFixed(weeksOffPerCycle, 2);
+      controls.daysOffWeek.value = formatFixed(daysOffPerWeek, 2);
+      controls.buffer.value = formatFixed(buffer * 100, 1);
+      controls.currencySymbol.value = currencySymbol;
+      if (controls.lessonCost instanceof HTMLInputElement) {
+        if (Number.isFinite(lessonCostInclVat)) {
+          controls.lessonCost.value = formatFixed(lessonCostInclVat, 2);
+        } else if (typeof controls.lessonCost.value === 'string' && controls.lessonCost.value.trim() !== '') {
+          controls.lessonCost.value = '';
+        }
+      }
+
+      controls.workingWeeksDisplay.textContent = formatFixed(workingWeeks, 2);
+      controls.workingDaysDisplay.textContent = formatFixed(workingDaysPerYear, 2);
+
+      return {
+        targetNet,
+        targetNetPerWeek,
+        targetNetPerMonth,
+        targetNetAveragePerWeek,
+        targetNetAveragePerMonth,
+        taxRate,
+        fixedCosts,
+        variableCostPerClass,
+        variableCostPerStudent,
+        vatRate,
+        classesPerWeek,
+        studentsPerClass,
+        lessonCostInclVat,
+        workingWeeks,
+        buffer,
+        bufferPercent,
+        currencySymbol,
+        monthsOff,
+        weeksOffPerCycle,
+        daysOffPerWeek,
+        workingDaysPerWeek,
+        workingDaysPerYear,
+        activeMonths,
+        activeMonthShare,
+        weeksShare
+      };
+    }
+
+    function formatCurrency(symbol, value) {
+      if (!Number.isFinite(value)) {
+        return `${symbol}0`;
+      }
+      const rounded = Math.round(value);
+      const formatted = numberFormatter.format(Math.abs(rounded));
+      return rounded < 0 ? `-${symbol}${formatted}` : `${symbol}${formatted}`;
+    }
+
+    function findBreakdownButton(context) {
+      if (!context || !tablesContainer) {
+        return null;
+      }
+
+      const { rowIndex, columnIndex, variant } = context;
+      if (!Number.isFinite(rowIndex) || !Number.isFinite(columnIndex)) {
+        return null;
+      }
+      const variantValue = variant === 'base' ? 'base' : 'buffered';
+
+      return tablesContainer.querySelector(
+        `button.price-line[data-row="${rowIndex}"][data-column="${columnIndex}"][data-variant="${variantValue}"]`
+      );
+    }
+
+    function formatBreakdownCurrency(value) {
+      return Number.isFinite(value) ? formatCurrency(latestCurrencySymbol, value) : '—';
+    }
+
+    function populateBreakdownDialog(context) {
+      if (
+        !context ||
+        !Array.isArray(latestPricingData) ||
+        !breakdownDialog ||
+        !breakdownSummary
+      ) {
+        return false;
+      }
+
+      const isTargetMode = latestPricingMode === PRICING_MODE_TARGET;
+      const isLessonMode = latestPricingMode === PRICING_MODE_LESSON;
+
+      if (!isTargetMode && !isLessonMode) {
+        return false;
+      }
+
+      const { rowIndex, columnIndex, variant } = context;
+      const row = latestPricingData[rowIndex];
+      if (!row || !Array.isArray(row.columns)) {
+        return false;
+      }
+
+      const column = row.columns[columnIndex];
+      if (!column) {
+        return false;
+      }
+
+      const pricingVariant = variant === 'base' ? column.base : column.buffered;
+      if (!pricingVariant || !pricingVariant.breakdown) {
+        return false;
+      }
+
+      const breakdown = pricingVariant.breakdown;
+      const perStudentInclVat = formatCurrency(latestCurrencySymbol, pricingVariant.priceInclVat);
+      const perStudentExVat = formatCurrency(latestCurrencySymbol, pricingVariant.priceExVat);
+      const perLessonInclVat = formatCurrency(latestCurrencySymbol, breakdown.totals.priceInclVatPerLesson);
+      const perLessonExVat = formatCurrency(latestCurrencySymbol, breakdown.totals.priceExVatPerLesson);
+
+      const studentsDisplay = Number.isFinite(row.students)
+        ? numberFormatter.format(row.students)
+        : '—';
+      const classesPerWeekValue = column.classesPerWeek;
+      const classesPerWeekDisplay = Number.isFinite(classesPerWeekValue)
+        ? (Number.isInteger(classesPerWeekValue)
+            ? numberFormatter.format(classesPerWeekValue)
+            : formatFixed(classesPerWeekValue, 2))
+        : '—';
+      const classesPerYearDisplay = Number.isFinite(column.classesPerYear)
+        ? numberFormatter.format(Math.round(column.classesPerYear))
+        : '—';
+
+      let variantLabel;
+      if (isLessonMode) {
+        variantLabel = variant === 'base'
+          ? 'Full attendance at set lesson price'
+          : `Attendance shortfall (${formatFixed(latestBufferPercent, 1)}% less revenue)`;
+      } else {
+        variantLabel = variant === 'base'
+          ? 'Base price (no buffer)'
+          : `Buffered price (+${formatFixed(latestBufferPercent, 1)}% safety margin)`;
+      }
+
+      if (breakdownVariant) {
+        breakdownVariant.textContent = variantLabel;
+      }
+
+      if (breakdownPrice) {
+        breakdownPrice.textContent = `${perStudentInclVat} per student (${perStudentExVat} ex VAT)`;
+      }
+
+      if (breakdownMeta) {
+        breakdownMeta.textContent = `${studentsDisplay} students · ${classesPerWeekDisplay} classes/week (≈ ${classesPerYearDisplay} / yr)`;
+      }
+
+      if (breakdownTotal) {
+        breakdownTotal.textContent = `Total collected per lesson: ${perLessonInclVat} (${perLessonExVat} ex VAT)`;
+      }
+
+      const tableRows = [
+        { key: 'vat', label: 'VAT remitted' },
+        { key: 'variableCosts', label: 'Variable costs' },
+        { key: 'fixedCostAllocation', label: 'Fixed cost allocation' },
+        { key: 'incomeTax', label: 'Income tax' },
+        { key: 'netIncome', label: 'Net income after tax' }
+      ];
+
+      if (breakdownTableBody) {
+        const rowsMarkup = tableRows
+          .map(item => {
+            const perStudentValue = breakdown.perStudent[item.key];
+            const perLessonValue = breakdown.perLesson[item.key];
+            return `
+              <tr>
+                <th scope="row">${item.label}</th>
+                <td>${formatBreakdownCurrency(perStudentValue)}</td>
+                <td>${formatBreakdownCurrency(perLessonValue)}</td>
+              </tr>
+            `;
+          })
+          .join('');
+        breakdownTableBody.innerHTML = rowsMarkup;
+      }
+
+      const legendItems = [
+        { key: 'vat', label: 'VAT remitted', value: breakdown.perLesson.vat, color: 'var(--breakdown-color-vat)' },
+        { key: 'variableCosts', label: 'Variable costs', value: breakdown.perLesson.variableCosts, color: 'var(--breakdown-color-variable)' },
+        { key: 'fixedCostAllocation', label: 'Fixed cost allocation', value: breakdown.perLesson.fixedCostAllocation, color: 'var(--breakdown-color-fixed)' },
+        { key: 'incomeTax', label: 'Income tax', value: breakdown.perLesson.incomeTax, color: 'var(--breakdown-color-tax)' },
+        { key: 'netIncome', label: 'Net income after tax', value: breakdown.perLesson.netIncome, color: 'var(--breakdown-color-net)' }
+      ];
+
+      if (breakdownLegend) {
+        const legendMarkup = legendItems
+          .map(item => `
+            <li class="lesson-breakdown-dialog__legend-item">
+              <span class="lesson-breakdown-dialog__legend-swatch" style="--swatch-color:${item.color};"></span>
+              <span class="lesson-breakdown-dialog__legend-label">${item.label}</span>
+              <span class="lesson-breakdown-dialog__legend-value">${formatBreakdownCurrency(item.value)}</span>
+            </li>
+          `)
+          .join('');
+        breakdownLegend.innerHTML = legendMarkup;
+      }
+
+      if (breakdownChartGraphic) {
+        const positiveSegments = legendItems.map(item => Math.max(item.value, 0));
+        const total = positiveSegments.reduce((sum, value) => sum + value, 0);
+
+        if (total > 0) {
+          let currentAngle = 0;
+          const segments = legendItems
+            .map((item, index) => {
+              const value = positiveSegments[index];
+              if (value <= 0) {
+                return null;
+              }
+              const start = currentAngle;
+              const end = start + (value / total) * 360;
+              currentAngle = end;
+              return `${item.color} ${start}deg ${end}deg`;
+            })
+            .filter(Boolean);
+
+          breakdownChartGraphic.style.background = segments.length
+            ? `conic-gradient(${segments.join(', ')})`
+            : 'radial-gradient(circle at 50% 50%, var(--price-line-bg), var(--row-header-bg))';
+        } else {
+          breakdownChartGraphic.style.background = 'radial-gradient(circle at 50% 50%, var(--price-line-bg), var(--row-header-bg))';
+        }
+
+      }
+
+      return true;
+    }
+
+    function openBreakdownDialog(context, triggerElement) {
+      if (!breakdownDialog) {
+        return;
+      }
+
+      const normalizedContext = {
+        rowIndex: Number(context?.rowIndex),
+        columnIndex: Number(context?.columnIndex),
+        variant: context?.variant === 'base' ? 'base' : 'buffered'
+      };
+
+      if (!populateBreakdownDialog(normalizedContext)) {
+        return;
+      }
+
+      activeBreakdownContext = normalizedContext;
+      breakdownTriggerElement = triggerElement instanceof HTMLElement ? triggerElement : null;
+      breakdownDialog.hidden = false;
+      breakdownDialog.scrollTop = 0;
+      setBodyScrollLock('breakdown', true);
+
+      window.requestAnimationFrame(() => {
+        const focusable = getFocusableElements(breakdownDialog);
+        if (focusable.length) {
+          focusable[0].focus();
+        } else if (breakdownClose) {
+          breakdownClose.focus();
+        }
+      });
+
+      document.addEventListener('keydown', handleBreakdownKeydown);
+    }
+
+    function closeBreakdownDialog() {
+      if (!breakdownDialog || breakdownDialog.hidden) {
+        return;
+      }
+
+      breakdownDialog.hidden = true;
+      setBodyScrollLock('breakdown', false);
+      document.removeEventListener('keydown', handleBreakdownKeydown);
+
+      const trigger = breakdownTriggerElement;
+      breakdownTriggerElement = null;
+      activeBreakdownContext = null;
+
+      if (trigger instanceof HTMLElement && trigger.isConnected && typeof trigger.focus === 'function') {
+        trigger.focus();
+      }
+    }
+
+    function handleBreakdownKeydown(event) {
+      if (!breakdownDialog || breakdownDialog.hidden) {
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeBreakdownDialog();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusable = getFocusableElements(breakdownDialog);
+        if (!focusable.length) {
+          event.preventDefault();
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      }
+    }
+
+    function refreshBreakdownDialog() {
+      if (!breakdownDialog || breakdownDialog.hidden || !activeBreakdownContext) {
+        return false;
+      }
+
+      const refreshed = populateBreakdownDialog(activeBreakdownContext);
+      if (refreshed) {
+        const updatedTrigger = findBreakdownButton(activeBreakdownContext);
+        if (updatedTrigger) {
+          breakdownTriggerElement = updatedTrigger;
+        }
+      }
+
+      return refreshed;
+    }
+
+    function computeNetIncomeFromRevenue(revenue, fixedCosts, effectiveTaxRate, variableCosts = 0) {
+      if (!Number.isFinite(revenue)) {
+        return null;
+      }
+      const normalizedVariableCosts = Number.isFinite(variableCosts) ? variableCosts : 0;
+      const profitBeforeTax = revenue - fixedCosts - normalizedVariableCosts;
+      return profitBeforeTax * (1 - effectiveTaxRate);
+    }
+
+    function buildPricingTable(data, symbol, bufferPercent, options = {}) {
+      if (!data.length) {
+        return `<div class="card"><p class="status-message">No valid combinations available.</p></div>`;
+      }
+
+      const { mode = PRICING_MODE_TARGET, showBasePrices: showBase = false } = options;
+      const formattedBuffer = formatFixed(bufferPercent, 1);
+      const showBasePricesActive = mode === PRICING_MODE_TARGET && showBase;
+      const cardClasses = ['card', 'pricing-card'];
+      if (showBasePricesActive) {
+        cardClasses.push('show-base-prices');
+      }
+
+      const toggleMarkup = mode === PRICING_MODE_TARGET
+        ? `<div class="price-toggle-row">
+            <button type="button" class="price-reveal-toggle secondary" aria-expanded="${showBasePricesActive}">
+              ${showBasePricesActive ? 'Hide base price' : 'Show base price'}
+            </button>
+          </div>`
+        : '';
+
+      const columnHeaders = data[0].columns
+        .map(col => {
+          return `<th scope="col">${col.classesPerWeek}/week<span class="sub-label">≈ ${numberFormatter.format(col.classesPerYear)} / yr</span></th>`;
+        })
+        .join('');
+
+      const rowsHtml = data
+        .map((row, rowIndex) => {
+          const cells = row.columns
+            .map((col, columnIndex) => {
+              if (mode === PRICING_MODE_LESSON && col.manualNet) {
+                const monthlyDisplay = Number.isFinite(col.manualNet.monthly)
+                  ? formatCurrency(symbol, col.manualNet.monthly)
+                  : '—';
+                const annualDisplay = Number.isFinite(col.manualNet.annual)
+                  ? formatCurrency(symbol, col.manualNet.annual)
+                  : '—';
+                const bufferedMonthlyDisplay = Number.isFinite(col.manualNet.bufferedMonthly)
+                  ? formatCurrency(symbol, col.manualNet.bufferedMonthly)
+                  : '—';
+                const bufferedAnnualDisplay = Number.isFinite(col.manualNet.bufferedAnnual)
+                  ? formatCurrency(symbol, col.manualNet.bufferedAnnual)
+                  : '—';
+
+                return `
+                <td>
+                  <div class="price-pair">
+                    <button
+                      type="button"
+                      class="price-line"
+                      data-row="${rowIndex}"
+                      data-column="${columnIndex}"
+                      data-variant="base"
+                    >
+                      <span class="price-label">Monthly net</span>
+                      <strong>${monthlyDisplay}</strong>
+                      <span class="price-secondary">Annual net ${annualDisplay}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="price-line buffered"
+                      data-row="${rowIndex}"
+                      data-column="${columnIndex}"
+                      data-variant="buffered"
+                    >
+                      <span class="price-label">Monthly net with ${formattedBuffer}% shortfall</span>
+                      <strong>${bufferedMonthlyDisplay}</strong>
+                      <span class="price-secondary">Annual net ${bufferedAnnualDisplay}</span>
+                    </button>
+                  </div>
+                </td>
+              `;
+              }
+
+              const bufferedExVat = formatCurrency(symbol, col.buffered.priceExVat);
+              const bufferedInclVat = formatCurrency(symbol, col.buffered.priceInclVat);
+              const baseExVat = formatCurrency(symbol, col.base.priceExVat);
+              const baseInclVat = formatCurrency(symbol, col.base.priceInclVat);
+              return `
+                <td>
+                  <button
+                    type="button"
+                    class="price-line buffered"
+                    data-row="${rowIndex}"
+                    data-column="${columnIndex}"
+                    data-variant="buffered"
+                  >
+                    <span class="price-label">Buffered +${formattedBuffer}%</span>
+                    <strong>${bufferedInclVat}</strong>
+                    <span class="price-secondary">ex VAT ${bufferedExVat}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="price-line base"
+                    aria-hidden="${showBasePricesActive ? 'false' : 'true'}"
+                    data-row="${rowIndex}"
+                    data-column="${columnIndex}"
+                    data-variant="base"
+                  >
+                    <span class="price-label">Base (no buffer)</span>
+                    <strong>${baseInclVat}</strong>
+                    <span class="price-secondary">ex VAT ${baseExVat}</span>
+                  </button>
+                </td>
+              `;
+            })
+            .join('');
+          return `<tr><th scope="row">${row.students}<span class="sub-label">students</span></th>${cells}</tr>`;
+        })
+        .join('');
+
+      return `
+        <div class="${cardClasses.join(' ')}">
+          ${toggleMarkup}
+          <table>
+            <caption>Per-student pricing (includes optional safety margin)</caption>
+            <thead>
+              <tr>
+                <th scope="col">Students / class</th>
+                ${columnHeaders}
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function buildActiveTargetsTable({
+      currencySymbol,
+      revenueNeeded,
+      workingDaysPerYear,
+      workingWeeks,
+      activeMonths
+    }) {
+      if (!Number.isFinite(revenueNeeded) || revenueNeeded <= 0) {
+        return '';
+      }
+
+      const targets = [
+        {
+          label: 'Active day',
+          basis: workingDaysPerYear,
+          suffix: 'active days / year'
+        },
+        {
+          label: 'Active week',
+          basis: workingWeeks,
+          suffix: 'active weeks / year'
+        },
+        {
+          label: 'Active month',
+          basis: activeMonths,
+          suffix: 'active months / year'
+        }
+      ];
+
+      const rows = targets
+        .map(target => {
+          const hasBasis = Number.isFinite(target.basis) && target.basis > 0;
+          const amount = hasBasis ? revenueNeeded / target.basis : null;
+          const amountDisplay = hasBasis && Number.isFinite(amount)
+            ? formatCurrency(currencySymbol, amount)
+            : '—';
+          const basisDisplay = hasBasis
+            ? `Based on ≈ ${formatFixed(target.basis, 2)} ${target.suffix}`
+            : '—';
+
+          return `
+            <tr>
+              <th scope="row">${target.label}</th>
+              <td>${amountDisplay}</td>
+              <td>${basisDisplay}</td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      return `
+        <div class="card">
+          <table>
+            <caption>
+              Gross Revenue Needed To Achieve Net Income Targets
+              <span
+                class="info-icon"
+                tabindex="0"
+                role="button"
+                aria-expanded="false"
+                aria-label="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
+                data-tooltip="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
+              >ℹ️</span>
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Target</th>
+                <th scope="col">Revenue needed</th>
+                <th scope="col">Basis</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function computeTables(inputs) {
+      const {
+        targetNet,
+        taxRate,
+        fixedCosts,
+        variableCostPerClass,
+        variableCostPerStudent,
+        vatRate,
+        classesPerWeek,
+        studentsPerClass,
+        workingWeeks,
+        buffer,
+        bufferPercent,
+        lessonCostInclVat,
+        activeMonths
+      } = inputs;
+
+      latestResults = [];
+
+      const manualMode = Number.isFinite(lessonCostInclVat);
+      const mode = manualMode ? PRICING_MODE_LESSON : PRICING_MODE_TARGET;
+
+      const pricingData = [];
+      const effectiveTaxRate = Math.min(taxRate, 0.99);
+      const hasSchedule =
+        classesPerWeek.length &&
+        studentsPerClass.length &&
+        Number.isFinite(workingWeeks) &&
+        workingWeeks > 0;
+
+      const hasWorkingWeeks = Number.isFinite(workingWeeks) && workingWeeks > 0;
+      const hasActiveMonths = Number.isFinite(activeMonths) && activeMonths > 0;
+
+      let manualNetSummary = null;
+      let revenueNeeded = null;
+
+      if (!hasSchedule) {
+        latestResultsMode = mode;
+        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
+      }
+
+      const sortedStudents = [...studentsPerClass];
+      sortedStudents.sort((a, b) => a - b);
+
+      const columnsMeta = classesPerWeek.map(classes => {
+        const classesPerYear = classes * workingWeeks;
+        return { classesPerWeek: classes, classesPerYear };
+      });
+
+      function buildPriceBreakdown({ priceExVatValue, priceInclVatValue, studentCount, classesPerYearValue }) {
+        const normalizedPriceExVat = Number.isFinite(priceExVatValue) ? priceExVatValue : 0;
+        const normalizedPriceInclVat = Number.isFinite(priceInclVatValue) ? priceInclVatValue : 0;
+        const actualStudents = Number.isFinite(studentCount) ? studentCount : 0;
+        const actualClassesPerYear = Number.isFinite(classesPerYearValue) ? classesPerYearValue : 0;
+        const safeStudents = actualStudents > 0 ? actualStudents : 1;
+        const fixedAllocationPerLesson = actualClassesPerYear > 0 ? fixedCosts / actualClassesPerYear : 0;
+        const vatPerStudent = normalizedPriceInclVat - normalizedPriceExVat;
+        const vatPerLesson = vatPerStudent * actualStudents;
+        const variableCostsPerLesson = variableCostPerClass + variableCostPerStudent * actualStudents;
+        const revenueExVatPerLesson = normalizedPriceExVat * actualStudents;
+        const profitBeforeTaxPerLesson = revenueExVatPerLesson - variableCostsPerLesson - fixedAllocationPerLesson;
+        const incomeTaxPerLesson = profitBeforeTaxPerLesson > 0 ? profitBeforeTaxPerLesson * effectiveTaxRate : 0;
+        const netIncomePerLesson = profitBeforeTaxPerLesson - incomeTaxPerLesson;
+
+        return {
+          perLesson: {
+            vat: vatPerLesson,
+            variableCosts: variableCostsPerLesson,
+            fixedCostAllocation: fixedAllocationPerLesson,
+            incomeTax: incomeTaxPerLesson,
+            netIncome: netIncomePerLesson
+          },
+          perStudent: {
+            vat: vatPerStudent,
+            variableCosts: variableCostsPerLesson / safeStudents,
+            fixedCostAllocation: fixedAllocationPerLesson / safeStudents,
+            incomeTax: incomeTaxPerLesson / safeStudents,
+            netIncome: netIncomePerLesson / safeStudents
+          },
+          totals: {
+            priceInclVatPerStudent: normalizedPriceInclVat,
+            priceExVatPerStudent: normalizedPriceExVat,
+            priceInclVatPerLesson: normalizedPriceInclVat * actualStudents,
+            priceExVatPerLesson: revenueExVatPerLesson,
+            students: actualStudents,
+            classesPerYear: actualClassesPerYear
+          }
+        };
+      }
+
+      if (mode === PRICING_MODE_LESSON) {
+        const vatDivisor = Math.max(1 + vatRate, 0.0001);
+        const priceInclVatPerStudent = lessonCostInclVat;
+        const priceExVatPerStudent = lessonCostInclVat / vatDivisor;
+        const attendanceMultiplier = Math.max(1 - buffer, 0);
+        const formattedBuffer = formatFixed(bufferPercent, 1);
+
+        for (const students of sortedStudents) {
+          const row = { students, columns: [] };
+
+          for (const column of columnsMeta) {
+            const classesPerYear = column.classesPerYear;
+            const annualRevenue = priceExVatPerStudent * students * classesPerYear;
+            const bufferedRevenue = annualRevenue * attendanceMultiplier;
+            const annualVariableCosts =
+              variableCostPerClass * classesPerYear +
+              variableCostPerStudent * students * classesPerYear;
+
+            const annualNet = computeNetIncomeFromRevenue(
+              annualRevenue,
+              fixedCosts,
+              effectiveTaxRate,
+              annualVariableCosts
+            );
+            const bufferedAnnualNet = computeNetIncomeFromRevenue(
+              bufferedRevenue,
+              fixedCosts,
+              effectiveTaxRate,
+              annualVariableCosts
+            );
+
+            const monthlyNet = Number.isFinite(annualNet) && hasActiveMonths
+              ? annualNet / activeMonths
+              : null;
+            const bufferedMonthlyNet = Number.isFinite(bufferedAnnualNet) && hasActiveMonths
+              ? bufferedAnnualNet / activeMonths
+              : null;
+
+            if (!manualNetSummary && Number.isFinite(annualNet)) {
+              manualNetSummary = {
+                annual: annualNet,
+                monthly: Number.isFinite(monthlyNet) ? monthlyNet : null,
+                weekly: hasWorkingWeeks ? annualNet / workingWeeks : null,
+                averageWeekly: annualNet / WEEKS_PER_YEAR,
+                averageMonthly: annualNet / MONTHS_PER_YEAR
+              };
+            }
+
+            const baseBreakdown = buildPriceBreakdown({
+              priceExVatValue: priceExVatPerStudent,
+              priceInclVatValue: priceInclVatPerStudent,
+              studentCount: students,
+              classesPerYearValue: classesPerYear
+            });
+
+            row.columns.push({
+              classesPerWeek: column.classesPerWeek,
+              classesPerYear,
+              manualNet: {
+                monthly: monthlyNet,
+                annual: annualNet,
+                bufferedMonthly: bufferedMonthlyNet,
+                bufferedAnnual: bufferedAnnualNet
+              },
+              base: {
+                priceExVat: priceExVatPerStudent,
+                priceInclVat: priceInclVatPerStudent,
+                breakdown: baseBreakdown
+              },
+              buffered: {
+                priceExVat: priceExVatPerStudent,
+                priceInclVat: priceInclVatPerStudent,
+                breakdown: baseBreakdown
+              }
+            });
+
+            latestResults.push({
+              variant: 'Full attendance',
+              students,
+              classesPerWeek: column.classesPerWeek,
+              classesPerYear: Math.round(classesPerYear),
+              monthlyNet,
+              annualNet
+            });
+            latestResults.push({
+              variant: `With ${formattedBuffer}% shortfall`,
+              students,
+              classesPerWeek: column.classesPerWeek,
+              classesPerYear: Math.round(classesPerYear),
+              monthlyNet: bufferedMonthlyNet,
+              annualNet: bufferedAnnualNet
+            });
+          }
+
+          pricingData.push(row);
+        }
+
+        latestResultsMode = mode;
+        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
+      }
+
+      const denominator = Math.max(1 - effectiveTaxRate, 0.0001);
+      const profitBeforeTax = targetNet / denominator;
+      revenueNeeded = profitBeforeTax + fixedCosts;
+
+      if (!Number.isFinite(revenueNeeded) || revenueNeeded <= 0) {
+        latestResultsMode = mode;
+        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
+      }
+
+      for (const students of sortedStudents) {
+        const row = { students, columns: [] };
+
+        for (const column of columnsMeta) {
+          const classesPerYear = column.classesPerYear;
+          const effectiveClassesPerYear = Math.max(classesPerYear, 1);
+          const annualVariableCosts =
+            variableCostPerClass * classesPerYear +
+            variableCostPerStudent * students * classesPerYear;
+          const revenueNeededForCombo = revenueNeeded + annualVariableCosts;
+          const revenuePerClass = revenueNeededForCombo / effectiveClassesPerYear;
+          const priceExVat = revenuePerClass / Math.max(students, 1);
+          const bufferedExVat = priceExVat * (1 + buffer);
+          const priceInclVat = priceExVat * (1 + vatRate);
+          const bufferedInclVat = bufferedExVat * (1 + vatRate);
+
+          const roundedBaseExVat = Math.round(priceExVat);
+          const roundedBaseInclVat = Math.round(priceInclVat);
+          const roundedBufferedExVat = Math.round(bufferedExVat);
+          const roundedBufferedInclVat = Math.round(bufferedInclVat);
+
+          const baseBreakdown = buildPriceBreakdown({
+            priceExVatValue: priceExVat,
+            priceInclVatValue: priceInclVat,
+            studentCount: students,
+            classesPerYearValue: classesPerYear
+          });
+          const bufferedBreakdown = buildPriceBreakdown({
+            priceExVatValue: bufferedExVat,
+            priceInclVatValue: bufferedInclVat,
+            studentCount: students,
+            classesPerYearValue: classesPerYear
+          });
+
+          row.columns.push({
+            classesPerWeek: column.classesPerWeek,
+            classesPerYear,
+            base: {
+              priceExVat,
+              priceInclVat,
+              breakdown: baseBreakdown
+            },
+            buffered: {
+              priceExVat: bufferedExVat,
+              priceInclVat: bufferedInclVat,
+              breakdown: bufferedBreakdown
+            }
+          });
+
+          latestResults.push({
+            variant: 'Base (no buffer)',
+            students,
+            classesPerWeek: column.classesPerWeek,
+            classesPerYear: Math.round(classesPerYear),
+            priceExVat: roundedBaseExVat,
+            priceInclVat: roundedBaseInclVat
+          });
+
+          latestResults.push({
+            variant: `Buffered +${bufferPercent}%`,
+            students,
+            classesPerWeek: column.classesPerWeek,
+            classesPerYear: Math.round(classesPerYear),
+            priceExVat: roundedBufferedExVat,
+            priceInclVat: roundedBufferedInclVat
+          });
+        }
+
+        pricingData.push(row);
+      }
+
+      latestResultsMode = mode;
+      return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
+    }
+
+    function render() {
+      const inputs = getInputs();
+      const { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary } = computeTables(inputs);
+
+      if (mode === PRICING_MODE_LESSON && manualNetSummary) {
+        if (controls.targetNet instanceof HTMLInputElement && Number.isFinite(manualNetSummary.annual)) {
+          controls.targetNet.value = formatFixed(manualNetSummary.annual, 2);
+          inputs.targetNet = manualNetSummary.annual;
+        }
+
+        if (controls.targetNetWeek instanceof HTMLInputElement) {
+          if (Number.isFinite(manualNetSummary.weekly)) {
+            controls.targetNetWeek.value = formatFixed(manualNetSummary.weekly, 2);
+            inputs.targetNetPerWeek = manualNetSummary.weekly;
+          } else {
+            controls.targetNetWeek.value = '';
+            inputs.targetNetPerWeek = null;
+          }
+        }
+
+        if (controls.targetNetMonth instanceof HTMLInputElement) {
+          if (Number.isFinite(manualNetSummary.monthly)) {
+            controls.targetNetMonth.value = formatFixed(manualNetSummary.monthly, 2);
+            inputs.targetNetPerMonth = manualNetSummary.monthly;
+          } else {
+            controls.targetNetMonth.value = '';
+            inputs.targetNetPerMonth = null;
+          }
+        }
+
+        if (controls.targetNetAverageWeek instanceof HTMLInputElement) {
+          if (Number.isFinite(manualNetSummary.averageWeekly)) {
+            controls.targetNetAverageWeek.value = formatFixed(manualNetSummary.averageWeekly, 2);
+            inputs.targetNetAveragePerWeek = manualNetSummary.averageWeekly;
+          } else {
+            controls.targetNetAverageWeek.value = '';
+            inputs.targetNetAveragePerWeek = null;
+          }
+        }
+
+        if (controls.targetNetAverageMonth instanceof HTMLInputElement) {
+          if (Number.isFinite(manualNetSummary.averageMonthly)) {
+            controls.targetNetAverageMonth.value = formatFixed(manualNetSummary.averageMonthly, 2);
+            inputs.targetNetAveragePerMonth = manualNetSummary.averageMonthly;
+          } else {
+            controls.targetNetAverageMonth.value = '';
+            inputs.targetNetAveragePerMonth = null;
+          }
+        }
+      }
+
+      latestCurrencySymbol = inputs.currencySymbol;
+      latestPricingMode = mode;
+      latestBufferPercent = bufferPercent;
+      latestPricingData = pricingData.length ? pricingData : null;
+
+      closeActiveInfoIcon();
+
+      if (!pricingData.length) {
+        tablesContainer.innerHTML = `
+          <div class="card">
+            <p class="status-message">Enter at least one valid class count and student count to see the pricing table.</p>
+          </div>
+        `;
+      } else {
+        const pricingTable = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent, {
+          mode,
+          showBasePrices
+        });
+        const targetsTable = mode === PRICING_MODE_LESSON
+          ? ''
+          : buildActiveTargetsTable({
+              currencySymbol: inputs.currencySymbol,
+              revenueNeeded,
+              workingDaysPerYear: inputs.workingDaysPerYear,
+              workingWeeks: inputs.workingWeeks,
+              activeMonths: inputs.activeMonths
+            });
+
+        tablesContainer.innerHTML = pricingTable + targetsTable;
+      }
+
+      if (breakdownDialog && !breakdownDialog.hidden) {
+        if (!latestPricingData || !refreshBreakdownDialog()) {
+          closeBreakdownDialog();
+        }
+      } else if (!latestPricingData) {
+        activeBreakdownContext = null;
+        breakdownTriggerElement = null;
+      }
+
+      enhanceAllInfoIcons();
+      renderAssumptions(inputs, { mode });
+    }
+
+    function renderAssumptions(inputs, { mode } = {}) {
+      const {
+        targetNet,
+        targetNetPerWeek,
+        targetNetPerMonth,
+        targetNetAveragePerWeek,
+        targetNetAveragePerMonth,
+        taxRate,
+        fixedCosts,
+        variableCostPerClass,
+        variableCostPerStudent,
+        vatRate,
+        classesPerWeek,
+        studentsPerClass,
+        workingWeeks,
+        bufferPercent,
+        currencySymbol,
+        monthsOff,
+        weeksOffPerCycle,
+        daysOffPerWeek,
+        workingDaysPerWeek,
+        workingDaysPerYear,
+        activeMonths,
+        activeMonthShare,
+        weeksShare,
+        lessonCostInclVat
+      } = inputs;
+
+      const activeMonthPercentage = activeMonthShare * 100;
+      const activeWeeksPercentage = weeksShare * 100;
+      const workingWeeksPerCycle = 4 * weeksShare;
+
+      const targetPerWeekDisplay = Number.isFinite(targetNetPerWeek)
+        ? formatCurrency(currencySymbol, targetNetPerWeek)
+        : '—';
+      const targetPerMonthDisplay = Number.isFinite(targetNetPerMonth)
+        ? formatCurrency(currencySymbol, targetNetPerMonth)
+        : '—';
+      const targetAveragePerWeekDisplay = Number.isFinite(targetNetAveragePerWeek)
+        ? formatCurrency(currencySymbol, targetNetAveragePerWeek)
+        : '—';
+      const targetAveragePerMonthDisplay = Number.isFinite(targetNetAveragePerMonth)
+        ? formatCurrency(currencySymbol, targetNetAveragePerMonth)
+        : '—';
+
+      const manualLessonLine = Number.isFinite(lessonCostInclVat)
+        ? `Manual lesson cost (incl. VAT): ${currencySymbol}${formatFixed(lessonCostInclVat, 2)}`
+        : 'Manual lesson cost (incl. VAT): not set';
+
+      const listItems = [
+        `Net income per year: ${formatCurrency(currencySymbol, targetNet)}`,
+        `Net income per active week: ${targetPerWeekDisplay}`,
+        `Net income per active month: ${targetPerMonthDisplay}`,
+        `Average weekly net income: ${targetAveragePerWeekDisplay}`,
+        `Average monthly net income: ${targetAveragePerMonthDisplay}`,
+        manualLessonLine,
+        `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
+        `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
+        `Variable cost per class: ${formatCurrency(currencySymbol, variableCostPerClass)} (per scheduled class)`,
+        `Variable cost per student: ${formatCurrency(currencySymbol, variableCostPerStudent)} (per student per class)`,
+        `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
+        `Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`,
+        `Days off per working week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
+        `Estimated working weeks per year: ${formatFixed(workingWeeks, 2)}`,
+        `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
+        `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
+        `Students per class considered: ${studentsPerClass.length ? studentsPerClass.join(', ') : 'none'}`,
+        `Safety margin applied to buffered line: ${formatFixed(bufferPercent, 1)}%`,
+        `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
+        `Currency symbol: ${currencySymbol}`,
+        `Prices are rounded to whole currency units for display and CSV export.`
+      ];
+
+      assumptionsList.innerHTML = listItems.map(item => `<li>${item}</li>`).join('');
+    }
+
+    function downloadCsv() {
+      if (!latestResults.length) {
+        controls.statusMessage.textContent = 'Add at least one class and student value before exporting CSV.';
+        setTimeout(() => {
+          controls.statusMessage.textContent = '';
+        }, 2500);
+        return;
+      }
+
+      let header;
+      let rows;
+
+      if (latestResultsMode === PRICING_MODE_LESSON) {
+        header = 'Variant,Students,Classes per week,Classes per year,Monthly net income,Annual net income';
+        rows = latestResults.map(entry => {
+          const monthly = Number.isFinite(entry.monthlyNet) ? Math.round(entry.monthlyNet) : '';
+          const annual = Number.isFinite(entry.annualNet) ? Math.round(entry.annualNet) : '';
+          return [
+            entry.variant,
+            entry.students,
+            entry.classesPerWeek,
+            entry.classesPerYear,
+            monthly,
+            annual
+          ].join(',');
+        });
+      } else {
+        header = 'Variant,Students,Classes per week,Classes per year,Price incl VAT,Price ex VAT';
+        rows = latestResults.map(entry => [
+          entry.variant,
+          entry.students,
+          entry.classesPerWeek,
+          entry.classesPerYear,
+          entry.priceInclVat,
+          entry.priceExVat
+        ].join(','));
+      }
+
+      const csvContent = [header, ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const timestamp = new Date().toISOString().slice(0, 10);
+      link.download = `course-pricing-${timestamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      controls.statusMessage.textContent = latestResultsMode === PRICING_MODE_LESSON
+        ? 'CSV download started. File lists monthly and annual net income for each combination.'
+        : 'CSV download started. File lists base and buffered prices including and excluding VAT.';
+      setTimeout(() => {
+        controls.statusMessage.textContent = '';
+      }, 2500);
+    }
+
+    [
+      { control: controls.targetNet, basis: 'year' },
+      { control: controls.targetNetWeek, basis: 'week' },
+      { control: controls.targetNetMonth, basis: 'month' },
+      { control: controls.targetNetAverageWeek, basis: 'avgWeek' },
+      { control: controls.targetNetAverageMonth, basis: 'avgMonth' }
+    ].forEach(({ control, basis }) => {
+      if (!(control instanceof HTMLInputElement)) return;
+      const updateBasis = () => {
+        targetNetBasis = basis;
+      };
+      control.addEventListener('input', updateBasis);
+      control.addEventListener('change', updateBasis);
+    });
+
+    Object.values(controls).forEach(control => {
+      if (!(control instanceof HTMLInputElement)) return;
+      if (control === controls.lessonCost) return;
+      control.addEventListener('change', render);
+      control.addEventListener('input', event => {
+        if (event.target.type === 'text') return;
+        render();
+      });
+    });
+
+    if (controls.lessonCost instanceof HTMLInputElement) {
+      const handleLessonCostInput = () => {
+        render();
+      };
+
+      controls.lessonCost.addEventListener('input', handleLessonCostInput);
+      controls.lessonCost.addEventListener('change', handleLessonCostInput);
+    }
+
+    tablesContainer.addEventListener('click', event => {
+      const priceButton = event.target instanceof HTMLElement
+        ? event.target.closest('button.price-line[data-row][data-column][data-variant]')
+        : null;
+
+      if (priceButton) {
+        const context = {
+          rowIndex: Number(priceButton.dataset.row),
+          columnIndex: Number(priceButton.dataset.column),
+          variant: priceButton.dataset.variant === 'base' ? 'base' : 'buffered'
+        };
+        openBreakdownDialog(context, priceButton);
+        return;
+      }
+
+      const toggleButton = event.target instanceof HTMLElement ? event.target.closest('.price-reveal-toggle') : null;
+      if (!toggleButton) {
+        return;
+      }
+      event.preventDefault();
+      showBasePrices = !showBasePrices;
+      render();
+      const refreshedToggle = tablesContainer.querySelector('.price-reveal-toggle');
+      if (refreshedToggle instanceof HTMLButtonElement) {
+        refreshedToggle.focus();
+      }
+    });
+
+    controls.recalcButton.addEventListener('click', render);
+    controls.downloadCsv.addEventListener('click', downloadCsv);
+    render();
+  </script>
+</body>
+</html>
