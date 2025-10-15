@@ -836,7 +836,12 @@
       padding: 16px 18px 18px;
     }
 
-    .controls .control-section > legend {
+    .section-legend {
+      margin: 0;
+      padding: 0;
+    }
+
+    .section-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -1520,7 +1525,7 @@
     }
 
     @media (max-width: 520px) {
-      .controls .control-section > legend {
+      .section-header {
         align-items: flex-start;
         flex-direction: column;
         gap: 8px;
@@ -1573,8 +1578,9 @@
           <legend class="visually-hidden">Calculator inputs</legend>
 
           <fieldset class="control-section" data-collapsible>
-            <legend>
-              <span class="section-title">Net income</span>
+            <legend class="section-legend visually-hidden" id="section-net-income-legend">Net income</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Net income</span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
@@ -1585,7 +1591,7 @@
               >
                 <span class="toggle-label">Collapse</span>
               </button>
-            </legend>
+            </div>
             <div class="section-body" id="section-net-income">
               <div class="control-group">
                 <p class="field-note">Entering a net income value will update the lesson cost automatically.</p>
@@ -1665,8 +1671,9 @@
           </fieldset>
 
           <fieldset class="control-section" data-collapsible>
-            <legend>
-              <span class="section-title">Taxes and costs</span>
+            <legend class="section-legend visually-hidden" id="section-taxes-costs-legend">Taxes and costs</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Taxes and costs</span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
@@ -1677,7 +1684,7 @@
               >
                 <span class="toggle-label">Collapse</span>
               </button>
-            </legend>
+            </div>
             <div class="section-body" id="section-taxes-costs">
               <div class="control">
                 <label for="tax-rate">
@@ -1811,8 +1818,9 @@
           </fieldset>
 
           <fieldset class="control-section" data-collapsible>
-            <legend>
-              <span class="section-title">Schedule and capacity</span>
+            <legend class="section-legend visually-hidden" id="section-schedule-capacity-legend">Schedule and capacity</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Schedule and capacity</span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
@@ -1823,7 +1831,7 @@
               >
                 <span class="toggle-label">Collapse</span>
               </button>
-            </legend>
+            </div>
             <div class="section-body" id="section-schedule-capacity">
               <div class="control">
                 <label for="classes-per-week">
@@ -1855,8 +1863,11 @@
           </fieldset>
 
           <fieldset class="control-section" data-collapsible>
-            <legend>
-              <span class="section-title">Manual lesson price override</span>
+            <legend class="section-legend visually-hidden" id="section-manual-override-legend">
+              Manual lesson price override
+            </legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Manual lesson price override</span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
@@ -1867,7 +1878,7 @@
               >
                 <span class="toggle-label">Collapse</span>
               </button>
-            </legend>
+            </div>
             <div class="section-body" id="section-manual-override">
               <div class="control">
                 <label for="lesson-cost">
@@ -1899,8 +1910,9 @@
           </fieldset>
 
           <fieldset class="control-section" data-collapsible>
-            <legend>
-              <span class="section-title">Time-off planner</span>
+            <legend class="section-legend visually-hidden" id="section-time-off-legend">Time-off planner</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Time-off planner</span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
@@ -1911,7 +1923,7 @@
               >
                 <span class="toggle-label">Collapse</span>
               </button>
-            </legend>
+            </div>
             <div class="section-body" id="section-time-off">
               <div class="control">
                 <label for="months-off">
@@ -1964,8 +1976,9 @@
           </fieldset>
 
           <fieldset class="control-section" data-collapsible>
-            <legend>
-              <span class="section-title">Display preferences</span>
+            <legend class="section-legend visually-hidden" id="section-display-preferences-legend">Display preferences</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Display preferences</span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
@@ -1976,7 +1989,7 @@
               >
                 <span class="toggle-label">Collapse</span>
               </button>
-            </legend>
+            </div>
             <div class="section-body" id="section-display-preferences">
               <div class="control">
                 <label for="buffer">
@@ -2157,22 +2170,23 @@
     let breakdownTriggerElement = null;
     let activeBreakdownContext = null;
 
-    const collapsibleSections = Array.from(document.querySelectorAll('.control-section[data-collapsible]'));
+    const COLLAPSIBLE_SECTION_SELECTOR = '.control-section[data-collapsible]';
 
-    function getSectionLabel(section, index) {
+    function getSectionLabel(section, index = 0) {
       if (!section) {
         return `Section ${index + 1}`;
       }
 
-      if (section.dataset.sectionLabel) {
-        return section.dataset.sectionLabel;
+      const title = section.querySelector('.section-title');
+      const labelText = title && title.textContent ? title.textContent.trim() : '';
+
+      if (labelText) {
+        section.dataset.sectionLabel = labelText;
+        return labelText;
       }
 
-      const title = section.querySelector('.section-title');
-      if (title && title.textContent.trim()) {
-        const label = title.textContent.trim();
-        section.dataset.sectionLabel = label;
-        return label;
+      if (section.dataset.sectionLabel) {
+        return section.dataset.sectionLabel;
       }
 
       const fallback = `Section ${index + 1}`;
@@ -2205,59 +2219,51 @@
       toggle.setAttribute('title', `${normalizedAction} ${normalizedLabel} section`);
     }
 
-    function toggleCollapsibleSection(section, triggerButton, explicitState) {
-      if (!section) {
-        return;
-      }
+    class CollapsibleController {
+      constructor(root = document) {
+        this.root = root;
+        this.sections = new Map();
+        this.handleToggleClick = this.handleToggleClick.bind(this);
+        this.handleMutations = this.handleMutations.bind(this);
 
-      const isCollapsed = section.classList.contains('collapsed');
-      const nextCollapsed = typeof explicitState === 'boolean' ? explicitState : !isCollapsed;
+        this.refreshSections(Array.from(this.root.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR)));
+        this.root.addEventListener('click', this.handleToggleClick);
 
-      if (nextCollapsed === isCollapsed) {
-        requestAnimationFrame(() => {
-          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-        return;
-      }
-
-      section.classList.toggle('collapsed', nextCollapsed);
-      const sectionLabel = section.dataset.sectionLabel || '';
-      const toggles = section.querySelectorAll('.section-toggle');
-
-      toggles.forEach(toggle => {
-        updateToggleButtonState(toggle, nextCollapsed, sectionLabel);
-      });
-
-      if (nextCollapsed && triggerButton && triggerButton.classList.contains('section-toggle--bottom')) {
-        const topToggle = section.querySelector('.section-toggle--top');
-        if (topToggle && typeof topToggle.focus === 'function') {
-          try {
-            topToggle.focus({ preventScroll: true });
-          } catch (error) {
-            topToggle.focus();
+        if (typeof MutationObserver === 'function') {
+          const observerTarget = this.root === document ? document.body : this.root;
+          if (observerTarget) {
+            this.observer = new MutationObserver(this.handleMutations);
+            this.observer.observe(observerTarget, { childList: true, subtree: true });
           }
         }
       }
 
-      requestAnimationFrame(() => {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-
-    function initializeCollapsibleSections() {
-      collapsibleSections.forEach((section, index) => {
-        const sectionLabel = getSectionLabel(section, index);
-        const body = section ? section.querySelector('.section-body') : null;
-
-        if (!section || !body) {
+      refreshSections(sectionElements) {
+        if (!sectionElements) {
           return;
         }
+
+        Array.from(sectionElements).forEach(section => this.registerSection(section));
+      }
+
+      registerSection(section) {
+        if (!(section instanceof HTMLElement)) {
+          return;
+        }
+
+        const body = section.querySelector('.section-body');
+        if (!body) {
+          return;
+        }
+
+        const fallbackIndex = this.sections.size;
+        const sectionLabel = getSectionLabel(section, fallbackIndex);
 
         if (!body.id) {
           const baseId = sectionLabel
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '') || `section-${index + 1}`;
+            .replace(/(^-|-$)/g, '') || `section-${fallbackIndex + 1}`;
 
           let uniqueId = baseId;
           let attempt = 1;
@@ -2269,19 +2275,138 @@
           body.id = uniqueId;
         }
 
-        const toggles = section.querySelectorAll('.section-toggle');
-        toggles.forEach(toggle => {
+        const collapsed = section.classList.contains('collapsed');
+        section.dataset.sectionLabel = sectionLabel;
+
+        section.querySelectorAll('.section-toggle').forEach(toggle => {
           toggle.setAttribute('aria-controls', body.id);
-          updateToggleButtonState(toggle, section.classList.contains('collapsed'), sectionLabel);
-          toggle.addEventListener('click', event => {
-            event.preventDefault();
-            toggleCollapsibleSection(section, toggle);
-          });
+          updateToggleButtonState(toggle, collapsed, sectionLabel);
         });
-      });
+
+        this.sections.set(section, { body });
+      }
+
+      unregisterSection(section) {
+        if (this.sections.has(section)) {
+          this.sections.delete(section);
+        }
+      }
+
+      handleToggleClick(event) {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+          return;
+        }
+
+        const toggle = target.closest('.section-toggle');
+        if (!toggle) {
+          return;
+        }
+
+        const section = toggle.closest(COLLAPSIBLE_SECTION_SELECTOR);
+        if (!section) {
+          return;
+        }
+
+        event.preventDefault();
+        this.ensureSection(section);
+        this.toggleSection(section, toggle);
+      }
+
+      ensureSection(section) {
+        if (!this.sections.has(section)) {
+          this.registerSection(section);
+          return;
+        }
+
+        const label = getSectionLabel(section, 0);
+        section.dataset.sectionLabel = label;
+        const collapsed = section.classList.contains('collapsed');
+        section.querySelectorAll('.section-toggle').forEach(toggle => {
+          updateToggleButtonState(toggle, collapsed, label);
+        });
+      }
+
+      toggleSection(section, triggerButton, explicitState) {
+        if (!(section instanceof HTMLElement)) {
+          return;
+        }
+
+        const isCollapsed = section.classList.contains('collapsed');
+        const nextCollapsed = typeof explicitState === 'boolean' ? explicitState : !isCollapsed;
+
+        if (nextCollapsed === isCollapsed) {
+          requestAnimationFrame(() => {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+          return;
+        }
+
+        section.classList.toggle('collapsed', nextCollapsed);
+        const sectionLabel = getSectionLabel(section, 0);
+
+        section.querySelectorAll('.section-toggle').forEach(toggle => {
+          updateToggleButtonState(toggle, nextCollapsed, sectionLabel);
+        });
+
+        if (nextCollapsed && triggerButton && triggerButton.classList.contains('section-toggle--bottom')) {
+          const topToggle = section.querySelector('.section-toggle--top');
+          if (topToggle && typeof topToggle.focus === 'function') {
+            try {
+              topToggle.focus({ preventScroll: true });
+            } catch (error) {
+              topToggle.focus();
+            }
+          }
+        }
+
+        requestAnimationFrame(() => {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+
+      handleMutations(mutations) {
+        if (!mutations) {
+          return;
+        }
+
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes || []) {
+            if (!(node instanceof HTMLElement)) {
+              continue;
+            }
+
+            if (node.matches && node.matches(COLLAPSIBLE_SECTION_SELECTOR)) {
+              this.registerSection(node);
+            }
+
+            if (typeof node.querySelectorAll === 'function') {
+              node.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR).forEach(section => {
+                this.registerSection(section);
+              });
+            }
+          }
+
+          for (const node of mutation.removedNodes || []) {
+            if (!(node instanceof HTMLElement)) {
+              continue;
+            }
+
+            if (this.sections.has(node)) {
+              this.unregisterSection(node);
+            }
+
+            if (typeof node.querySelectorAll === 'function') {
+              node.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR).forEach(section => {
+                this.unregisterSection(section);
+              });
+            }
+          }
+        }
+      }
     }
 
-    initializeCollapsibleSections();
+    const collapsibleController = new CollapsibleController(document);
 
     function getFocusableElements(container) {
       if (!container) {
