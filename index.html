@@ -1271,6 +1271,10 @@
       gap: 20px;
     }
 
+    .table-grid.table-grid--stacked {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -1836,14 +1840,14 @@
               <div class="control">
                 <label for="classes-per-week">
                   <span class="label-text">Classes per week</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,5)." data-tooltip="Comma-separated integers (e.g. 4,5).">ℹ️</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers or ranges (e.g. 4,5 or 3-8)." data-tooltip="Comma-separated integers or ranges (e.g. 4,5 or 3-8).">ℹ️</span>
                 </label>
                 <input type="text" id="classes-per-week" value="4,5" autocomplete="off" />
               </div>
               <div class="control">
                 <label for="students-per-class">
                   <span class="label-text">Students per class</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers (e.g. 4,6,8)." data-tooltip="Comma-separated integers (e.g. 4,6,8).">ℹ️</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers or ranges (e.g. 5-12)." data-tooltip="Comma-separated integers or ranges (e.g. 5-12).">ℹ️</span>
                 </label>
                 <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
               </div>
@@ -2750,6 +2754,7 @@
     controls.fixedCostFields = fixedCostFields;
 
     const tablesContainer = document.getElementById('tables-container');
+    let tablesLayoutUpdateScheduled = false;
     const assumptionsList = document.getElementById('assumptions-list');
     const targetNetInputs = [
       controls.targetNet,
@@ -2982,11 +2987,69 @@
       if (!value) {
         return [];
       }
-      return value
+
+      const values = [];
+      const tokens = value
         .split(',')
-        .map(token => Number(token.trim()))
-        .filter(num => Number.isFinite(num) && num > 0)
-        .map(num => Math.round(num));
+        .map(token => token.trim())
+        .filter(token => token.length > 0);
+
+      tokens.forEach(token => {
+        const rangeMatch = token.match(/^(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)$/);
+        if (rangeMatch) {
+          const startValue = Math.round(Number(rangeMatch[1]));
+          const endValue = Math.round(Number(rangeMatch[2]));
+          if (!Number.isFinite(startValue) || !Number.isFinite(endValue)) {
+            return;
+          }
+
+          const rangeStart = Math.min(startValue, endValue);
+          const rangeEnd = Math.max(startValue, endValue);
+          for (let current = rangeStart; current <= rangeEnd; current += 1) {
+            if (current > 0) {
+              values.push(current);
+            }
+          }
+          return;
+        }
+
+        const parsed = Math.round(Number(token));
+        if (Number.isFinite(parsed) && parsed > 0) {
+          values.push(parsed);
+        }
+      });
+
+      return Array.from(new Set(values)).sort((a, b) => a - b);
+    }
+
+    function updateTablesLayout() {
+      if (!tablesContainer) {
+        return;
+      }
+
+      const cards = tablesContainer.querySelectorAll('.card');
+      if (cards.length <= 1) {
+        tablesContainer.classList.remove('table-grid--stacked');
+        return;
+      }
+
+      const hasOverflow = tablesContainer.scrollWidth > tablesContainer.clientWidth + 1;
+      tablesContainer.classList.toggle('table-grid--stacked', hasOverflow);
+    }
+
+    function scheduleTablesLayoutUpdate() {
+      if (!tablesContainer) {
+        return;
+      }
+      if (tablesLayoutUpdateScheduled) {
+        return;
+      }
+
+      tablesLayoutUpdateScheduled = true;
+      requestAnimationFrame(() => {
+        tablesLayoutUpdateScheduled = false;
+        updateTablesLayout();
+      });
     }
 
     function getFixedCostTotal() {
@@ -4061,6 +4124,7 @@
             <p class="status-message">Enter at least one valid class count and student count to see the pricing table.</p>
           </div>
         `;
+        scheduleTablesLayoutUpdate();
       } else {
         const pricingTable = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent, {
           mode,
@@ -4077,6 +4141,7 @@
             });
 
         tablesContainer.innerHTML = pricingTable + targetsTable;
+        scheduleTablesLayoutUpdate();
       }
 
       if (breakdownDialog && !breakdownDialog.hidden) {
@@ -4258,6 +4323,8 @@
       controls.lessonCost.addEventListener('input', handleLessonCostInput);
       controls.lessonCost.addEventListener('change', handleLessonCostInput);
     }
+
+    window.addEventListener('resize', scheduleTablesLayoutUpdate);
 
     tablesContainer.addEventListener('click', event => {
       const priceButton = event.target instanceof HTMLElement
