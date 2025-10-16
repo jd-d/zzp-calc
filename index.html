@@ -2855,6 +2855,26 @@
 
     const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
+    let latestResults = [];
+    let showBasePrices = false;
+    let targetNetBasis = 'year';
+    const PRICING_MODE_TARGET = 'target';
+    const PRICING_MODE_LESSON = 'lesson';
+    let latestResultsMode = PRICING_MODE_TARGET;
+    let latestPricingData = null;
+    let latestCurrencySymbol = '€';
+    let latestPricingMode = PRICING_MODE_TARGET;
+    let latestBufferPercent = 0;
+    const PERSISTED_TARGET_NET_BASIS_KEY = '__targetNetBasis';
+    const TARGET_NET_BASIS_VALUES = ['year', 'week', 'month', 'avgWeek', 'avgMonth'];
+    const TARGET_NET_BASIS_BY_INPUT_ID = {
+      'target-net': 'year',
+      'target-net-week': 'week',
+      'target-net-month': 'month',
+      'target-net-average-week': 'avgWeek',
+      'target-net-average-month': 'avgMonth'
+    };
+
     const controls = {
       targetNet: document.getElementById('target-net'),
       targetNetWeek: document.getElementById('target-net-week'),
@@ -2947,7 +2967,7 @@
     }
 
     function captureInputValues(inputs = getPersistableInputs()) {
-      return inputs.reduce((accumulator, input) => {
+      const values = inputs.reduce((accumulator, input) => {
         if (!(input instanceof HTMLInputElement) || !input.id) {
           return accumulator;
         }
@@ -2958,6 +2978,8 @@
         }
         return accumulator;
       }, {});
+      values[PERSISTED_TARGET_NET_BASIS_KEY] = targetNetBasis;
+      return values;
     }
 
     const defaultInputValues = captureInputValues();
@@ -2999,6 +3021,10 @@
       if (!values || typeof values !== 'object') {
         return;
       }
+      const storedBasis = values[PERSISTED_TARGET_NET_BASIS_KEY];
+      if (typeof storedBasis === 'string' && TARGET_NET_BASIS_VALUES.includes(storedBasis)) {
+        targetNetBasis = storedBasis;
+      }
       const inputs = getPersistableInputs();
       inputs.forEach(input => {
         if (!(input instanceof HTMLInputElement) || !input.id) {
@@ -3036,7 +3062,13 @@
       }
     }
 
-    function handlePersistableInputMutation() {
+    function handlePersistableInputMutation(event) {
+      if (event && event.target instanceof HTMLInputElement) {
+        const nextBasis = TARGET_NET_BASIS_BY_INPUT_ID[event.target.id];
+        if (typeof nextBasis === 'string') {
+          targetNetBasis = nextBasis;
+        }
+      }
       if (persistenceEnabled) {
         savePersistedInputs();
       }
@@ -3087,11 +3119,6 @@
     let tablesLayoutUpdateScheduled = false;
     const assumptionsList = document.getElementById('assumptions-list');
     initializePersistence();
-    const targetNetInputs = [
-      controls.targetNet,
-      controls.targetNetWeek,
-      controls.targetNetMonth
-    ].filter(input => input instanceof HTMLInputElement);
 
     const INFO_ICON_ACTIVE_CLASS = 'is-active';
     const TOOLTIP_VIEWPORT_PADDING = 16;
@@ -3275,17 +3302,6 @@
         positionInfoIconTooltip(activeInfoIcon);
       }
     });
-
-    let latestResults = [];
-    let showBasePrices = false;
-    let targetNetBasis = 'year';
-    const PRICING_MODE_TARGET = 'target';
-    const PRICING_MODE_LESSON = 'lesson';
-    let latestResultsMode = PRICING_MODE_TARGET;
-    let latestPricingData = null;
-    let latestCurrencySymbol = '€';
-    let latestPricingMode = PRICING_MODE_TARGET;
-    let latestBufferPercent = 0;
 
     const WEEKS_PER_YEAR = 52;
     const MONTHS_PER_YEAR = 12;
