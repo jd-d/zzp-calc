@@ -3017,7 +3017,8 @@
       }
     }
 
-    function applyInputValues(values) {
+    function applyInputValues(values, options = {}) {
+      const { skipRender = false } = options;
       if (!values || typeof values !== 'object') {
         return;
       }
@@ -3043,7 +3044,9 @@
         }
       });
       updateFixedCostTotalDisplay();
-      render();
+      if (!skipRender) {
+        render();
+      }
     }
 
     function savePersistedInputs() {
@@ -3084,7 +3087,7 @@
 
       const storedValues = persistenceEnabled ? readPersistedValues() : null;
       if (storedValues) {
-        applyInputValues(storedValues);
+        applyInputValues(storedValues, { skipRender: true });
       }
 
       getPersistableInputs().forEach(input => {
@@ -3118,7 +3121,6 @@
     const tablesContainer = document.getElementById('tables-container');
     let tablesLayoutUpdateScheduled = false;
     const assumptionsList = document.getElementById('assumptions-list');
-    initializePersistence();
 
     const INFO_ICON_ACTIVE_CLASS = 'is-active';
     const TOOLTIP_VIEWPORT_PADDING = 16;
@@ -4703,6 +4705,8 @@
 
     controls.recalcButton.addEventListener('click', render);
     controls.downloadCsv.addEventListener('click', downloadCsv);
+
+    initializePersistence();
     render();
   </script>
 </body>
