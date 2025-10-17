@@ -5,7 +5,7 @@
 - [ ] Add safety margin controls and reorganize the settings layout for clarity.
 
 ## Medium Priority
-- [ ] Add an input field after "Students per Class" for "Lesson length (mins)" and use it to append hourly pricing (e.g., "(€XX/hr)") to each lesson price in the table.
+- [ ] Add an input near the revenue summary for "Session length (mins)" and use it to append hourly equivalents (e.g., "(€XX/hr)") to the gross revenue figures.
 - [ ] Pre fill the form as is done now but change the 65k to 50k preset. Add a radio button next to the annual target field to decide if targets are gross or net and adjust calculations accordingly.
 
 ## Low Priority
