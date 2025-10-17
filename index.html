@@ -3118,7 +3118,6 @@
     const tablesContainer = document.getElementById('tables-container');
     let tablesLayoutUpdateScheduled = false;
     const assumptionsList = document.getElementById('assumptions-list');
-    initializePersistence();
 
     const INFO_ICON_ACTIVE_CLASS = 'is-active';
     const TOOLTIP_VIEWPORT_PADDING = 16;
@@ -3302,6 +3301,8 @@
         positionInfoIconTooltip(activeInfoIcon);
       }
     });
+
+    initializePersistence();
 
     const WEEKS_PER_YEAR = 52;
     const MONTHS_PER_YEAR = 12;
