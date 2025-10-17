@@ -687,11 +687,11 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin: 20px 0 24px;
       padding: 14px 16px;
       border-radius: 14px;
       border: 1px solid var(--field-border);
       background: var(--field-output-bg);
+      width: 100%;
     }
 
     .persist-controls__primary {
@@ -1655,20 +1655,58 @@
     <div class="layout">
       <section class="card controls" aria-labelledby="inputs-heading">
         <h2 id="inputs-heading" style="font-size: 1.1rem;">Inputs</h2>
-        <div class="persist-controls" role="group" aria-labelledby="persist-settings-label">
-          <div class="persist-controls__primary">
-            <label class="persist-checkbox" id="persist-settings-label" for="remember-inputs">
-              <input type="checkbox" id="remember-inputs" />
-              <span>Remember my inputs on this device</span>
-            </label>
-            <p class="persist-description">
-              Stores your latest calculator values in local storage so they are ready the next time you visit from this browser.
-            </p>
-          </div>
-          <button type="button" id="reset-saved-inputs" class="secondary">Reset to defaults</button>
-        </div>
         <fieldset class="control-sections">
           <legend class="visually-hidden">Calculator inputs</legend>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-settings-legend">Settings</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Settings</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-settings"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-settings">
+              <div class="persist-controls" role="group" aria-labelledby="persist-settings-label">
+                <div class="persist-controls__primary">
+                  <label class="persist-checkbox" id="persist-settings-label" for="remember-inputs">
+                    <input type="checkbox" id="remember-inputs" />
+                    <span>Remember my inputs on this device</span>
+                  </label>
+                  <p class="persist-description">
+                    Stores your latest calculator values in local storage so they're ready the next time you visit from this browser.
+                  </p>
+                </div>
+                <button type="button" id="reset-saved-inputs" class="secondary">Reset to defaults</button>
+              </div>
+              <div class="control">
+                <label for="currency-symbol">
+                  <span class="label-text">Currency symbol</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
+                </label>
+                <input type="text" id="currency-symbol" value="€" maxlength="3" />
+              </div>
+            </div>
+            <div class="section-footer">
+              <button
+                type="button"
+                class="section-toggle section-toggle--bottom"
+                data-expanded-text="Collapse section"
+                data-collapsed-text="Expand section"
+                aria-expanded="true"
+                aria-controls="section-settings"
+              >
+                <span class="toggle-label">Collapse section</span>
+              </button>
+            </div>
+          </fieldset>
 
           <fieldset class="control-section" data-collapsible>
             <legend class="section-legend visually-hidden" id="section-net-income-legend">Net income</legend>
@@ -1760,6 +1798,54 @@
                   <span class="toggle-label">Collapse section</span>
                 </button>
               </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-safety-margin-legend">Safety margin</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Safety margin</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-safety-margin"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-safety-margin">
+              <p class="field-note">
+                Add a percentage cushion on top of your desired net income. The buffered line in the results uses this value to suggest a price that covers surprises.
+              </p>
+              <div class="control">
+                <label for="buffer">
+                  <span class="label-text">Safety margin cushion (%)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Adds a cushion to your desired income. The buffered pricing line uses this percentage."
+                    data-tooltip="Adds a cushion to your desired income. The buffered pricing line uses this percentage."
+                  >ℹ️</span>
+                </label>
+                <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
+              </div>
+            </div>
+            <div class="section-footer">
+              <button
+                type="button"
+                class="section-toggle section-toggle--bottom"
+                data-expanded-text="Collapse section"
+                data-collapsed-text="Expand section"
+                aria-expanded="true"
+                aria-controls="section-safety-margin"
+              >
+                <span class="toggle-label">Collapse section</span>
+              </button>
             </div>
           </fieldset>
 
@@ -2136,50 +2222,6 @@
             </div>
           </fieldset>
 
-          <fieldset class="control-section" data-collapsible>
-            <legend class="section-legend visually-hidden" id="section-display-preferences-legend">Display preferences</legend>
-            <div class="section-header">
-              <span class="section-title" aria-hidden="true">Display preferences</span>
-              <button
-                type="button"
-                class="section-toggle section-toggle--top"
-                data-expanded-text="Collapse"
-                data-collapsed-text="Expand"
-                aria-expanded="true"
-                aria-controls="section-display-preferences"
-              >
-                <span class="toggle-label">Collapse</span>
-              </button>
-            </div>
-            <div class="section-body" id="section-display-preferences">
-              <div class="control">
-                <label for="buffer">
-                  <span class="label-text">Safety margin (%)</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Applied to cover no-shows, refunds, etc." data-tooltip="Applied to cover no-shows, refunds, etc.">ℹ️</span>
-                </label>
-                <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
-              </div>
-              <div class="control">
-                <label for="currency-symbol">
-                  <span class="label-text">Currency symbol</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Displayed before amounts." data-tooltip="Displayed before amounts.">ℹ️</span>
-                </label>
-                <input type="text" id="currency-symbol" value="€" maxlength="3" />
-              </div>
-              <div class="section-footer">
-                <button
-                  type="button"
-                  class="section-toggle section-toggle--bottom"
-                  data-expanded-text="Collapse section"
-                  data-collapsed-text="Expand section"
-                  aria-expanded="true"
-                  aria-controls="section-display-preferences"
-                >
-                  <span class="toggle-label">Collapse section</span>
-                </button>
-              </div>
-            </div>
-          </fieldset>
         </fieldset>
         <div class="button-row actions" role="group" aria-label="Actions">
           <button type="button" id="recalculate">Recalculate</button>
@@ -4583,7 +4625,7 @@
         `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
         `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
         `Students per class considered: ${studentsPerClass.length ? studentsPerClass.join(', ') : 'none'}`,
-        `Safety margin applied to buffered line: ${formatFixed(bufferPercent, 1)}%`,
+        `Safety margin cushion (buffered price uses this %): ${formatFixed(bufferPercent, 1)}%`,
         `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
         `Currency symbol: ${currencySymbol}`,
         `Prices are rounded to whole currency units for display and CSV export.`
