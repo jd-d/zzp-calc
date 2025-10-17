@@ -3302,8 +3302,6 @@
       }
     });
 
-    initializePersistence();
-
     const WEEKS_PER_YEAR = 52;
     const MONTHS_PER_YEAR = 12;
     const BASE_WORK_DAYS_PER_WEEK = 5;
@@ -4704,6 +4702,8 @@
 
     controls.recalcButton.addEventListener('click', render);
     controls.downloadCsv.addEventListener('click', downloadCsv);
+
+    initializePersistence();
     render();
   </script>
 </body>
