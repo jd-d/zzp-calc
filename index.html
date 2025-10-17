@@ -380,242 +380,6 @@
       }
     }
 
-    .lesson-breakdown-dialog[hidden] {
-      display: none;
-    }
-
-    .lesson-breakdown-dialog {
-      position: fixed;
-      inset: 0;
-      z-index: 950;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: clamp(16px, 4vw, 32px);
-    }
-
-    .lesson-breakdown-dialog__backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(8, 11, 20, 0.6);
-      backdrop-filter: blur(6px);
-    }
-
-    .lesson-breakdown-dialog__content {
-      position: relative;
-      z-index: 1;
-      width: min(960px, 100%);
-      max-height: 92vh;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      box-shadow: var(--card-shadow);
-      padding: clamp(20px, 3vw, 28px);
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .lesson-breakdown-dialog__header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .lesson-breakdown-dialog__header h2 {
-      margin: 0;
-      font-size: clamp(1.4rem, 2vw, 1.65rem);
-    }
-
-    .lesson-breakdown-dialog__variant {
-      margin: 6px 0 0;
-      color: var(--text-muted);
-      font-size: 0.95rem;
-    }
-
-    .lesson-breakdown-dialog__summary {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .lesson-breakdown-dialog__price {
-      margin: 0;
-      font-size: clamp(1.4rem, 2.4vw, 1.75rem);
-      font-weight: 600;
-    }
-
-    .lesson-breakdown-dialog__meta,
-    .lesson-breakdown-dialog__total {
-      margin: 0;
-      color: var(--text-muted);
-      font-size: 0.95rem;
-    }
-
-    .lesson-breakdown-dialog__body {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
-      gap: clamp(18px, 3vw, 28px);
-    }
-
-    .lesson-breakdown-dialog__table-wrapper {
-      overflow: auto;
-      border-radius: 16px;
-      border: 1px solid var(--table-row-border);
-      background: var(--field-output-bg);
-    }
-
-    .lesson-breakdown-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 320px;
-    }
-
-    .lesson-breakdown-table thead th {
-      position: sticky;
-      top: 0;
-      background: var(--table-header-bg);
-      color: var(--table-header-text);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      font-size: 0.75rem;
-      padding: 12px;
-    }
-
-    .lesson-breakdown-table th,
-    .lesson-breakdown-table td {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--table-row-border);
-      font-size: 0.95rem;
-    }
-
-    .lesson-breakdown-table tbody th {
-      text-align: left;
-      font-weight: 600;
-    }
-
-    .lesson-breakdown-table tbody td {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .lesson-breakdown-table tbody tr:last-child th,
-    .lesson-breakdown-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    .lesson-breakdown-dialog__chart {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 16px;
-    }
-
-    .lesson-breakdown-dialog__chart-graphic {
-      width: clamp(160px, 22vw, 200px);
-      aspect-ratio: 1 / 1;
-      border-radius: 50%;
-      background: var(--price-line-bg);
-      border: 1px solid var(--price-line-border);
-      margin: 0 auto;
-      position: relative;
-      transition: background 0.3s ease;
-    }
-
-    .lesson-breakdown-dialog__chart-graphic::after {
-      content: "";
-      position: absolute;
-      inset: 24%;
-      border-radius: 50%;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-    }
-
-    .lesson-breakdown-dialog__legend {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .lesson-breakdown-dialog__legend-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.9rem;
-    }
-
-    .lesson-breakdown-dialog__legend-swatch {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--swatch-color, var(--accent));
-      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
-      flex: 0 0 auto;
-    }
-
-    .lesson-breakdown-dialog__legend-label {
-      flex: 1 1 auto;
-      color: var(--text-muted);
-    }
-
-    .lesson-breakdown-dialog__legend-value {
-      flex: 0 0 auto;
-      font-variant-numeric: tabular-nums;
-      font-weight: 600;
-    }
-
-    .lesson-breakdown-dialog__close {
-      appearance: none;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 1.5rem;
-      cursor: pointer;
-      padding: 6px;
-      border-radius: 50%;
-      line-height: 1;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    .lesson-breakdown-dialog__close:hover,
-    .lesson-breakdown-dialog__close:focus-visible {
-      background: var(--secondary-button-bg);
-      color: var(--text-primary);
-      outline: none;
-      box-shadow: 0 0 0 3px var(--focus-ring);
-    }
-
-    @media (max-width: 900px) {
-      .lesson-breakdown-dialog__body {
-        grid-template-columns: 1fr;
-      }
-
-      .lesson-breakdown-dialog__chart {
-        align-items: center;
-      }
-    }
-
-    @media (max-width: 540px) {
-      .lesson-breakdown-dialog__content {
-        border-radius: 16px;
-        padding: 18px;
-      }
-
-      .lesson-breakdown-dialog__body {
-        gap: 18px;
-      }
-
-      .lesson-breakdown-dialog__table-wrapper {
-        border-radius: 12px;
-      }
-    }
-
     .page {
       position: relative;
       overflow: visible;
@@ -2030,17 +1794,10 @@
               </div>
               <div class="control">
                 <label for="variable-cost-class">
-                  <span class="label-text">Variable cost per class</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Expenses that apply each time you run a class, such as room hire or transport." data-tooltip="Expenses that apply each time you run a class, such as room hire or transport.">ℹ️</span>
+                  <span class="label-text">Variable cost per working day</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Expenses that apply on days you operate, such as travel, supplies, or subcontractors." data-tooltip="Expenses that apply on days you operate, such as travel, supplies, or subcontractors.">ℹ️</span>
                 </label>
                 <input type="number" id="variable-cost-class" value="0" min="0" step="0.01" inputmode="decimal" />
-              </div>
-              <div class="control">
-                <label for="variable-cost-student">
-                  <span class="label-text">Variable cost per student</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Per-student expenses like materials or refreshments." data-tooltip="Per-student expenses like materials or refreshments.">ℹ️</span>
-                </label>
-                <input type="number" id="variable-cost-student" value="0" min="0" step="0.01" inputmode="decimal" />
               </div>
               <div class="control">
                 <label for="vat-rate">
@@ -2064,97 +1821,7 @@
             </div>
           </fieldset>
 
-          <fieldset class="control-section" data-collapsible>
-            <legend class="section-legend visually-hidden" id="section-schedule-capacity-legend">Schedule and capacity</legend>
-            <div class="section-header">
-              <span class="section-title" aria-hidden="true">Schedule and capacity</span>
-              <button
-                type="button"
-                class="section-toggle section-toggle--top"
-                data-expanded-text="Collapse"
-                data-collapsed-text="Expand"
-                aria-expanded="true"
-                aria-controls="section-schedule-capacity"
-              >
-                <span class="toggle-label">Collapse</span>
-              </button>
-            </div>
-            <div class="section-body" id="section-schedule-capacity">
-              <div class="control">
-                <label for="classes-per-week">
-                  <span class="label-text">Classes per week</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers or ranges (e.g. 4,5 or 3-8)." data-tooltip="Comma-separated integers or ranges (e.g. 4,5 or 3-8).">ℹ️</span>
-                </label>
-                <input type="text" id="classes-per-week" value="4,5" autocomplete="off" />
-              </div>
-              <div class="control">
-                <label for="students-per-class">
-                  <span class="label-text">Students per class</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers or ranges (e.g. 5-12)." data-tooltip="Comma-separated integers or ranges (e.g. 5-12).">ℹ️</span>
-                </label>
-                <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
-              </div>
-              <div class="section-footer">
-                <button
-                  type="button"
-                  class="section-toggle section-toggle--bottom"
-                  data-expanded-text="Collapse section"
-                  data-collapsed-text="Expand section"
-                  aria-expanded="true"
-                  aria-controls="section-schedule-capacity"
-                >
-                  <span class="toggle-label">Collapse section</span>
-                </button>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="control-section" data-collapsible>
-            <legend class="section-legend visually-hidden" id="section-manual-override-legend">
-              Manual lesson price override
-            </legend>
-            <div class="section-header">
-              <span class="section-title" aria-hidden="true">Manual lesson price override</span>
-              <button
-                type="button"
-                class="section-toggle section-toggle--top"
-                data-expanded-text="Collapse"
-                data-collapsed-text="Expand"
-                aria-expanded="true"
-                aria-controls="section-manual-override"
-              >
-                <span class="toggle-label">Collapse</span>
-              </button>
-            </div>
-            <div class="section-body" id="section-manual-override">
-              <div class="control">
-                <label for="lesson-cost">
-                  <span class="label-text">Manual lesson cost (incl. VAT)</span>
-                  <span
-                    class="info-icon"
-                    tabindex="0"
-                    role="button" aria-expanded="false"
-                    aria-label="Set a fixed per-student lesson price including VAT."
-                    data-tooltip="Set a fixed per-student lesson price including VAT."
-                  >ℹ️</span>
-                </label>
-                <input type="number" id="lesson-cost" min="0" step="0.01" inputmode="decimal" />
-                <p class="field-note">Entering a lesson cost updates the net income values above.</p>
-              </div>
-              <div class="section-footer">
-                <button
-                  type="button"
-                  class="section-toggle section-toggle--bottom"
-                  data-expanded-text="Collapse section"
-                  data-collapsed-text="Expand section"
-                  aria-expanded="true"
-                  aria-controls="section-manual-override"
-                >
-                  <span class="toggle-label">Collapse section</span>
-                </button>
-              </div>
-            </div>
-          </fieldset>
+          
 
           <fieldset class="control-section" data-collapsible>
             <legend class="section-legend visually-hidden" id="section-time-off-legend">Time-off planner</legend>
@@ -2291,56 +1958,6 @@
     </section>
   </div>
 
-  <div
-    class="lesson-breakdown-dialog"
-    id="lesson-breakdown-dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="lesson-breakdown-title"
-    aria-describedby="lesson-breakdown-summary"
-    hidden
-  >
-    <div class="lesson-breakdown-dialog__backdrop" id="lesson-breakdown-backdrop" tabindex="-1"></div>
-    <div class="lesson-breakdown-dialog__content" role="document">
-      <div class="lesson-breakdown-dialog__header">
-        <div>
-          <h2 id="lesson-breakdown-title">Lesson breakdown</h2>
-          <p class="lesson-breakdown-dialog__variant" id="lesson-breakdown-variant"></p>
-        </div>
-        <button
-          type="button"
-          class="lesson-breakdown-dialog__close"
-          id="lesson-breakdown-close"
-          aria-label="Close lesson breakdown"
-        >×</button>
-      </div>
-      <div class="lesson-breakdown-dialog__summary" id="lesson-breakdown-summary">
-        <p class="lesson-breakdown-dialog__price" id="lesson-breakdown-price"></p>
-        <p class="lesson-breakdown-dialog__meta" id="lesson-breakdown-meta"></p>
-        <p class="lesson-breakdown-dialog__total" id="lesson-breakdown-total"></p>
-      </div>
-      <div class="lesson-breakdown-dialog__body">
-        <div class="lesson-breakdown-dialog__table-wrapper">
-          <table class="lesson-breakdown-table">
-            <caption class="visually-hidden">Per-student and per-lesson financial breakdown</caption>
-            <thead>
-              <tr>
-                <th scope="col">Line item</th>
-                <th scope="col">Per student</th>
-                <th scope="col">Per lesson</th>
-              </tr>
-            </thead>
-            <tbody id="lesson-breakdown-table-body"></tbody>
-          </table>
-        </div>
-        <div class="lesson-breakdown-dialog__chart">
-          <div class="lesson-breakdown-dialog__chart-graphic" id="lesson-breakdown-chart-graphic" aria-hidden="true"></div>
-          <ul class="lesson-breakdown-dialog__legend" id="lesson-breakdown-legend"></ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="readme-dialog" id="readme-dialog" role="dialog" aria-modal="true" aria-labelledby="readme-title" hidden>
     <div class="readme-dialog__backdrop" id="readme-backdrop" tabindex="-1"></div>
     <div class="readme-dialog__content" role="document">
@@ -2354,17 +1971,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
-    const breakdownDialog = document.getElementById('lesson-breakdown-dialog');
-    const breakdownBackdrop = document.getElementById('lesson-breakdown-backdrop');
-    const breakdownClose = document.getElementById('lesson-breakdown-close');
-    const breakdownSummary = document.getElementById('lesson-breakdown-summary');
-    const breakdownVariant = document.getElementById('lesson-breakdown-variant');
-    const breakdownPrice = document.getElementById('lesson-breakdown-price');
-    const breakdownMeta = document.getElementById('lesson-breakdown-meta');
-    const breakdownTotal = document.getElementById('lesson-breakdown-total');
-    const breakdownTableBody = document.getElementById('lesson-breakdown-table-body');
-    const breakdownChartGraphic = document.getElementById('lesson-breakdown-chart-graphic');
-    const breakdownLegend = document.getElementById('lesson-breakdown-legend');
     const howToLink = document.getElementById('how-to-link');
     const readmeDialog = document.getElementById('readme-dialog');
     const readmeBody = document.getElementById('readme-body');
@@ -2373,8 +1979,6 @@
     let readmeLoaded = false;
     let readmeLoading = false;
     let previouslyFocusedElement = null;
-    let breakdownTriggerElement = null;
-    let activeBreakdownContext = null;
 
     const COLLAPSIBLE_SECTION_SELECTOR = '.control-section[data-collapsible]';
 
@@ -2818,22 +2422,6 @@
       });
     }
 
-    if (breakdownClose) {
-      breakdownClose.addEventListener('click', closeBreakdownDialog);
-    }
-
-    if (breakdownBackdrop) {
-      breakdownBackdrop.addEventListener('click', closeBreakdownDialog);
-    }
-
-    if (breakdownDialog) {
-      breakdownDialog.addEventListener('click', event => {
-        if (event.target === breakdownDialog) {
-          closeBreakdownDialog();
-        }
-      });
-    }
-
     const themeToggleButton = document.getElementById('theme-toggle');
     const themeToggleLabel = themeToggleButton ? themeToggleButton.querySelector('.toggle-label') : null;
     const THEME_STORAGE_KEY = 'course-pricing-theme';
@@ -2905,15 +2493,9 @@
     const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
     let latestResults = [];
-    let showBasePrices = false;
     let targetNetBasis = 'year';
-    const PRICING_MODE_TARGET = 'target';
-    const PRICING_MODE_LESSON = 'lesson';
-    let latestResultsMode = PRICING_MODE_TARGET;
-    let latestPricingData = null;
     let latestCurrencySymbol = '€';
-    let latestPricingMode = PRICING_MODE_TARGET;
-    let latestBufferPercent = 0;
+    let latestRevenueSummary = null;
     const PERSISTED_TARGET_NET_BASIS_KEY = '__targetNetBasis';
     const TARGET_NET_BASIS_VALUES = ['year', 'week', 'month', 'avgWeek', 'avgMonth'];
     const TARGET_NET_BASIS_BY_INPUT_ID = {
@@ -2933,11 +2515,7 @@
       taxRate: document.getElementById('tax-rate'),
       fixedCosts: document.getElementById('fixed-costs'),
       variableCostPerClass: document.getElementById('variable-cost-class'),
-      variableCostPerStudent: document.getElementById('variable-cost-student'),
       vatRate: document.getElementById('vat-rate'),
-      classesPerWeek: document.getElementById('classes-per-week'),
-      studentsPerClass: document.getElementById('students-per-class'),
-      lessonCost: document.getElementById('lesson-cost'),
       monthsOff: document.getElementById('months-off'),
       weeksOffCycle: document.getElementById('weeks-off-cycle'),
       daysOffWeek: document.getElementById('days-off-week'),
@@ -3536,23 +3114,10 @@
       const taxRate = taxRatePercent / 100;
       const fixedCosts = updateFixedCostTotalDisplay();
       const variableCostPerClass = Math.max(parseNumber(controls.variableCostPerClass.value, 0), 0);
-      const variableCostPerStudent = Math.max(parseNumber(controls.variableCostPerStudent.value, 0), 0);
       const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
-      const classesPerWeek = parseList(controls.classesPerWeek.value);
-      const studentsPerClass = parseList(controls.studentsPerClass.value);
       const bufferPercent = Math.max(parseNumber(controls.buffer.value, 15), 0);
       const buffer = bufferPercent / 100;
       const currencySymbol = controls.currencySymbol.value.trim() || '€';
-      let lessonCostInclVat = null;
-      if (controls.lessonCost instanceof HTMLInputElement) {
-        const rawLessonCost = controls.lessonCost.value;
-        if (typeof rawLessonCost === 'string' && rawLessonCost.trim() !== '') {
-          const parsedLessonCost = Number(rawLessonCost);
-          if (Number.isFinite(parsedLessonCost) && parsedLessonCost >= 0) {
-            lessonCostInclVat = parsedLessonCost;
-          }
-        }
-      }
 
       const activeMonthShare = Math.min(Math.max((12 - monthsOff) / 12, 0), 1);
       const activeMonths = 12 * activeMonthShare;
@@ -3635,25 +3200,17 @@
       if (controls.variableCostPerClass instanceof HTMLInputElement) {
         controls.variableCostPerClass.value = formatFixed(variableCostPerClass, 2);
       }
-      if (controls.variableCostPerStudent instanceof HTMLInputElement) {
-        controls.variableCostPerStudent.value = formatFixed(variableCostPerStudent, 2);
-      }
       controls.vatRate.value = formatFixed(vatRate * 100, 1);
       controls.monthsOff.value = formatFixed(monthsOff, 2);
       controls.weeksOffCycle.value = formatFixed(weeksOffPerCycle, 2);
       controls.daysOffWeek.value = formatFixed(daysOffPerWeek, 2);
       controls.buffer.value = formatFixed(buffer * 100, 1);
       controls.currencySymbol.value = currencySymbol;
-      if (controls.lessonCost instanceof HTMLInputElement) {
-        if (Number.isFinite(lessonCostInclVat)) {
-          controls.lessonCost.value = formatFixed(lessonCostInclVat, 2);
-        } else if (typeof controls.lessonCost.value === 'string' && controls.lessonCost.value.trim() !== '') {
-          controls.lessonCost.value = '';
-        }
-      }
 
       controls.workingWeeksDisplay.textContent = formatFixed(workingWeeks, 2);
       controls.workingDaysDisplay.textContent = formatFixed(workingDaysPerYear, 2);
+
+      const annualVariableCosts = variableCostPerClass * workingDaysPerYear;
 
       return {
         targetNet,
@@ -3664,11 +3221,8 @@
         taxRate,
         fixedCosts,
         variableCostPerClass,
-        variableCostPerStudent,
         vatRate,
-        classesPerWeek,
-        studentsPerClass,
-        lessonCostInclVat,
+        annualVariableCosts,
         workingWeeks,
         buffer,
         bufferPercent,
@@ -3693,872 +3247,189 @@
       return rounded < 0 ? `-${symbol}${formatted}` : `${symbol}${formatted}`;
     }
 
-    function findBreakdownButton(context) {
-      if (!context || !tablesContainer) {
-        return null;
-      }
 
-      const { rowIndex, columnIndex, variant } = context;
-      if (!Number.isFinite(rowIndex) || !Number.isFinite(columnIndex)) {
-        return null;
-      }
-      const variantValue = variant === 'base' ? 'base' : 'buffered';
+    function computeRevenueSummary(inputs) {
+      const {
+        targetNet,
+        taxRate,
+        fixedCosts,
+        annualVariableCosts,
+        buffer,
+        bufferPercent,
+        workingWeeks,
+        activeMonths,
+        workingDaysPerYear
+      } = inputs;
 
-      return tablesContainer.querySelector(
-        `button.price-line[data-row="${rowIndex}"][data-column="${columnIndex}"][data-variant="${variantValue}"]`
-      );
-    }
+      const effectiveTaxRate = Math.min(Math.max(taxRate, 0), 0.99);
+      const denominator = Math.max(1 - effectiveTaxRate, 0.0001);
+      const profitBeforeTax = targetNet / denominator;
+      const baseRevenue = profitBeforeTax + fixedCosts + annualVariableCosts;
+      const bufferedRevenue = baseRevenue * (1 + buffer);
 
-    function formatBreakdownCurrency(value) {
-      return Number.isFinite(value) ? formatCurrency(latestCurrencySymbol, value) : '—';
-    }
+      const monthlyBase = Number.isFinite(activeMonths) && activeMonths > 0 ? baseRevenue / activeMonths : null;
+      const monthlyBuffered = Number.isFinite(activeMonths) && activeMonths > 0 ? bufferedRevenue / activeMonths : null;
+      const weeklyBase = Number.isFinite(workingWeeks) && workingWeeks > 0 ? baseRevenue / workingWeeks : null;
+      const weeklyBuffered = Number.isFinite(workingWeeks) && workingWeeks > 0 ? bufferedRevenue / workingWeeks : null;
+      const dailyBase = Number.isFinite(workingDaysPerYear) && workingDaysPerYear > 0
+        ? baseRevenue / workingDaysPerYear
+        : null;
+      const dailyBuffered = Number.isFinite(workingDaysPerYear) && workingDaysPerYear > 0
+        ? bufferedRevenue / workingDaysPerYear
+        : null;
 
-    function populateBreakdownDialog(context) {
-      if (
-        !context ||
-        !Array.isArray(latestPricingData) ||
-        !breakdownDialog ||
-        !breakdownSummary
-      ) {
-        return false;
-      }
-
-      const isTargetMode = latestPricingMode === PRICING_MODE_TARGET;
-      const isLessonMode = latestPricingMode === PRICING_MODE_LESSON;
-
-      if (!isTargetMode && !isLessonMode) {
-        return false;
-      }
-
-      const { rowIndex, columnIndex, variant } = context;
-      const row = latestPricingData[rowIndex];
-      if (!row || !Array.isArray(row.columns)) {
-        return false;
-      }
-
-      const column = row.columns[columnIndex];
-      if (!column) {
-        return false;
-      }
-
-      const pricingVariant = variant === 'base' ? column.base : column.buffered;
-      if (!pricingVariant || !pricingVariant.breakdown) {
-        return false;
-      }
-
-      const breakdown = pricingVariant.breakdown;
-      const perStudentInclVat = formatCurrency(latestCurrencySymbol, pricingVariant.priceInclVat);
-      const perStudentExVat = formatCurrency(latestCurrencySymbol, pricingVariant.priceExVat);
-      const perLessonInclVat = formatCurrency(latestCurrencySymbol, breakdown.totals.priceInclVatPerLesson);
-      const perLessonExVat = formatCurrency(latestCurrencySymbol, breakdown.totals.priceExVatPerLesson);
-
-      const studentsDisplay = Number.isFinite(row.students)
-        ? numberFormatter.format(row.students)
-        : '—';
-      const classesPerWeekValue = column.classesPerWeek;
-      const classesPerWeekDisplay = Number.isFinite(classesPerWeekValue)
-        ? (Number.isInteger(classesPerWeekValue)
-            ? numberFormatter.format(classesPerWeekValue)
-            : formatFixed(classesPerWeekValue, 2))
-        : '—';
-      const classesPerYearDisplay = Number.isFinite(column.classesPerYear)
-        ? numberFormatter.format(Math.round(column.classesPerYear))
-        : '—';
-
-      let variantLabel;
-      if (isLessonMode) {
-        variantLabel = variant === 'base'
-          ? 'Full attendance at set lesson price'
-          : `Attendance shortfall (${formatFixed(latestBufferPercent, 1)}% less revenue)`;
-      } else {
-        variantLabel = variant === 'base'
-          ? 'Base price (no buffer)'
-          : `Buffered price (+${formatFixed(latestBufferPercent, 1)}% safety margin)`;
-      }
-
-      if (breakdownVariant) {
-        breakdownVariant.textContent = variantLabel;
-      }
-
-      if (breakdownPrice) {
-        breakdownPrice.textContent = `${perStudentInclVat} per student (${perStudentExVat} ex VAT)`;
-      }
-
-      if (breakdownMeta) {
-        breakdownMeta.textContent = `${studentsDisplay} students · ${classesPerWeekDisplay} classes/week (≈ ${classesPerYearDisplay} / yr)`;
-      }
-
-      if (breakdownTotal) {
-        breakdownTotal.textContent = `Total collected per lesson: ${perLessonInclVat} (${perLessonExVat} ex VAT)`;
-      }
-
-      const tableRows = [
-        { key: 'vat', label: 'VAT remitted' },
-        { key: 'variableCosts', label: 'Variable costs' },
-        { key: 'fixedCostAllocation', label: 'Fixed cost allocation' },
-        { key: 'incomeTax', label: 'Income tax' },
-        { key: 'netIncome', label: 'Net income after tax' }
-      ];
-
-      if (breakdownTableBody) {
-        const rowsMarkup = tableRows
-          .map(item => {
-            const perStudentValue = breakdown.perStudent[item.key];
-            const perLessonValue = breakdown.perLesson[item.key];
-            return `
-              <tr>
-                <th scope="row">${item.label}</th>
-                <td>${formatBreakdownCurrency(perStudentValue)}</td>
-                <td>${formatBreakdownCurrency(perLessonValue)}</td>
-              </tr>
-            `;
-          })
-          .join('');
-        breakdownTableBody.innerHTML = rowsMarkup;
-      }
-
-      const legendItems = [
-        { key: 'vat', label: 'VAT remitted', value: breakdown.perLesson.vat, color: 'var(--breakdown-color-vat)' },
-        { key: 'variableCosts', label: 'Variable costs', value: breakdown.perLesson.variableCosts, color: 'var(--breakdown-color-variable)' },
-        { key: 'fixedCostAllocation', label: 'Fixed cost allocation', value: breakdown.perLesson.fixedCostAllocation, color: 'var(--breakdown-color-fixed)' },
-        { key: 'incomeTax', label: 'Income tax', value: breakdown.perLesson.incomeTax, color: 'var(--breakdown-color-tax)' },
-        { key: 'netIncome', label: 'Net income after tax', value: breakdown.perLesson.netIncome, color: 'var(--breakdown-color-net)' }
-      ];
-
-      if (breakdownLegend) {
-        const legendMarkup = legendItems
-          .map(item => `
-            <li class="lesson-breakdown-dialog__legend-item">
-              <span class="lesson-breakdown-dialog__legend-swatch" style="--swatch-color:${item.color};"></span>
-              <span class="lesson-breakdown-dialog__legend-label">${item.label}</span>
-              <span class="lesson-breakdown-dialog__legend-value">${formatBreakdownCurrency(item.value)}</span>
-            </li>
-          `)
-          .join('');
-        breakdownLegend.innerHTML = legendMarkup;
-      }
-
-      if (breakdownChartGraphic) {
-        const positiveSegments = legendItems.map(item => Math.max(item.value, 0));
-        const total = positiveSegments.reduce((sum, value) => sum + value, 0);
-
-        if (total > 0) {
-          let currentAngle = 0;
-          const segments = legendItems
-            .map((item, index) => {
-              const value = positiveSegments[index];
-              if (value <= 0) {
-                return null;
-              }
-              const start = currentAngle;
-              const end = start + (value / total) * 360;
-              currentAngle = end;
-              return `${item.color} ${start}deg ${end}deg`;
-            })
-            .filter(Boolean);
-
-          breakdownChartGraphic.style.background = segments.length
-            ? `conic-gradient(${segments.join(', ')})`
-            : 'radial-gradient(circle at 50% 50%, var(--price-line-bg), var(--row-header-bg))';
-        } else {
-          breakdownChartGraphic.style.background = 'radial-gradient(circle at 50% 50%, var(--price-line-bg), var(--row-header-bg))';
-        }
-
-      }
-
-      return true;
-    }
-
-    function openBreakdownDialog(context, triggerElement) {
-      if (!breakdownDialog) {
-        return;
-      }
-
-      const normalizedContext = {
-        rowIndex: Number(context?.rowIndex),
-        columnIndex: Number(context?.columnIndex),
-        variant: context?.variant === 'base' ? 'base' : 'buffered'
+      return {
+        baseRevenue,
+        bufferedRevenue,
+        bufferPercent,
+        monthlyBase,
+        monthlyBuffered,
+        weeklyBase,
+        weeklyBuffered,
+        dailyBase,
+        dailyBuffered
       };
-
-      if (!populateBreakdownDialog(normalizedContext)) {
-        return;
-      }
-
-      activeBreakdownContext = normalizedContext;
-      breakdownTriggerElement = triggerElement instanceof HTMLElement ? triggerElement : null;
-      breakdownDialog.hidden = false;
-      breakdownDialog.scrollTop = 0;
-      setBodyScrollLock('breakdown', true);
-
-      window.requestAnimationFrame(() => {
-        const focusable = getFocusableElements(breakdownDialog);
-        if (focusable.length) {
-          focusable[0].focus();
-        } else if (breakdownClose) {
-          breakdownClose.focus();
-        }
-      });
-
-      document.addEventListener('keydown', handleBreakdownKeydown);
     }
 
-    function closeBreakdownDialog() {
-      if (!breakdownDialog || breakdownDialog.hidden) {
-        return;
-      }
-
-      breakdownDialog.hidden = true;
-      setBodyScrollLock('breakdown', false);
-      document.removeEventListener('keydown', handleBreakdownKeydown);
-
-      const trigger = breakdownTriggerElement;
-      breakdownTriggerElement = null;
-      activeBreakdownContext = null;
-
-      if (trigger instanceof HTMLElement && trigger.isConnected && typeof trigger.focus === 'function') {
-        trigger.focus();
-      }
-    }
-
-    function handleBreakdownKeydown(event) {
-      if (!breakdownDialog || breakdownDialog.hidden) {
-        return;
-      }
-
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closeBreakdownDialog();
-        return;
-      }
-
-      if (event.key === 'Tab') {
-        const focusable = getFocusableElements(breakdownDialog);
-        if (!focusable.length) {
-          event.preventDefault();
-          return;
-        }
-
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-
-        if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        } else if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        }
-      }
-    }
-
-    function refreshBreakdownDialog() {
-      if (!breakdownDialog || breakdownDialog.hidden || !activeBreakdownContext) {
-        return false;
-      }
-
-      const refreshed = populateBreakdownDialog(activeBreakdownContext);
-      if (refreshed) {
-        const updatedTrigger = findBreakdownButton(activeBreakdownContext);
-        if (updatedTrigger) {
-          breakdownTriggerElement = updatedTrigger;
-        }
-      }
-
-      return refreshed;
-    }
-
-    function computeNetIncomeFromRevenue(revenue, fixedCosts, effectiveTaxRate, variableCosts = 0) {
-      if (!Number.isFinite(revenue)) {
-        return null;
-      }
-      const normalizedVariableCosts = Number.isFinite(variableCosts) ? variableCosts : 0;
-      const profitBeforeTax = revenue - fixedCosts - normalizedVariableCosts;
-      return profitBeforeTax * (1 - effectiveTaxRate);
-    }
-
-    function buildPricingTable(data, symbol, bufferPercent, options = {}) {
-      if (!data.length) {
-        return `<div class="card"><p class="status-message">No valid combinations available.</p></div>`;
-      }
-
-      const { mode = PRICING_MODE_TARGET, showBasePrices: showBase = false } = options;
-      const formattedBuffer = formatFixed(bufferPercent, 1);
-      const showBasePricesActive = mode === PRICING_MODE_TARGET && showBase;
-      const cardClasses = ['card', 'pricing-card'];
-      if (showBasePricesActive) {
-        cardClasses.push('show-base-prices');
-      }
-
-      const toggleMarkup = mode === PRICING_MODE_TARGET
-        ? `<div class="price-toggle-row">
-            <button type="button" class="price-reveal-toggle secondary" aria-expanded="${showBasePricesActive}">
-              ${showBasePricesActive ? 'Hide base price' : 'Show base price'}
-            </button>
-          </div>`
-        : '';
-
-      const columnHeaders = data[0].columns
-        .map(col => {
-          return `<th scope="col">${col.classesPerWeek}/week<span class="sub-label">≈ ${numberFormatter.format(col.classesPerYear)} / yr</span></th>`;
-        })
-        .join('');
-
-      const rowsHtml = data
-        .map((row, rowIndex) => {
-          const cells = row.columns
-            .map((col, columnIndex) => {
-              if (mode === PRICING_MODE_LESSON && col.manualNet) {
-                const monthlyDisplay = Number.isFinite(col.manualNet.monthly)
-                  ? formatCurrency(symbol, col.manualNet.monthly)
-                  : '—';
-                const annualDisplay = Number.isFinite(col.manualNet.annual)
-                  ? formatCurrency(symbol, col.manualNet.annual)
-                  : '—';
-                const bufferedMonthlyDisplay = Number.isFinite(col.manualNet.bufferedMonthly)
-                  ? formatCurrency(symbol, col.manualNet.bufferedMonthly)
-                  : '—';
-                const bufferedAnnualDisplay = Number.isFinite(col.manualNet.bufferedAnnual)
-                  ? formatCurrency(symbol, col.manualNet.bufferedAnnual)
-                  : '—';
-
-                return `
-                <td>
-                  <div class="price-pair">
-                    <button
-                      type="button"
-                      class="price-line"
-                      data-row="${rowIndex}"
-                      data-column="${columnIndex}"
-                      data-variant="base"
-                    >
-                      <span class="price-label">Monthly net</span>
-                      <strong>${monthlyDisplay}</strong>
-                      <span class="price-secondary">Annual net ${annualDisplay}</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="price-line buffered"
-                      data-row="${rowIndex}"
-                      data-column="${columnIndex}"
-                      data-variant="buffered"
-                    >
-                      <span class="price-label">Monthly net with ${formattedBuffer}% shortfall</span>
-                      <strong>${bufferedMonthlyDisplay}</strong>
-                      <span class="price-secondary">Annual net ${bufferedAnnualDisplay}</span>
-                    </button>
-                  </div>
-                </td>
-              `;
-              }
-
-              const bufferedExVat = formatCurrency(symbol, col.buffered.priceExVat);
-              const bufferedInclVat = formatCurrency(symbol, col.buffered.priceInclVat);
-              const baseExVat = formatCurrency(symbol, col.base.priceExVat);
-              const baseInclVat = formatCurrency(symbol, col.base.priceInclVat);
-              return `
-                <td>
-                  <button
-                    type="button"
-                    class="price-line buffered"
-                    data-row="${rowIndex}"
-                    data-column="${columnIndex}"
-                    data-variant="buffered"
-                  >
-                    <span class="price-label">Buffered +${formattedBuffer}%</span>
-                    <strong>${bufferedInclVat}</strong>
-                    <span class="price-secondary">ex VAT ${bufferedExVat}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="price-line base"
-                    aria-hidden="${showBasePricesActive ? 'false' : 'true'}"
-                    data-row="${rowIndex}"
-                    data-column="${columnIndex}"
-                    data-variant="base"
-                  >
-                    <span class="price-label">Base (no buffer)</span>
-                    <strong>${baseInclVat}</strong>
-                    <span class="price-secondary">ex VAT ${baseExVat}</span>
-                  </button>
-                </td>
-              `;
-            })
-            .join('');
-          return `<tr><th scope="row">${row.students}<span class="sub-label">students</span></th>${cells}</tr>`;
-        })
-        .join('');
-
-      return `
-        <div class="${cardClasses.join(' ')}">
-          ${toggleMarkup}
-          <table>
-            <caption>Per-student pricing (includes optional safety margin)</caption>
-            <thead>
-              <tr>
-                <th scope="col">Students / class</th>
-                ${columnHeaders}
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+    function buildRevenueSummaryTable(summary, currencySymbol, inputs) {
+      if (!summary || !Number.isFinite(summary.baseRevenue)) {
+        return `
+        <div class="card">
+          <p class="status-message">Enter your income targets and costs to see the revenue summary.</p>
         </div>
-      `;
-    }
-
-    function buildActiveTargetsTable({
-      currencySymbol,
-      revenueNeeded,
-      workingDaysPerYear,
-      workingWeeks,
-      activeMonths
-    }) {
-      if (!Number.isFinite(revenueNeeded) || revenueNeeded <= 0) {
-        return '';
+        `;
       }
 
-      const targets = [
+      const rows = [
         {
-          label: 'Active day',
-          basis: workingDaysPerYear,
-          suffix: 'active days / year'
-        },
-        {
-          label: 'Active week',
-          basis: workingWeeks,
-          suffix: 'active weeks / year'
+          label: 'Annual total',
+          base: summary.baseRevenue,
+          buffered: summary.bufferedRevenue,
+          basis: 'Includes fixed costs and estimated variable costs before applying the safety margin.'
         },
         {
           label: 'Active month',
-          basis: activeMonths,
-          suffix: 'active months / year'
+          base: summary.monthlyBase,
+          buffered: summary.monthlyBuffered,
+          basis: Number.isFinite(inputs.activeMonths) && inputs.activeMonths > 0
+            ? `Based on ≈ ${formatFixed(inputs.activeMonths, 2)} active months / year`
+            : '—'
+        },
+        {
+          label: 'Active week',
+          base: summary.weeklyBase,
+          buffered: summary.weeklyBuffered,
+          basis: Number.isFinite(inputs.workingWeeks) && inputs.workingWeeks > 0
+            ? `Based on ≈ ${formatFixed(inputs.workingWeeks, 2)} active weeks / year`
+            : '—'
+        },
+        {
+          label: 'Active day',
+          base: summary.dailyBase,
+          buffered: summary.dailyBuffered,
+          basis: Number.isFinite(inputs.workingDaysPerYear) && inputs.workingDaysPerYear > 0
+            ? `Based on ≈ ${formatFixed(inputs.workingDaysPerYear, 2)} active days / year`
+            : '—'
         }
       ];
 
-      const rows = targets
-        .map(target => {
-          const hasBasis = Number.isFinite(target.basis) && target.basis > 0;
-          const amount = hasBasis ? revenueNeeded / target.basis : null;
-          const amountDisplay = hasBasis && Number.isFinite(amount)
-            ? formatCurrency(currencySymbol, amount)
-            : '—';
-          const basisDisplay = hasBasis
-            ? `Based on ≈ ${formatFixed(target.basis, 2)} ${target.suffix}`
-            : '—';
-
+      const rowsMarkup = rows
+        .map(row => {
+          const baseDisplay = Number.isFinite(row.base) ? formatCurrency(currencySymbol, row.base) : '—';
+          const bufferedDisplay = Number.isFinite(row.buffered) ? formatCurrency(currencySymbol, row.buffered) : '—';
           return `
             <tr>
-              <th scope="row">${target.label}</th>
-              <td>${amountDisplay}</td>
-              <td>${basisDisplay}</td>
+              <th scope="row">${row.label}</th>
+              <td>${baseDisplay}</td>
+              <td>${bufferedDisplay}</td>
+              <td>${row.basis}</td>
             </tr>
           `;
         })
         .join('');
 
+      const bufferLabel = Number.isFinite(summary.bufferPercent) ? formatFixed(summary.bufferPercent, 1) : '0';
+
       return `
         <div class="card">
           <table>
             <caption>
-              Gross Revenue Needed To Achieve Net Income Targets
-              <span
-                class="info-icon"
-                tabindex="0"
-                role="button"
-                aria-expanded="false"
-                aria-label="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
-                data-tooltip="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
-              >ℹ️</span>
+              Gross revenue needed (base vs. safety margin +${bufferLabel}%)
             </caption>
             <thead>
               <tr>
                 <th scope="col">Target</th>
-                <th scope="col">Revenue needed</th>
+                <th scope="col">Base revenue</th>
+                <th scope="col">With margin</th>
                 <th scope="col">Basis</th>
               </tr>
             </thead>
             <tbody>
-              ${rows}
+              ${rowsMarkup}
             </tbody>
           </table>
         </div>
       `;
     }
 
-    function computeTables(inputs) {
-      const {
-        targetNet,
-        taxRate,
-        fixedCosts,
-        variableCostPerClass,
-        variableCostPerStudent,
-        vatRate,
-        classesPerWeek,
-        studentsPerClass,
-        workingWeeks,
-        buffer,
-        bufferPercent,
-        lessonCostInclVat,
-        activeMonths
-      } = inputs;
+    function render() {
+      const inputs = getInputs();
+      const summary = computeRevenueSummary(inputs);
+
+      latestCurrencySymbol = inputs.currencySymbol;
+      latestRevenueSummary = summary;
+
+      const tableMarkup = buildRevenueSummaryTable(summary, inputs.currencySymbol, inputs);
+      tablesContainer.innerHTML = tableMarkup;
+      scheduleTablesLayoutUpdate();
 
       latestResults = [];
 
-      const manualMode = Number.isFinite(lessonCostInclVat);
-      const mode = manualMode ? PRICING_MODE_LESSON : PRICING_MODE_TARGET;
-
-      const pricingData = [];
-      const effectiveTaxRate = Math.min(taxRate, 0.99);
-      const hasSchedule =
-        classesPerWeek.length &&
-        studentsPerClass.length &&
-        Number.isFinite(workingWeeks) &&
-        workingWeeks > 0;
-
-      const hasWorkingWeeks = Number.isFinite(workingWeeks) && workingWeeks > 0;
-      const hasActiveMonths = Number.isFinite(activeMonths) && activeMonths > 0;
-
-      let manualNetSummary = null;
-      let revenueNeeded = null;
-
-      if (!hasSchedule) {
-        latestResultsMode = mode;
-        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
-      }
-
-      const sortedStudents = [...studentsPerClass];
-      sortedStudents.sort((a, b) => a - b);
-
-      const columnsMeta = classesPerWeek.map(classes => {
-        const classesPerYear = classes * workingWeeks;
-        return { classesPerWeek: classes, classesPerYear };
-      });
-
-      function buildPriceBreakdown({ priceExVatValue, priceInclVatValue, studentCount, classesPerYearValue }) {
-        const normalizedPriceExVat = Number.isFinite(priceExVatValue) ? priceExVatValue : 0;
-        const normalizedPriceInclVat = Number.isFinite(priceInclVatValue) ? priceInclVatValue : 0;
-        const actualStudents = Number.isFinite(studentCount) ? studentCount : 0;
-        const actualClassesPerYear = Number.isFinite(classesPerYearValue) ? classesPerYearValue : 0;
-        const safeStudents = actualStudents > 0 ? actualStudents : 1;
-        const fixedAllocationPerLesson = actualClassesPerYear > 0 ? fixedCosts / actualClassesPerYear : 0;
-        const vatPerStudent = normalizedPriceInclVat - normalizedPriceExVat;
-        const vatPerLesson = vatPerStudent * actualStudents;
-        const variableCostsPerLesson = variableCostPerClass + variableCostPerStudent * actualStudents;
-        const revenueExVatPerLesson = normalizedPriceExVat * actualStudents;
-        const profitBeforeTaxPerLesson = revenueExVatPerLesson - variableCostsPerLesson - fixedAllocationPerLesson;
-        const incomeTaxPerLesson = profitBeforeTaxPerLesson > 0 ? profitBeforeTaxPerLesson * effectiveTaxRate : 0;
-        const netIncomePerLesson = profitBeforeTaxPerLesson - incomeTaxPerLesson;
-
-        return {
-          perLesson: {
-            vat: vatPerLesson,
-            variableCosts: variableCostsPerLesson,
-            fixedCostAllocation: fixedAllocationPerLesson,
-            incomeTax: incomeTaxPerLesson,
-            netIncome: netIncomePerLesson
+      if (summary && Number.isFinite(summary.baseRevenue)) {
+        latestResults = [
+          {
+            label: 'Annual total',
+            base: summary.baseRevenue,
+            buffered: summary.bufferedRevenue,
+            basis: 'Includes fixed and estimated variable costs.'
           },
-          perStudent: {
-            vat: vatPerStudent,
-            variableCosts: variableCostsPerLesson / safeStudents,
-            fixedCostAllocation: fixedAllocationPerLesson / safeStudents,
-            incomeTax: incomeTaxPerLesson / safeStudents,
-            netIncome: netIncomePerLesson / safeStudents
+          {
+            label: 'Active month',
+            base: summary.monthlyBase,
+            buffered: summary.monthlyBuffered,
+            basis: Number.isFinite(inputs.activeMonths) && inputs.activeMonths > 0
+              ? `≈ ${formatFixed(inputs.activeMonths, 2)} active months / year`
+              : ''
           },
-          totals: {
-            priceInclVatPerStudent: normalizedPriceInclVat,
-            priceExVatPerStudent: normalizedPriceExVat,
-            priceInclVatPerLesson: normalizedPriceInclVat * actualStudents,
-            priceExVatPerLesson: revenueExVatPerLesson,
-            students: actualStudents,
-            classesPerYear: actualClassesPerYear
+          {
+            label: 'Active week',
+            base: summary.weeklyBase,
+            buffered: summary.weeklyBuffered,
+            basis: Number.isFinite(inputs.workingWeeks) && inputs.workingWeeks > 0
+              ? `≈ ${formatFixed(inputs.workingWeeks, 2)} active weeks / year`
+              : ''
+          },
+          {
+            label: 'Active day',
+            base: summary.dailyBase,
+            buffered: summary.dailyBuffered,
+            basis: Number.isFinite(inputs.workingDaysPerYear) && inputs.workingDaysPerYear > 0
+              ? `≈ ${formatFixed(inputs.workingDaysPerYear, 2)} active days / year`
+              : ''
           }
-        };
+        ];
       }
-
-      if (mode === PRICING_MODE_LESSON) {
-        const vatDivisor = Math.max(1 + vatRate, 0.0001);
-        const priceInclVatPerStudent = lessonCostInclVat;
-        const priceExVatPerStudent = lessonCostInclVat / vatDivisor;
-        const attendanceMultiplier = Math.max(1 - buffer, 0);
-        const formattedBuffer = formatFixed(bufferPercent, 1);
-
-        for (const students of sortedStudents) {
-          const row = { students, columns: [] };
-
-          for (const column of columnsMeta) {
-            const classesPerYear = column.classesPerYear;
-            const annualRevenue = priceExVatPerStudent * students * classesPerYear;
-            const bufferedRevenue = annualRevenue * attendanceMultiplier;
-            const annualVariableCosts =
-              variableCostPerClass * classesPerYear +
-              variableCostPerStudent * students * classesPerYear;
-
-            const annualNet = computeNetIncomeFromRevenue(
-              annualRevenue,
-              fixedCosts,
-              effectiveTaxRate,
-              annualVariableCosts
-            );
-            const bufferedAnnualNet = computeNetIncomeFromRevenue(
-              bufferedRevenue,
-              fixedCosts,
-              effectiveTaxRate,
-              annualVariableCosts
-            );
-
-            const monthlyNet = Number.isFinite(annualNet) && hasActiveMonths
-              ? annualNet / activeMonths
-              : null;
-            const bufferedMonthlyNet = Number.isFinite(bufferedAnnualNet) && hasActiveMonths
-              ? bufferedAnnualNet / activeMonths
-              : null;
-
-            if (!manualNetSummary && Number.isFinite(annualNet)) {
-              manualNetSummary = {
-                annual: annualNet,
-                monthly: Number.isFinite(monthlyNet) ? monthlyNet : null,
-                weekly: hasWorkingWeeks ? annualNet / workingWeeks : null,
-                averageWeekly: annualNet / WEEKS_PER_YEAR,
-                averageMonthly: annualNet / MONTHS_PER_YEAR
-              };
-            }
-
-            const baseBreakdown = buildPriceBreakdown({
-              priceExVatValue: priceExVatPerStudent,
-              priceInclVatValue: priceInclVatPerStudent,
-              studentCount: students,
-              classesPerYearValue: classesPerYear
-            });
-
-            row.columns.push({
-              classesPerWeek: column.classesPerWeek,
-              classesPerYear,
-              manualNet: {
-                monthly: monthlyNet,
-                annual: annualNet,
-                bufferedMonthly: bufferedMonthlyNet,
-                bufferedAnnual: bufferedAnnualNet
-              },
-              base: {
-                priceExVat: priceExVatPerStudent,
-                priceInclVat: priceInclVatPerStudent,
-                breakdown: baseBreakdown
-              },
-              buffered: {
-                priceExVat: priceExVatPerStudent,
-                priceInclVat: priceInclVatPerStudent,
-                breakdown: baseBreakdown
-              }
-            });
-
-            latestResults.push({
-              variant: 'Full attendance',
-              students,
-              classesPerWeek: column.classesPerWeek,
-              classesPerYear: Math.round(classesPerYear),
-              monthlyNet,
-              annualNet
-            });
-            latestResults.push({
-              variant: `With ${formattedBuffer}% shortfall`,
-              students,
-              classesPerWeek: column.classesPerWeek,
-              classesPerYear: Math.round(classesPerYear),
-              monthlyNet: bufferedMonthlyNet,
-              annualNet: bufferedAnnualNet
-            });
-          }
-
-          pricingData.push(row);
-        }
-
-        latestResultsMode = mode;
-        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
-      }
-
-      const denominator = Math.max(1 - effectiveTaxRate, 0.0001);
-      const profitBeforeTax = targetNet / denominator;
-      revenueNeeded = profitBeforeTax + fixedCosts;
-
-      if (!Number.isFinite(revenueNeeded) || revenueNeeded <= 0) {
-        latestResultsMode = mode;
-        return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
-      }
-
-      for (const students of sortedStudents) {
-        const row = { students, columns: [] };
-
-        for (const column of columnsMeta) {
-          const classesPerYear = column.classesPerYear;
-          const effectiveClassesPerYear = Math.max(classesPerYear, 1);
-          const annualVariableCosts =
-            variableCostPerClass * classesPerYear +
-            variableCostPerStudent * students * classesPerYear;
-          const revenueNeededForCombo = revenueNeeded + annualVariableCosts;
-          const revenuePerClass = revenueNeededForCombo / effectiveClassesPerYear;
-          const priceExVat = revenuePerClass / Math.max(students, 1);
-          const bufferedExVat = priceExVat * (1 + buffer);
-          const priceInclVat = priceExVat * (1 + vatRate);
-          const bufferedInclVat = bufferedExVat * (1 + vatRate);
-
-          const roundedBaseExVat = Math.round(priceExVat);
-          const roundedBaseInclVat = Math.round(priceInclVat);
-          const roundedBufferedExVat = Math.round(bufferedExVat);
-          const roundedBufferedInclVat = Math.round(bufferedInclVat);
-
-          const baseBreakdown = buildPriceBreakdown({
-            priceExVatValue: priceExVat,
-            priceInclVatValue: priceInclVat,
-            studentCount: students,
-            classesPerYearValue: classesPerYear
-          });
-          const bufferedBreakdown = buildPriceBreakdown({
-            priceExVatValue: bufferedExVat,
-            priceInclVatValue: bufferedInclVat,
-            studentCount: students,
-            classesPerYearValue: classesPerYear
-          });
-
-          row.columns.push({
-            classesPerWeek: column.classesPerWeek,
-            classesPerYear,
-            base: {
-              priceExVat,
-              priceInclVat,
-              breakdown: baseBreakdown
-            },
-            buffered: {
-              priceExVat: bufferedExVat,
-              priceInclVat: bufferedInclVat,
-              breakdown: bufferedBreakdown
-            }
-          });
-
-          latestResults.push({
-            variant: 'Base (no buffer)',
-            students,
-            classesPerWeek: column.classesPerWeek,
-            classesPerYear: Math.round(classesPerYear),
-            priceExVat: roundedBaseExVat,
-            priceInclVat: roundedBaseInclVat
-          });
-
-          latestResults.push({
-            variant: `Buffered +${bufferPercent}%`,
-            students,
-            classesPerWeek: column.classesPerWeek,
-            classesPerYear: Math.round(classesPerYear),
-            priceExVat: roundedBufferedExVat,
-            priceInclVat: roundedBufferedInclVat
-          });
-        }
-
-        pricingData.push(row);
-      }
-
-      latestResultsMode = mode;
-      return { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary };
-    }
-
-    function render() {
-      const inputs = getInputs();
-      const { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary } = computeTables(inputs);
-
-      if (mode === PRICING_MODE_LESSON && manualNetSummary) {
-        if (controls.targetNet instanceof HTMLInputElement && Number.isFinite(manualNetSummary.annual)) {
-          controls.targetNet.value = formatFixed(manualNetSummary.annual, 2);
-          inputs.targetNet = manualNetSummary.annual;
-        }
-
-        if (controls.targetNetWeek instanceof HTMLInputElement) {
-          if (Number.isFinite(manualNetSummary.weekly)) {
-            controls.targetNetWeek.value = formatFixed(manualNetSummary.weekly, 2);
-            inputs.targetNetPerWeek = manualNetSummary.weekly;
-          } else {
-            controls.targetNetWeek.value = '';
-            inputs.targetNetPerWeek = null;
-          }
-        }
-
-        if (controls.targetNetMonth instanceof HTMLInputElement) {
-          if (Number.isFinite(manualNetSummary.monthly)) {
-            controls.targetNetMonth.value = formatFixed(manualNetSummary.monthly, 2);
-            inputs.targetNetPerMonth = manualNetSummary.monthly;
-          } else {
-            controls.targetNetMonth.value = '';
-            inputs.targetNetPerMonth = null;
-          }
-        }
-
-        if (controls.targetNetAverageWeek instanceof HTMLInputElement) {
-          if (Number.isFinite(manualNetSummary.averageWeekly)) {
-            controls.targetNetAverageWeek.value = formatFixed(manualNetSummary.averageWeekly, 2);
-            inputs.targetNetAveragePerWeek = manualNetSummary.averageWeekly;
-          } else {
-            controls.targetNetAverageWeek.value = '';
-            inputs.targetNetAveragePerWeek = null;
-          }
-        }
-
-        if (controls.targetNetAverageMonth instanceof HTMLInputElement) {
-          if (Number.isFinite(manualNetSummary.averageMonthly)) {
-            controls.targetNetAverageMonth.value = formatFixed(manualNetSummary.averageMonthly, 2);
-            inputs.targetNetAveragePerMonth = manualNetSummary.averageMonthly;
-          } else {
-            controls.targetNetAverageMonth.value = '';
-            inputs.targetNetAveragePerMonth = null;
-          }
-        }
-      }
-
-      latestCurrencySymbol = inputs.currencySymbol;
-      latestPricingMode = mode;
-      latestBufferPercent = bufferPercent;
-      latestPricingData = pricingData.length ? pricingData : null;
 
       closeActiveInfoIcon();
-
-      if (!pricingData.length) {
-        tablesContainer.innerHTML = `
-          <div class="card">
-            <p class="status-message">Enter at least one valid class count and student count to see the pricing table.</p>
-          </div>
-        `;
-        scheduleTablesLayoutUpdate();
-      } else {
-        const pricingTable = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent, {
-          mode,
-          showBasePrices
-        });
-        const targetsTable = mode === PRICING_MODE_LESSON
-          ? ''
-          : buildActiveTargetsTable({
-              currencySymbol: inputs.currencySymbol,
-              revenueNeeded,
-              workingDaysPerYear: inputs.workingDaysPerYear,
-              workingWeeks: inputs.workingWeeks,
-              activeMonths: inputs.activeMonths
-            });
-
-        tablesContainer.innerHTML = pricingTable + targetsTable;
-        scheduleTablesLayoutUpdate();
-      }
-
-      if (breakdownDialog && !breakdownDialog.hidden) {
-        if (!latestPricingData || !refreshBreakdownDialog()) {
-          closeBreakdownDialog();
-        }
-      } else if (!latestPricingData) {
-        activeBreakdownContext = null;
-        breakdownTriggerElement = null;
-      }
-
       enhanceAllInfoIcons();
-      renderAssumptions(inputs, { mode });
+      renderAssumptions(inputs, summary);
     }
 
-    function renderAssumptions(inputs, { mode } = {}) {
+    function renderAssumptions(inputs, summary) {
+      if (!assumptionsList) {
+        return;
+      }
+
       const {
         targetNet,
         targetNetPerWeek,
@@ -4568,11 +3439,8 @@
         taxRate,
         fixedCosts,
         variableCostPerClass,
-        variableCostPerStudent,
+        annualVariableCosts,
         vatRate,
-        classesPerWeek,
-        studentsPerClass,
-        workingWeeks,
         bufferPercent,
         currencySymbol,
         monthsOff,
@@ -4580,10 +3448,10 @@
         daysOffPerWeek,
         workingDaysPerWeek,
         workingDaysPerYear,
+        workingWeeks,
         activeMonths,
         activeMonthShare,
-        weeksShare,
-        lessonCostInclVat
+        weeksShare
       } = inputs;
 
       const activeMonthPercentage = activeMonthShare * 100;
@@ -4603,93 +3471,75 @@
         ? formatCurrency(currencySymbol, targetNetAveragePerMonth)
         : '—';
 
-      const manualLessonLine = Number.isFinite(lessonCostInclVat)
-        ? `Manual lesson cost (incl. VAT): ${currencySymbol}${formatFixed(lessonCostInclVat, 2)}`
-        : 'Manual lesson cost (incl. VAT): not set';
+      const listItems = [];
 
-      const listItems = [
+      if (summary && Number.isFinite(summary.baseRevenue)) {
+        const baseDisplay = formatCurrency(currencySymbol, summary.baseRevenue);
+        const bufferedDisplay = Number.isFinite(summary.bufferedRevenue)
+          ? formatCurrency(currencySymbol, summary.bufferedRevenue)
+          : '—';
+        listItems.push(`Gross revenue needed: ${baseDisplay} (with margin: ${bufferedDisplay})`);
+      }
+
+      listItems.push(
         `Net income per year: ${formatCurrency(currencySymbol, targetNet)}`,
         `Net income per active week: ${targetPerWeekDisplay}`,
         `Net income per active month: ${targetPerMonthDisplay}`,
         `Average weekly net income: ${targetAveragePerWeekDisplay}`,
         `Average monthly net income: ${targetAveragePerMonthDisplay}`,
-        manualLessonLine,
         `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
         `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
-        `Variable cost per class: ${formatCurrency(currencySymbol, variableCostPerClass)} (per scheduled class)`,
-        `Variable cost per student: ${formatCurrency(currencySymbol, variableCostPerStudent)} (per student per class)`,
+        `Variable cost per working day: ${formatCurrency(currencySymbol, variableCostPerClass)}`,
+        `Estimated annual variable costs: ${formatCurrency(currencySymbol, annualVariableCosts)}`,
         `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
         `Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`,
         `Days off per week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
         `Estimated working weeks per year: ${formatFixed(workingWeeks, 2)}`,
         `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
-        `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
-        `Students per class considered: ${studentsPerClass.length ? studentsPerClass.join(', ') : 'none'}`,
-        `Safety margin cushion (buffered price uses this %): ${formatFixed(bufferPercent, 1)}%`,
+        `Safety margin applied to revenue: ${formatFixed(bufferPercent, 1)}%`,
         `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
         `Currency symbol: ${currencySymbol}`,
-        `Prices are rounded to whole currency units for display and CSV export.`
-      ];
+        `Values are rounded to whole currency units for display and CSV export.`
+      );
 
       assumptionsList.innerHTML = listItems.map(item => `<li>${item}</li>`).join('');
     }
 
     function downloadCsv() {
       if (!latestResults.length) {
-        controls.statusMessage.textContent = 'Add at least one class and student value before exporting CSV.';
+        controls.statusMessage.textContent = 'Calculate the revenue summary before exporting CSV.';
         setTimeout(() => {
           controls.statusMessage.textContent = '';
         }, 2500);
         return;
       }
 
-      let header;
-      let rows;
+      const header = 'Target,Base gross revenue,With margin,Basis';
+      const rows = latestResults.map(entry => {
+        const base = Number.isFinite(entry.base) ? Math.round(entry.base) : '';
+        const buffered = Number.isFinite(entry.buffered) ? Math.round(entry.buffered) : '';
+        const basis = entry.basis ? entry.basis.replace(/,/g, ';') : '';
+        return [entry.label, base, buffered, basis].join(',');
+      });
 
-      if (latestResultsMode === PRICING_MODE_LESSON) {
-        header = 'Variant,Students,Classes per week,Classes per year,Monthly net income,Annual net income';
-        rows = latestResults.map(entry => {
-          const monthly = Number.isFinite(entry.monthlyNet) ? Math.round(entry.monthlyNet) : '';
-          const annual = Number.isFinite(entry.annualNet) ? Math.round(entry.annualNet) : '';
-          return [
-            entry.variant,
-            entry.students,
-            entry.classesPerWeek,
-            entry.classesPerYear,
-            monthly,
-            annual
-          ].join(',');
-        });
-      } else {
-        header = 'Variant,Students,Classes per week,Classes per year,Price incl VAT,Price ex VAT';
-        rows = latestResults.map(entry => [
-          entry.variant,
-          entry.students,
-          entry.classesPerWeek,
-          entry.classesPerYear,
-          entry.priceInclVat,
-          entry.priceExVat
-        ].join(','));
-      }
-
-      const csvContent = [header, ...rows].join('\n');
+      const csvContent = [header, ...rows].join('
+');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       const timestamp = new Date().toISOString().slice(0, 10);
-      link.download = `course-pricing-${timestamp}.csv`;
+      link.download = `business-revenue-summary-${timestamp}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      controls.statusMessage.textContent = latestResultsMode === PRICING_MODE_LESSON
-        ? 'CSV download started. File lists monthly and annual net income for each combination.'
-        : 'CSV download started. File lists base and buffered prices including and excluding VAT.';
+      controls.statusMessage.textContent = 'CSV download started. File lists base and buffered gross revenue targets.';
       setTimeout(() => {
         controls.statusMessage.textContent = '';
       }, 2500);
     }
+
 
     [
       { control: controls.targetNet, basis: 'year' },
@@ -4708,7 +3558,6 @@
 
     Object.values(controls).forEach(control => {
       if (!(control instanceof HTMLInputElement)) return;
-      if (control === controls.lessonCost) return;
       control.addEventListener('change', render);
       control.addEventListener('input', event => {
         if (event.target.type === 'text') return;
@@ -4716,44 +3565,7 @@
       });
     });
 
-    if (controls.lessonCost instanceof HTMLInputElement) {
-      const handleLessonCostInput = () => {
-        render();
-      };
-
-      controls.lessonCost.addEventListener('input', handleLessonCostInput);
-      controls.lessonCost.addEventListener('change', handleLessonCostInput);
-    }
-
     window.addEventListener('resize', scheduleTablesLayoutUpdate);
-
-    tablesContainer.addEventListener('click', event => {
-      const priceButton = event.target instanceof HTMLElement
-        ? event.target.closest('button.price-line[data-row][data-column][data-variant]')
-        : null;
-
-      if (priceButton) {
-        const context = {
-          rowIndex: Number(priceButton.dataset.row),
-          columnIndex: Number(priceButton.dataset.column),
-          variant: priceButton.dataset.variant === 'base' ? 'base' : 'buffered'
-        };
-        openBreakdownDialog(context, priceButton);
-        return;
-      }
-
-      const toggleButton = event.target instanceof HTMLElement ? event.target.closest('.price-reveal-toggle') : null;
-      if (!toggleButton) {
-        return;
-      }
-      event.preventDefault();
-      showBasePrices = !showBasePrices;
-      render();
-      const refreshedToggle = tablesContainer.querySelector('.price-reveal-toggle');
-      if (refreshedToggle instanceof HTMLButtonElement) {
-        refreshedToggle.focus();
-      }
-    });
 
     controls.recalcButton.addEventListener('click', render);
     controls.downloadCsv.addEventListener('click', downloadCsv);
