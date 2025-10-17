@@ -3017,7 +3017,8 @@
       }
     }
 
-    function applyInputValues(values) {
+    function applyInputValues(values, options = {}) {
+      const { skipRender = false } = options;
       if (!values || typeof values !== 'object') {
         return;
       }
@@ -3043,7 +3044,9 @@
         }
       });
       updateFixedCostTotalDisplay();
-      render();
+      if (!skipRender) {
+        render();
+      }
     }
 
     function savePersistedInputs() {
@@ -3084,7 +3087,7 @@
 
       const storedValues = persistenceEnabled ? readPersistedValues() : null;
       if (storedValues) {
-        applyInputValues(storedValues);
+        applyInputValues(storedValues, { skipRender: true });
       }
 
       getPersistableInputs().forEach(input => {
