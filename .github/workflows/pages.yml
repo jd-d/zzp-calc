@@ -97,7 +97,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `\u23F3 Preview is preparing. I'll post the ready link here once it's live.`
+              body: `\u23F3 Preview is being prepared. I'll update this comment with the link once it's ready.`
             });
             return { commentId: data.id, url };
         env:
@@ -148,8 +148,8 @@ jobs:
           script: |
             const { commentId, url, ready } = JSON.parse(process.env.PREVIEW_RESULT);
             const body = ready
-              ? `\uD83D\uDD0D Preview ready: ${url}`
-              : `\u26A0\uFE0F Preview is still preparing. You can check back soon: ${url}`;
+              ? `\uD83D\uDD0D Preview ready: [View preview](${url})`
+              : `\u26A0\uFE0F Preview is still preparing. You can check back soon: [View preview](${url})`;
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
