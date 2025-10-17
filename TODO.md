@@ -1,7 +1,8 @@
 # TODO
 
 ## High Priority (UI/UX)
-- [ ] _No open items._
+- [ ] Revise the time-off and day-off logic, including related styling adjustments.
+- [ ] Add safety margin controls and reorganize the settings layout for clarity.
 
 ## Medium Priority
 - [ ] Add an input field after "Students per Class" for "Lesson length (mins)" and use it to append hourly pricing (e.g., "(€XX/hr)") to each lesson price in the table.
