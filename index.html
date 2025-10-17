@@ -36,7 +36,9 @@
       --text-muted: #b1b7c7;
       --field-bg: rgba(7, 9, 14, 0.75);
       --field-border: rgba(255, 255, 255, 0.15);
-      --field-output-bg: rgba(7, 9, 14, 0.45);
+      --field-output-bg: rgba(77, 163, 255, 0.18);
+      --field-output-border: rgba(77, 163, 255, 0.5);
+      --field-output-color: #e5f1ff;
       --table-header-bg: rgba(255, 255, 255, 0.04);
       --table-header-text: var(--text-muted);
       --table-row-border: rgba(255, 255, 255, 0.07);
@@ -100,7 +102,9 @@
       --text-muted: #4b5563;
       --field-bg: rgba(255, 255, 255, 0.85);
       --field-border: rgba(15, 23, 42, 0.14);
-      --field-output-bg: rgba(241, 245, 249, 0.9);
+      --field-output-bg: rgba(37, 99, 235, 0.14);
+      --field-output-border: rgba(37, 99, 235, 0.35);
+      --field-output-color: #0b162d;
       --table-header-bg: rgba(37, 99, 235, 0.08);
       --table-header-text: #1f2937;
       --table-row-border: rgba(15, 23, 42, 0.08);
@@ -1178,11 +1182,14 @@
       display: block;
       padding: 10px 12px;
       border-radius: 10px;
-      border: 1px solid var(--field-border);
-      background: var(--field-output-bg);
-      color: var(--text-primary);
       font-size: 1rem;
       font-variant-numeric: tabular-nums;
+    }
+
+    .output-field {
+      border: 1px solid var(--field-output-border);
+      background: var(--field-output-bg);
+      color: var(--field-output-color);
     }
 
     .button-row {
@@ -2095,24 +2102,24 @@
               </div>
               <div class="control">
                 <label for="days-off-week">
-                  <span class="label-text">Days off per working week</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Assumes a 5-day working week. Supports decimals for half-days." data-tooltip="Assumes a 5-day working week. Supports decimals for half-days.">ℹ️</span>
+                  <span class="label-text">Days off per week</span>
+                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Defaults to a typical weekend off but supports partial-day values." data-tooltip="Defaults to a typical weekend off but supports partial-day values.">ℹ️</span>
                 </label>
-                <input type="number" id="days-off-week" value="1" min="0" max="5" step="0.25" inputmode="decimal" />
+                <input type="number" id="days-off-week" value="2" min="0" max="7" step="0.25" inputmode="decimal" />
               </div>
               <div class="control">
                 <label>
                   <span class="label-text">Estimated working weeks per year</span>
                   <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Calculated from the schedule above." data-tooltip="Calculated from the schedule above.">ℹ️</span>
                 </label>
-                <output id="working-weeks-display">32.5</output>
+                <output id="working-weeks-display" class="output-field">32.5</output>
               </div>
               <div class="control">
                 <label>
                   <span class="label-text">Estimated working days per year</span>
                   <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Working weeks × working days per active week." data-tooltip="Working weeks × working days per active week.">ℹ️</span>
                 </label>
-                <output id="working-days-display">130</output>
+                <output id="working-days-display" class="output-field">130</output>
               </div>
               <div class="section-footer">
                 <button
@@ -3307,7 +3314,7 @@
 
     const WEEKS_PER_YEAR = 52;
     const MONTHS_PER_YEAR = 12;
-    const BASE_WORK_DAYS_PER_WEEK = 5;
+    const BASE_WORK_DAYS_PER_WEEK = 7;
     const TARGET_NET_DEFAULT = 50000;
 
     function formatFixed(value, fractionDigits = 1) {
@@ -3481,7 +3488,7 @@
     function getInputs() {
       const monthsOff = parseNumber(controls.monthsOff.value, 2, { min: 0, max: 12 });
       const weeksOffPerCycle = parseNumber(controls.weeksOffCycle.value, 1, { min: 0, max: 4 });
-      const daysOffPerWeek = parseNumber(controls.daysOffWeek.value, 1, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
+      const daysOffPerWeek = parseNumber(controls.daysOffWeek.value, 2, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
 
       const taxRatePercent = Math.min(Math.max(parseNumber(controls.taxRate.value, 40), 0), 99.9);
       const taxRate = taxRatePercent / 100;
@@ -3509,7 +3516,10 @@
       const activeMonths = 12 * activeMonthShare;
       const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
       const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
-      const workingDaysPerWeek = Math.max(BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek, 0);
+      const workingDaysPerWeek = Math.max(
+        0,
+        Math.min(BASE_WORK_DAYS_PER_WEEK, BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek)
+      );
       const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
 
       const defaultTargetNetWeek = workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT;
@@ -4568,7 +4578,7 @@
         `Variable cost per student: ${formatCurrency(currencySymbol, variableCostPerStudent)} (per student per class)`,
         `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
         `Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`,
-        `Days off per working week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
+        `Days off per week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
         `Estimated working weeks per year: ${formatFixed(workingWeeks, 2)}`,
         `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
         `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
