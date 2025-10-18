@@ -804,101 +804,139 @@ header.hero {
   border: 1px dashed var(--border-default);
 }
 
-.portfolio {
+#portfolio {
+  position: relative;
   grid-column: 1 / -1;
-}
-
-.portfolio .surface-content {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(var(--space-5), 3vw, var(--space-7));
-}
-
-.portfolio__header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-@media (min-width: 720px) {
-  .portfolio__header {
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: space-between;
-  }
-}
-
-.portfolio__status {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.portfolio__status.is-positive {
-  color: var(--breakdown-color-net);
-}
-
-.portfolio__status.is-negative {
-  color: var(--inactive-strong);
-}
-
-.portfolio__grid {
+  background: var(--surface-0);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-lg);
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
   display: grid;
-  gap: clamp(var(--space-5), 3vw, var(--space-6));
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(var(--space-5), 3vw, var(--space-7));
+  overflow: hidden;
+}
+
+#portfolio::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--surface-highlight-gradient);
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#portfolio::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: var(--surface-border-gradient);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: -1;
+}
+
+#portfolio > * {
+  position: relative;
+  z-index: 1;
+}
+
+#portfolio .grid.two {
   align-items: start;
 }
 
-.portfolio__totals h3,
-.portfolio__week h3,
-.portfolio__violations-title {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
+#portfolio h2 {
+  margin-top: 0;
+  margin-bottom: var(--space-3);
 }
 
-.portfolio-totals {
+.wrapper {
+  width: min(100%, 1200px);
+  margin-inline: auto;
+  padding-inline: clamp(var(--space-5), 3vw, var(--space-6));
+}
+
+.grid {
+  display: grid;
+  gap: clamp(var(--space-5), 3vw, var(--space-6));
+}
+
+.grid.two {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 840px) {
+  .grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.kv {
   margin: 0;
   display: grid;
   gap: var(--space-3);
 }
 
-.portfolio-totals__row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  align-items: baseline;
+.kv.two-col {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
-.portfolio-totals__row dt {
-  margin: 0;
+.kv.two-col > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.kv dt {
   font-size: var(--font-size-xs);
-  text-transform: uppercase;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  margin: 0;
 }
 
-.portfolio-totals__row dd {
+.kv dd {
   margin: 0;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.portfolio__week {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 320px;
+.portfolio-status {
+  margin: calc(-1 * var(--space-2)) 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
-.portfolio-week {
+.portfolio-status.is-positive {
+  color: var(--breakdown-color-net);
+}
+
+.portfolio-status.is-negative {
+  color: var(--inactive-strong);
+}
+
+.metric-violation {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--inactive-strong);
+}
+
+.metric-violation:empty {
+  display: none;
+}
+
+.week {
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
   gap: var(--space-3);
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 320px;
 }
 
 .portfolio-week__item {
@@ -980,7 +1018,7 @@ header.hero {
   text-align: center;
 }
 
-.portfolio__violations {
+.portfolio-violations {
   border-radius: var(--radius-md);
   border: 1px solid var(--inactive-border);
   background: var(--inactive-bg);
@@ -989,11 +1027,11 @@ header.hero {
   gap: var(--space-3);
 }
 
-.portfolio__violations-title {
+.portfolio-violations h3 {
   margin: 0;
 }
 
-.portfolio__violations-list {
+.portfolio-violations ul {
   margin: 0;
   padding-left: var(--space-4);
   display: grid;
@@ -1001,7 +1039,7 @@ header.hero {
   color: var(--inactive-strong);
 }
 
-.portfolio__violations-list li {
+.portfolio-violations li {
   margin: 0;
 }
 
