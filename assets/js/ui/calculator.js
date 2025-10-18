@@ -24,6 +24,7 @@ import {
 } from '../state.js';
 import { deriveCapacity } from '../capacity.js';
 import { deriveTargetNetDefaults, deriveIncomeTargets } from '../income.js';
+import { calculateDutchTax2025 } from '../tax.js';
 import { computeCosts } from '../costs.js';
 import { normalizeScenarioModifiers } from '../modifiers.js';
 
@@ -151,7 +152,8 @@ export function initializeCalculatorUI() {
     const costs = derived && derived.costs ? derived.costs : computeCosts(state, capacity);
     const defaults = deriveTargetNetDefaults(capacity);
     const income = deriveIncomeTargets(state, capacity);
-    return { capacity, defaults, income, costs, modifiers };
+    const tax = calculateDutchTax2025(state, capacity, costs);
+    return { capacity, defaults, income, costs, modifiers, tax };
   }
 
   function formatFixed(value, fractionDigits = 1) {
@@ -375,7 +377,11 @@ export function initializeCalculatorUI() {
   function computeRevenueSummary(inputs) {
     const {
       targetNet,
-      taxRate,
+      profitBeforeTax,
+      taxReserve,
+      effectiveTaxRate,
+      incomeTax,
+      zvwContribution,
       fixedCosts,
       annualVariableCosts,
       buffer,
@@ -386,11 +392,27 @@ export function initializeCalculatorUI() {
       billableHours
     } = inputs;
 
-    const effectiveTaxRate = Math.min(Math.max(taxRate, 0), 0.99);
-    const denominator = Math.max(1 - effectiveTaxRate, 0.0001);
-    const profitBeforeTax = targetNet / denominator;
-    const baseRevenue = profitBeforeTax + fixedCosts + annualVariableCosts;
+    const normalizedProfitBeforeTax = Number.isFinite(profitBeforeTax) && profitBeforeTax > 0
+      ? profitBeforeTax
+      : targetNet;
+    const normalizedTaxReserve = Number.isFinite(taxReserve)
+      ? Math.max(taxReserve, 0)
+      : Math.max(normalizedProfitBeforeTax - targetNet, 0);
+    const derivedProfitBeforeTax = normalizedProfitBeforeTax > 0
+      ? normalizedProfitBeforeTax
+      : targetNet + normalizedTaxReserve;
+    const totalTaxReserve = normalizedTaxReserve;
+    const baseRevenue = derivedProfitBeforeTax + fixedCosts + annualVariableCosts;
     const bufferedRevenue = baseRevenue * (1 + buffer);
+    const normalizedEffectiveTaxRate = derivedProfitBeforeTax > 0
+      ? Math.min(
+        Math.max(
+          Number.isFinite(effectiveTaxRate) ? effectiveTaxRate : totalTaxReserve / derivedProfitBeforeTax,
+          0
+        ),
+        0.99
+      )
+      : 0;
 
     const monthlyBase = Number.isFinite(activeMonths) && activeMonths > 0 ? baseRevenue / activeMonths : null;
     const monthlyBuffered = Number.isFinite(activeMonths) && activeMonths > 0 ? bufferedRevenue / activeMonths : null;
@@ -422,7 +444,12 @@ export function initializeCalculatorUI() {
       dailyBuffered,
       hourlyBase,
       hourlyBuffered,
-      billableHours
+      billableHours,
+      profitBeforeTax: derivedProfitBeforeTax,
+      taxReserve: totalTaxReserve,
+      incomeTax: Number.isFinite(incomeTax) ? incomeTax : null,
+      zvwContribution: Number.isFinite(zvwContribution) ? zvwContribution : null,
+      effectiveTaxRate: normalizedEffectiveTaxRate
     };
   }
 
@@ -516,7 +543,7 @@ export function initializeCalculatorUI() {
   }
 
   function extractInputsFromViews(views, stateSnapshot = calcState) {
-    const { capacity = {}, income = {}, costs = {} } = views || {};
+    const { capacity = {}, income = {}, costs = {}, tax = {} } = views || {};
     const currentState = stateSnapshot && typeof stateSnapshot === 'object' ? stateSnapshot : {};
     const sessionLength = Number.isFinite(currentState.sessionLength) ? currentState.sessionLength : 1.5;
     const modifiersView = views && views.modifiers
@@ -538,13 +565,49 @@ export function initializeCalculatorUI() {
     const billableHours = Number.isFinite(sessionLength) && sessionLength > 0 && Number.isFinite(effectiveBillableDays) && effectiveBillableDays > 0
       ? effectiveBillableDays * sessionLength
       : null;
+    const taxInfo = tax && typeof tax === 'object' ? tax : {};
+    const targetNet = Number.isFinite(income.targetNet) ? income.targetNet : 0;
+    const manualTaxRate = Number.isFinite(costs.taxRate) ? costs.taxRate : 0;
+    const effectiveTaxRate = Number.isFinite(taxInfo.effectiveTaxRate)
+      ? taxInfo.effectiveTaxRate
+      : manualTaxRate;
+    const boundedRate = Math.min(Math.max(effectiveTaxRate, 0), 0.99);
+    const fallbackProfitBeforeTax = boundedRate < 0.999
+      ? targetNet / Math.max(1 - boundedRate, 0.0001)
+      : targetNet;
+    const profitBeforeTax = Number.isFinite(taxInfo.profitBeforeTax) && taxInfo.profitBeforeTax > 0
+      ? taxInfo.profitBeforeTax
+      : fallbackProfitBeforeTax;
+    const taxReserve = Number.isFinite(taxInfo.taxReserve)
+      ? taxInfo.taxReserve
+      : Math.max(profitBeforeTax - targetNet, 0);
+    const incomeTax = Number.isFinite(taxInfo.incomeTax) ? taxInfo.incomeTax : null;
+    const zvwContribution = Number.isFinite(taxInfo.zvwContribution) ? taxInfo.zvwContribution : null;
+    const zelfstandigenaftrek = Number.isFinite(taxInfo.zelfstandigenaftrek) ? taxInfo.zelfstandigenaftrek : null;
+    const startersaftrek = Number.isFinite(taxInfo.startersaftrek) ? taxInfo.startersaftrek : null;
+    const mkbVrijstellingRate = Number.isFinite(taxInfo.mkbVrijstellingRate) ? taxInfo.mkbVrijstellingRate : 0;
+    const mkbVrijstelling = Number.isFinite(taxInfo.mkbVrijstelling) ? taxInfo.mkbVrijstelling : null;
+    const taxableProfitBeforeMkb = Number.isFinite(taxInfo.taxableProfitBeforeMkb) ? taxInfo.taxableProfitBeforeMkb : null;
+    const taxableProfitAfterMkb = Number.isFinite(taxInfo.taxableProfitAfterMkb) ? taxInfo.taxableProfitAfterMkb : null;
+    const zvwBase = Number.isFinite(taxInfo.zvwBase) ? taxInfo.zvwBase : null;
     return {
-      targetNet: income.targetNet,
+      targetNet,
       targetNetPerWeek: income.targetNetPerWeek,
       targetNetPerMonth: income.targetNetPerMonth,
       targetNetAveragePerWeek: income.targetNetAveragePerWeek,
       targetNetAveragePerMonth: income.targetNetAveragePerMonth,
-      taxRate: costs.taxRate,
+      effectiveTaxRate,
+      taxReserve,
+      incomeTax,
+      zvwContribution,
+      profitBeforeTax,
+      zelfstandigenaftrek,
+      startersaftrek,
+      mkbVrijstelling,
+      mkbVrijstellingRate,
+      taxableProfitBeforeMkb,
+      taxableProfitAfterMkb,
+      zvwBase,
       fixedCosts: costs.fixedCosts,
       variableCostPerClass: costs.variableCostPerClass,
       vatRate: costs.vatRate,
@@ -594,7 +657,18 @@ export function initializeCalculatorUI() {
       targetNetPerMonth,
       targetNetAveragePerWeek,
       targetNetAveragePerMonth,
-      taxRate,
+      effectiveTaxRate,
+      taxReserve,
+      incomeTax,
+      zvwContribution,
+      profitBeforeTax,
+      zelfstandigenaftrek,
+      startersaftrek,
+      mkbVrijstelling,
+      mkbVrijstellingRate,
+      taxableProfitBeforeMkb,
+      taxableProfitAfterMkb,
+      zvwBase,
       fixedCosts,
       variableCostPerClass,
       annualVariableCosts,
@@ -662,6 +736,53 @@ export function initializeCalculatorUI() {
     const targetAveragePerMonthDisplay = Number.isFinite(targetNetAveragePerMonth)
       ? formatCurrency(currencySymbol, targetNetAveragePerMonth)
       : '—';
+    const profitBeforeTaxValue = summary && Number.isFinite(summary.profitBeforeTax)
+      ? summary.profitBeforeTax
+      : profitBeforeTax;
+    const profitBeforeTaxDisplay = Number.isFinite(profitBeforeTaxValue)
+      ? formatCurrency(currencySymbol, profitBeforeTaxValue)
+      : '—';
+    const taxReserveValue = summary && Number.isFinite(summary.taxReserve)
+      ? summary.taxReserve
+      : taxReserve;
+    const taxReserveDisplay = Number.isFinite(taxReserveValue)
+      ? formatCurrency(currencySymbol, taxReserveValue)
+      : '—';
+    const incomeTaxValue = summary && Number.isFinite(summary.incomeTax)
+      ? summary.incomeTax
+      : incomeTax;
+    const incomeTaxDisplay = Number.isFinite(incomeTaxValue)
+      ? formatCurrency(currencySymbol, incomeTaxValue)
+      : '—';
+    const zvwContributionValue = summary && Number.isFinite(summary.zvwContribution)
+      ? summary.zvwContribution
+      : zvwContribution;
+    const zvwContributionDisplay = Number.isFinite(zvwContributionValue)
+      ? formatCurrency(currencySymbol, zvwContributionValue)
+      : '—';
+    const effectiveRateValue = summary && Number.isFinite(summary.effectiveTaxRate)
+      ? summary.effectiveTaxRate
+      : effectiveTaxRate;
+    const effectiveRateDisplay = formatFixed((effectiveRateValue || 0) * 100, 1);
+    const zelfstandigenaftrekDisplay = Number.isFinite(zelfstandigenaftrek)
+      ? formatCurrency(currencySymbol, zelfstandigenaftrek)
+      : '—';
+    const startersaftrekDisplay = Number.isFinite(startersaftrek)
+      ? formatCurrency(currencySymbol, startersaftrek)
+      : '—';
+    const mkbVrijstellingDisplay = Number.isFinite(mkbVrijstelling)
+      ? formatCurrency(currencySymbol, mkbVrijstelling)
+      : '—';
+    const mkbVrijstellingRateDisplay = formatFixed((mkbVrijstellingRate || 0) * 100, 2);
+    const taxableBeforeMkbDisplay = Number.isFinite(taxableProfitBeforeMkb)
+      ? formatCurrency(currencySymbol, taxableProfitBeforeMkb)
+      : '—';
+    const taxableAfterMkbDisplay = Number.isFinite(taxableProfitAfterMkb)
+      ? formatCurrency(currencySymbol, taxableProfitAfterMkb)
+      : '—';
+    const zvwBaseDisplay = Number.isFinite(zvwBase)
+      ? formatCurrency(currencySymbol, zvwBase)
+      : '—';
 
     const listItems = [];
 
@@ -679,7 +800,17 @@ export function initializeCalculatorUI() {
       `Net income per active month: ${targetPerMonthDisplay}`,
       `Average weekly net income: ${targetAveragePerWeekDisplay}`,
       `Average monthly net income: ${targetAveragePerMonthDisplay}`,
-      `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
+      `Estimated profit before income tax: ${profitBeforeTaxDisplay}`,
+      `Estimated Dutch tax reserve (income + Zvw): ${taxReserveDisplay}`,
+      `Income tax portion: ${incomeTaxDisplay}`,
+      `Zvw health contribution: ${zvwContributionDisplay}`,
+      `Effective income tax rate: ${effectiveRateDisplay}%`,
+      `Entrepreneur deduction (zelfstandigenaftrek): ${zelfstandigenaftrekDisplay}`,
+      `Starter deduction (startersaftrek): ${startersaftrekDisplay}`,
+      `MKB-vrijstelling (${mkbVrijstellingRateDisplay}%): ${mkbVrijstellingDisplay}`,
+      `Taxable profit before MKB-vrijstelling: ${taxableBeforeMkbDisplay}`,
+      `Taxable profit after MKB-vrijstelling: ${taxableAfterMkbDisplay}`,
+      `Zvw contribution base: ${zvwBaseDisplay}`,
       `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
       `Variable cost per working day: ${formatCurrency(currencySymbol, variableCostPerClass)}`,
       `Estimated annual variable costs: ${formatCurrency(currencySymbol, annualVariableCosts)}`,

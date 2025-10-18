@@ -35,6 +35,12 @@ const initialState = {
     vatRatePercent: 21,
     bufferPercent: 15
   },
+  tax: {
+    zelfstandigenaftrek: true,
+    startersaftrek: false,
+    mkbVrijstelling: true,
+    includeZvw: true
+  },
   config: {
     currencySymbol: '€',
     defaults: {
@@ -55,6 +61,7 @@ let derivedState = buildDerivedState(state);
 const subscribers = new Set();
 
 const serviceOverrides = Object.create(null);
+const taxOverrides = Object.create(null);
 
 function deepClone(value) {
   if (Array.isArray(value)) {
@@ -301,7 +308,8 @@ export const calcState = {
   set,
   patch,
   subscribe,
-  services: serviceOverrides
+  services: serviceOverrides,
+  tax: taxOverrides
 };
 
 export {
