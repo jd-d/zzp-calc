@@ -2,17 +2,20 @@ import * as store from './state.js';
 import { initializeCalculatorUI } from './ui/calculator.js';
 import { initializePageUi } from './ui/main.js';
 import { mountScenarioToolbar } from './ui/scenario-toolbar.js';
+import { mountPortfolio } from './ui/portfolio.js';
 import { bindSliderPair } from './ui/components.js';
 
 export * from './state.js';
 export { initializeCalculatorUI } from './ui/calculator.js';
 export { initializePageUi } from './ui/main.js';
 export { mountScenarioToolbar } from './ui/scenario-toolbar.js';
+export { mountPortfolio } from './ui/portfolio.js';
 
 export function initializeApp() {
   initializePageUi();
   const calculator = initializeCalculatorUI();
   const scenario = mountScenarioToolbar(store);
+  const portfolio = mountPortfolio(store);
 
   bindSliderPair({
     sliderId: 'monthsOff',
@@ -29,6 +32,7 @@ export function initializeApp() {
   return {
     calculator,
     scenario,
+    portfolio,
     store
   };
 }

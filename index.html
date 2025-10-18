@@ -958,6 +958,38 @@
         </div>
       </section>
 
+      <section
+        class="card surface-card portfolio motion-slide-up"
+        id="portfolio"
+        aria-labelledby="portfolio-heading"
+      >
+        <div class="surface-content stack">
+          <div class="portfolio__header">
+            <h2 id="portfolio-heading">Portfolio outlook</h2>
+            <p class="portfolio__status" id="portfolio-status">Waiting for scenario…</p>
+          </div>
+          <div class="portfolio__grid">
+            <div class="portfolio__totals">
+              <h3>Portfolio totals</h3>
+              <dl class="portfolio-totals">
+                <div class="portfolio-totals__row"><dt>Revenue</dt><dd id="p-rev">—</dd></div>
+                <div class="portfolio-totals__row"><dt>Costs</dt><dd id="p-cost">—</dd></div>
+                <div class="portfolio-totals__row"><dt>Tax reserve</dt><dd id="p-tax">—</dd></div>
+                <div class="portfolio-totals__row"><dt>Net</dt><dd id="p-net">—</dd></div>
+              </dl>
+            </div>
+            <div class="portfolio__week" aria-live="polite">
+              <h3>Weekly plan</h3>
+              <ol class="portfolio-week" id="p-week"></ol>
+            </div>
+          </div>
+          <div class="portfolio__violations" id="portfolio-violations" role="alert" hidden>
+            <h3 class="portfolio__violations-title">Constraints to review</h3>
+            <ul class="portfolio__violations-list" id="portfolio-violations-list"></ul>
+          </div>
+        </div>
+      </section>
+
       <section class="tables surface-card motion-slide-up" aria-live="polite">
         <div class="surface-content stack">
           <div class="table-grid" id="tables-container">
