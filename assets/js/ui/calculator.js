@@ -1,5 +1,6 @@
 import {
   get,
+  getDerived,
   patch,
   subscribe,
   parseNumber,
@@ -105,20 +106,22 @@ export function initializeCalculatorUI() {
   const PERSISTED_TARGET_NET_BASIS_KEY = '__targetNetBasis';
 
   let calcState = get();
+  let calcDerived = getDerived();
   let latestResults = [];
   let persistenceEnabled = false;
   let persistableInputsCache = null;
   let tablesLayoutUpdateScheduled = false;
   let defaultInputValues = null;
 
-  const unsubscribe = subscribe(nextState => {
+  const unsubscribe = subscribe((nextState, derived) => {
     calcState = nextState;
-    const views = deriveCalcViews(calcState);
+    calcDerived = derived || calcDerived;
+    const views = deriveCalcViews(calcState, calcDerived);
     applyCalcStateToControls(calcState, views);
     renderDerivedViews(calcState, views);
   });
 
-  const initialViews = deriveCalcViews(calcState);
+  const initialViews = deriveCalcViews(calcState, calcDerived);
   applyCalcStateToControls(calcState, initialViews);
   renderDerivedViews(calcState, initialViews);
   defaultInputValues = captureInputValues();
@@ -129,11 +132,13 @@ export function initializeCalculatorUI() {
 
   return unsubscribe;
 
-  function deriveCalcViews(state) {
-    const capacity = deriveCapacity(state.capacity);
+  function deriveCalcViews(state, derived) {
+    const capacity = derived && derived.capacity
+      ? derived.capacity
+      : deriveCapacity(state.capacity);
+    const costs = derived && derived.costs ? derived.costs : computeCosts(state, capacity);
     const defaults = deriveTargetNetDefaults(capacity);
     const income = deriveIncomeTargets(state, capacity);
-    const costs = computeCosts(state, capacity);
     return { capacity, defaults, income, costs };
   }
 
@@ -470,7 +475,18 @@ export function initializeCalculatorUI() {
       workingDaysPerYear: capacity.workingDaysPerYear,
       activeMonths: capacity.activeMonths,
       activeMonthShare: capacity.activeMonthShare,
-      weeksShare: capacity.weeksShare
+      weeksShare: capacity.weeksShare,
+      utilizationPercent: capacity.utilizationPercent,
+      utilizationRate: capacity.utilizationRate,
+      billableWeeks: capacity.billableWeeks,
+      billableDaysPerYear: capacity.billableDaysPerYear,
+      billableDaysAfterTravel: capacity.billableDaysAfterTravel,
+      travelDaysPerMonth: capacity.travelDaysPerMonth,
+      travelDaysPerYear: capacity.travelDaysPerYear,
+      travelWeeksPerYear: capacity.travelWeeksPerYear,
+      travelAllowanceDays: capacity.travelAllowanceDays,
+      travelAllowanceShare: capacity.travelAllowanceShare,
+      travelAllowanceBillableShare: capacity.travelAllowanceBillableShare
     };
   }
 
@@ -500,12 +516,30 @@ export function initializeCalculatorUI() {
       workingDaysPerYear,
       workingWeeks,
       bufferPercent,
-      vatRate
+      vatRate,
+      utilizationPercent,
+      billableDaysPerYear,
+      billableDaysAfterTravel,
+      travelDaysPerMonth,
+      travelDaysPerYear,
+      travelWeeksPerYear,
+      travelAllowanceDays,
+      travelAllowanceShare,
+      travelAllowanceBillableShare
     } = inputs;
 
     const activeMonthPercentage = activeMonthShare * 100;
     const workingWeeksPerCycle = 4 - weeksOffPerCycle;
     const activeWeeksPercentage = weeksShare * 100;
+    const utilizationDisplay = formatFixed(utilizationPercent, 1);
+    const billableDaysPerYearDisplay = formatFixed(billableDaysPerYear, 2);
+    const billableDaysAfterTravelDisplay = formatFixed(billableDaysAfterTravel, 2);
+    const travelDaysPerMonthDisplay = formatFixed(travelDaysPerMonth, 2);
+    const travelDaysPerYearDisplay = formatFixed(travelDaysPerYear, 2);
+    const travelWeeksPerYearDisplay = formatFixed(travelWeeksPerYear, 2);
+    const travelAllowanceDaysDisplay = formatFixed(travelAllowanceDays, 2);
+    const travelAllowanceSharePercent = formatFixed((travelAllowanceShare || 0) * 100, 1);
+    const travelAllowanceBillablePercent = formatFixed((travelAllowanceBillableShare || 0) * 100, 1);
 
     const targetPerWeekDisplay = Number.isFinite(targetNetPerWeek)
       ? formatCurrency(currencySymbol, targetNetPerWeek)
@@ -545,6 +579,10 @@ export function initializeCalculatorUI() {
       `Days off per week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
       `Estimated working weeks per year: ${formatFixed(workingWeeks, 2)}`,
       `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
+      `Target utilization during active weeks: ${utilizationDisplay}%`,
+      `Billable days before travel allowances: ${billableDaysPerYearDisplay} (after travel: ${billableDaysAfterTravelDisplay})`,
+      `Travel days planned per active month: ${travelDaysPerMonthDisplay}; ≈ ${travelDaysPerYearDisplay} days (${travelWeeksPerYearDisplay} weeks) per year`,
+      `Travel allowance impact on availability: ${travelAllowanceDaysDisplay} days (${travelAllowanceSharePercent}% of active days; ${travelAllowanceBillablePercent}% of billable plan)`,
       `Safety margin applied to revenue: ${formatFixed(bufferPercent, 1)}%`,
       `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
       `Currency symbol: ${currencySymbol}`,
