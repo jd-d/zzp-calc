@@ -1,4 +1,4 @@
-import { calcState } from './state.js';
+import { calcState, TAX_MODE_VALUES } from './state.js';
 import { deriveIncomeTargets } from './income.js';
 
 export const ZELFSTANDIGENAFTREK_2025 = 2470;
@@ -21,6 +21,42 @@ const TAX_TOGGLE_DEFAULTS = {
   mkbVrijstelling: true,
   includeZvw: true
 };
+
+function normalizeStateForTax(state) {
+  const safeState = state && typeof state === 'object' ? state : {};
+  const normalizedConfig = safeState.config && typeof safeState.config === 'object'
+    ? { ...safeState.config }
+    : {};
+  if (!normalizedConfig.defaults || typeof normalizedConfig.defaults !== 'object') {
+    normalizedConfig.defaults = {};
+  }
+  if (!normalizedConfig.defaults.incomeTargets || typeof normalizedConfig.defaults.incomeTargets !== 'object') {
+    normalizedConfig.defaults.incomeTargets = {};
+  }
+  return { ...safeState, config: normalizedConfig };
+}
+
+function normalizeTaxMode(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const normalized = value.toLowerCase();
+  return TAX_MODE_VALUES.includes(normalized) ? normalized : null;
+}
+
+export function resolveTaxMode(state) {
+  const override = normalizeTaxMode(calcState?.tax?.mode);
+  if (override) {
+    return override;
+  }
+  if (state && typeof state === 'object') {
+    const stateMode = normalizeTaxMode(state.tax && state.tax.mode);
+    if (stateMode) {
+      return stateMode;
+    }
+  }
+  return TAX_MODE_VALUES[0];
+}
 
 function readTaxToggle(key, state, defaultValue) {
   const overrides = calcState && calcState.tax;
@@ -184,20 +220,13 @@ function solveTaxBreakdown(targetNet, settings, costs) {
   return bestBreakdown;
 }
 
-export function calculateDutchTax2025(state, capacity, costs) {
+export function calculateDutchTax2025(state, capacity, costs, incomeTargets) {
   const safeState = state && typeof state === 'object' ? state : {};
   const safeCapacity = capacity && typeof capacity === 'object' ? capacity : {};
-  const normalizedConfig = safeState.config && typeof safeState.config === 'object'
-    ? { ...safeState.config }
-    : {};
-  if (!normalizedConfig.defaults || typeof normalizedConfig.defaults !== 'object') {
-    normalizedConfig.defaults = {};
-  }
-  if (!normalizedConfig.defaults.incomeTargets || typeof normalizedConfig.defaults.incomeTargets !== 'object') {
-    normalizedConfig.defaults.incomeTargets = {};
-  }
-  const normalizedState = { ...safeState, config: normalizedConfig };
-  const income = deriveIncomeTargets(normalizedState, safeCapacity);
+  const normalizedState = normalizeStateForTax(state);
+  const income = incomeTargets && typeof incomeTargets === 'object'
+    ? incomeTargets
+    : deriveIncomeTargets(normalizedState, safeCapacity);
   const targetNet = Number.isFinite(income.targetNet) ? Math.max(income.targetNet, 0) : 0;
   const settings = resolveTaxSettings(safeState);
   const breakdown = solveTaxBreakdown(targetNet, settings, costs);
@@ -206,6 +235,7 @@ export function calculateDutchTax2025(state, capacity, costs) {
     : 0;
 
   return {
+    mode: 'dutch2025',
     targetNet,
     profitBeforeTax: breakdown.profitBeforeTax,
     incomeTax: breakdown.incomeTax,
@@ -220,6 +250,46 @@ export function calculateDutchTax2025(state, capacity, costs) {
     taxableProfitAfterMkb: breakdown.taxableProfitAfterMkb,
     zvwBase: breakdown.zvwBase
   };
+} 
+
+export function calculateSimpleTaxReserve(state, capacity, costs, incomeTargets) {
+  const safeCapacity = capacity && typeof capacity === 'object' ? capacity : {};
+  const normalizedState = normalizeStateForTax(state);
+  const income = incomeTargets && typeof incomeTargets === 'object'
+    ? incomeTargets
+    : deriveIncomeTargets(normalizedState, safeCapacity);
+  const targetNet = Number.isFinite(income.targetNet) ? Math.max(income.targetNet, 0) : 0;
+  const manualRate = costs && Number.isFinite(costs.taxRate) ? costs.taxRate : 0;
+  const effectiveTaxRate = Math.min(Math.max(manualRate, 0), 0.999);
+  const denominator = Math.max(1 - effectiveTaxRate, 0.0001);
+  const profitBeforeTax = effectiveTaxRate >= 0.999 ? targetNet : targetNet / denominator;
+  const taxReserve = Math.max(profitBeforeTax - targetNet, 0);
+
+  return {
+    mode: 'simple',
+    targetNet,
+    profitBeforeTax,
+    incomeTax: taxReserve,
+    zvwContribution: 0,
+    taxReserve,
+    effectiveTaxRate,
+    zelfstandigenaftrek: null,
+    startersaftrek: null,
+    mkbVrijstellingRate: 0,
+    mkbVrijstelling: null,
+    taxableProfitBeforeMkb: profitBeforeTax,
+    taxableProfitAfterMkb: profitBeforeTax,
+    zvwBase: null
+  };
+}
+
+export function calculateTaxReserve(state, capacity, costs, incomeTargets) {
+  const mode = resolveTaxMode(state);
+  if (mode === 'dutch2025') {
+    const result = calculateDutchTax2025(state, capacity, costs, incomeTargets);
+    return result && typeof result === 'object' ? { ...result, mode } : result;
+  }
+  return calculateSimpleTaxReserve(state, capacity, costs, incomeTargets);
 }
 
 export { computeTaxBreakdown as _internalComputeTaxBreakdown };
