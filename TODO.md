@@ -23,7 +23,6 @@ The following increments can be triggered individually to deliver the full prici
 
 ### Sprint 5 – Advanced Tax and Experience Enhancers
 - [ ] Build the advanced Dutch 2025 tax module (Zelfstandigenaftrek, MKB-vrijstelling, Zvw, starter deduction toggle) with overrides.
-- [ ] Integrate comfort meter, seasonality sliders, travel friction, and hands-on quota constraints.
 - [ ] Add one-click plan presets and an English/Spanish language toggle.
 
 ## Legacy Backlog
@@ -37,3 +36,4 @@ The following increments can be triggered individually to deliver the full prici
 - [x] Consolidate the pricing table to display only the buffered price, omitting separate breakeven and buffered values. (2025-09-30)
 - [x] Append hourly equivalents to gross revenue figures based on a configurable session length input. (2025-10-18)
 - [x] Display portfolio summaries (revenue, costs, tax, net) and a compact weekly schedule preview. (2025-10-19)
+- [x] Integrate comfort meter, seasonality sliders, travel friction, and hands-on quota constraints. (2025-10-18)

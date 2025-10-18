@@ -3,6 +3,7 @@ import {
   WEEKS_PER_YEAR,
   BASE_WORK_DAYS_PER_WEEK
 } from './constants.js';
+import { normalizeScenarioModifiers } from './modifiers.js';
 
 const WEEKS_PER_CYCLE = 4;
 
@@ -24,57 +25,64 @@ function clampPercent(value, fallback = 0, { min = 0, max = 100 } = {}) {
   return clamp(normalized, min, max);
 }
 
-function deriveUtilization(capacityState) {
-  const utilizationPercent = clampPercent(capacityState.utilizationPercent, 100);
-  const utilizationRate = utilizationPercent / 100;
-  return { utilizationPercent, utilizationRate };
+function deriveUtilization(capacityState, modifiers) {
+  const baseUtilizationPercent = clampPercent(capacityState.utilizationPercent, 100);
+  const seasonalityPenalty = Math.max(1 - (modifiers?.seasonality || 0), 0.1);
+  const utilizationRate = Math.min(Math.max((baseUtilizationPercent / 100) * seasonalityPenalty, 0), 1);
+  const utilizationPercent = utilizationRate * 100;
+  return { utilizationPercent, utilizationRate, seasonalityPenalty };
 }
 
-function normalizeTravelDays(capacityState, context) {
+function normalizeTravelDays(capacityState, context, modifiers) {
   const { activeMonths, workingWeeks } = context;
 
-  const travelDaysPerMonth = clamp(
+  const baseTravelDaysPerMonth = clamp(
     toNumber(capacityState.travelDaysPerMonth, 0),
     0,
     BASE_WORK_DAYS_PER_WEEK * 4
   );
 
-  const travelDaysPerCycle = clamp(
+  const baseTravelDaysPerCycle = clamp(
     toNumber(capacityState.travelDaysPerCycle, 0),
     0,
     BASE_WORK_DAYS_PER_WEEK
   );
 
   const annualFromMonth = Number.isFinite(activeMonths)
-    ? travelDaysPerMonth * activeMonths
+    ? baseTravelDaysPerMonth * activeMonths
     : 0;
 
   const cyclesPerYear = Number.isFinite(workingWeeks) && workingWeeks > 0
     ? workingWeeks / WEEKS_PER_CYCLE
     : WEEKS_PER_YEAR / WEEKS_PER_CYCLE;
 
-  const annualFromCycle = travelDaysPerCycle * cyclesPerYear;
+  const annualFromCycle = baseTravelDaysPerCycle * cyclesPerYear;
 
   const providedAnnual = toNumber(capacityState.travelDaysPerYear, 0);
-  const travelDaysPerYear = clamp(
+  const baseTravelDaysPerYear = clamp(
     providedAnnual > 0 ? providedAnnual : Math.max(annualFromMonth, annualFromCycle),
     0,
     Infinity
   );
 
+  const frictionMultiplier = 1 + Math.max(modifiers?.travelFriction || 0, 0);
+  const travelDaysPerYear = baseTravelDaysPerYear * frictionMultiplier;
+  const travelDaysPerMonth = baseTravelDaysPerMonth * frictionMultiplier;
+  const travelDaysPerCycle = baseTravelDaysPerCycle * frictionMultiplier;
   const travelWeeksPerYear = travelDaysPerYear / (BASE_WORK_DAYS_PER_WEEK || 1);
 
   return {
     travelDaysPerMonth,
     travelDaysPerCycle,
     travelDaysPerYear,
-    travelWeeksPerYear
+    travelWeeksPerYear,
+    frictionMultiplier
   };
 }
 
-function deriveTravelAllowances(capacityState, context) {
+function deriveTravelAllowances(capacityState, context, modifiers) {
   const { workingDaysPerYear, billableDaysPerYear } = context;
-  const travelMetrics = normalizeTravelDays(capacityState, context);
+  const travelMetrics = normalizeTravelDays(capacityState, context, modifiers);
 
   const cappedTravelDays = Math.min(travelMetrics.travelDaysPerYear, Math.max(workingDaysPerYear, 0));
   const travelAllowanceDays = Math.max(cappedTravelDays, 0);
@@ -95,7 +103,8 @@ function deriveTravelAllowances(capacityState, context) {
   };
 }
 
-export function deriveCapacity(capacityState = {}) {
+export function deriveCapacity(capacityState = {}, modifiersState = {}) {
+  const modifiers = normalizeScenarioModifiers(modifiersState);
   const monthsOff = clamp(
     toNumber(capacityState.monthsOff, 0),
     0,
@@ -114,7 +123,8 @@ export function deriveCapacity(capacityState = {}) {
   const workingWeeksPerCycle = WEEKS_PER_CYCLE - weeksOffPerCycle;
   const weeksShare = WEEKS_PER_CYCLE > 0 ? workingWeeksPerCycle / WEEKS_PER_CYCLE : 0;
 
-  const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
+  const baseWorkingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
+  const workingWeeks = baseWorkingWeeks * Math.max(1 - modifiers.seasonality, 0.1);
 
   const daysOffPerWeek = clamp(
     toNumber(capacityState.daysOffWeek, 0),
@@ -125,7 +135,7 @@ export function deriveCapacity(capacityState = {}) {
   const workingDaysPerWeek = BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek;
   const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
 
-  const { utilizationPercent, utilizationRate } = deriveUtilization(capacityState);
+  const { utilizationPercent, utilizationRate, seasonalityPenalty } = deriveUtilization(capacityState, modifiers);
 
   const billableWeeks = workingWeeks * utilizationRate;
   const billableDaysPerYear = workingDaysPerYear * utilizationRate;
@@ -135,7 +145,7 @@ export function deriveCapacity(capacityState = {}) {
     workingWeeks,
     workingDaysPerYear,
     billableDaysPerYear
-  });
+  }, modifiers);
 
   const billableDaysAfterTravel = Math.max(
     billableDaysPerYear - travelAllowances.travelAllowanceDays,
@@ -158,7 +168,11 @@ export function deriveCapacity(capacityState = {}) {
     billableWeeks,
     billableDaysPerYear,
     billableDaysAfterTravel,
-    ...travelAllowances
+    ...travelAllowances,
+    seasonalityPercent: modifiers.seasonalityPercent,
+    seasonalityPenalty,
+    travelFrictionPercent: modifiers.travelFrictionPercent,
+    travelFrictionMultiplier: travelAllowances.frictionMultiplier
   };
 }
 

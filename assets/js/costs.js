@@ -36,6 +36,8 @@ function sumFixedCosts(costsState) {
   }, 0);
 }
 
+import { normalizeScenarioModifiers } from './modifiers.js';
+
 function computeVariableCostTotals(costsState = {}, capacity = {}) {
   const perWorkingDay = Math.max(
     toNumber(costsState.variableCostPerWorkingDay ?? costsState.variableCostPerClass, 0),
@@ -95,7 +97,10 @@ export function computeCosts(state, capacityMetrics = {}) {
   const vatRate = vatRatePercent / 100;
 
   const bufferPercent = normalizePercent(costsState.bufferPercent, 15, { min: 0 });
-  const buffer = bufferPercent / 100;
+  const modifiers = normalizeScenarioModifiers(state && state.modifiers);
+  const comfortMarginPercent = modifiers.comfortMarginPercent;
+  const bufferPercentEffective = bufferPercent + comfortMarginPercent;
+  const buffer = bufferPercentEffective / 100;
 
   const fixedCosts = Math.max(sumFixedCosts(costsState), 0);
 
@@ -114,6 +119,8 @@ export function computeCosts(state, capacityMetrics = {}) {
     vatRatePercent,
     buffer,
     bufferPercent,
+    bufferPercentBase: bufferPercent,
+    comfortMarginPercent,
     fixedCosts,
     annualVariableCosts,
     variableCostPerClass: variableCosts.perWorkingDay,
