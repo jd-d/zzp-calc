@@ -9,6 +9,7 @@ import {
   setMonthsOff,
   setWeeksOffCycle,
   setDaysOffWeek,
+  setSessionLength,
   setTaxRatePercent,
   setVariableCostPerClass,
   setVatRatePercent,
@@ -37,6 +38,7 @@ export function initializeCalculatorUI() {
     monthsOff: document.getElementById('months-off'),
     weeksOffCycle: document.getElementById('weeks-off-cycle'),
     daysOffWeek: document.getElementById('days-off-week'),
+    sessionLength: document.getElementById('session-length'),
     buffer: document.getElementById('buffer'),
     currencySymbol: document.getElementById('currency-symbol'),
     recalcButton: document.getElementById('recalculate'),
@@ -308,6 +310,11 @@ export function initializeCalculatorUI() {
       controls.daysOffWeek.value = formatFixed(state.capacity.daysOffWeek ?? 0, 2);
     }
 
+    if (controls.sessionLength instanceof HTMLInputElement) {
+      const value = Number.isFinite(state.sessionLength) ? state.sessionLength : 1.5;
+      controls.sessionLength.value = formatFixed(Math.max(value, 0), 2);
+    }
+
     if (controls.buffer instanceof HTMLInputElement) {
       controls.buffer.value = formatFixed(state.costs.bufferPercent ?? 15, 1);
     }
@@ -337,7 +344,8 @@ export function initializeCalculatorUI() {
       bufferPercent,
       workingWeeks,
       activeMonths,
-      workingDaysPerYear
+      workingDaysPerYear,
+      billableHours
     } = inputs;
 
     const effectiveTaxRate = Math.min(Math.max(taxRate, 0), 0.99);
@@ -357,6 +365,13 @@ export function initializeCalculatorUI() {
       ? bufferedRevenue / workingDaysPerYear
       : null;
 
+    const hourlyBase = Number.isFinite(billableHours) && billableHours > 0
+      ? baseRevenue / billableHours
+      : null;
+    const hourlyBuffered = Number.isFinite(billableHours) && billableHours > 0
+      ? bufferedRevenue / billableHours
+      : null;
+
     return {
       baseRevenue,
       bufferedRevenue,
@@ -366,7 +381,10 @@ export function initializeCalculatorUI() {
       weeklyBase,
       weeklyBuffered,
       dailyBase,
-      dailyBuffered
+      dailyBuffered,
+      hourlyBase,
+      hourlyBuffered,
+      billableHours
     };
   }
 
@@ -408,6 +426,14 @@ export function initializeCalculatorUI() {
         buffered: summary.dailyBuffered,
         basis: Number.isFinite(inputs.workingDaysPerYear) && inputs.workingDaysPerYear > 0
           ? `Based on ≈ ${formatFixed(inputs.workingDaysPerYear, 2)} active days / year`
+          : '—'
+      },
+      {
+        label: 'Billable hour',
+        base: summary.hourlyBase,
+        buffered: summary.hourlyBuffered,
+        basis: Number.isFinite(summary.billableHours) && summary.billableHours > 0
+          ? `Based on ≈ ${formatFixed(summary.billableHours, 2)} billable hours / year`
           : '—'
       }
     ];
@@ -451,8 +477,16 @@ export function initializeCalculatorUI() {
       `;
   }
 
-  function extractInputsFromViews(views) {
-    const { capacity, income, costs } = views;
+  function extractInputsFromViews(views, stateSnapshot = calcState) {
+    const { capacity = {}, income = {}, costs = {} } = views || {};
+    const currentState = stateSnapshot && typeof stateSnapshot === 'object' ? stateSnapshot : {};
+    const sessionLength = Number.isFinite(currentState.sessionLength) ? currentState.sessionLength : 1.5;
+    const effectiveBillableDays = Number.isFinite(capacity.billableDaysAfterTravel)
+      ? capacity.billableDaysAfterTravel
+      : capacity.billableDaysPerYear;
+    const billableHours = Number.isFinite(sessionLength) && sessionLength > 0 && Number.isFinite(effectiveBillableDays) && effectiveBillableDays > 0
+      ? effectiveBillableDays * sessionLength
+      : null;
     return {
       targetNet: income.targetNet,
       targetNetPerWeek: income.targetNetPerWeek,
@@ -486,7 +520,9 @@ export function initializeCalculatorUI() {
       travelWeeksPerYear: capacity.travelWeeksPerYear,
       travelAllowanceDays: capacity.travelAllowanceDays,
       travelAllowanceShare: capacity.travelAllowanceShare,
-      travelAllowanceBillableShare: capacity.travelAllowanceBillableShare
+      travelAllowanceBillableShare: capacity.travelAllowanceBillableShare,
+      sessionLength,
+      billableHours
     };
   }
 
@@ -525,7 +561,9 @@ export function initializeCalculatorUI() {
       travelWeeksPerYear,
       travelAllowanceDays,
       travelAllowanceShare,
-      travelAllowanceBillableShare
+      travelAllowanceBillableShare,
+      sessionLength,
+      billableHours
     } = inputs;
 
     const activeMonthPercentage = activeMonthShare * 100;
@@ -540,6 +578,10 @@ export function initializeCalculatorUI() {
     const travelAllowanceDaysDisplay = formatFixed(travelAllowanceDays, 2);
     const travelAllowanceSharePercent = formatFixed((travelAllowanceShare || 0) * 100, 1);
     const travelAllowanceBillablePercent = formatFixed((travelAllowanceBillableShare || 0) * 100, 1);
+    const sessionLengthDisplay = formatFixed(sessionLength, 2);
+    const billableHoursDisplay = Number.isFinite(billableHours)
+      ? formatFixed(billableHours, 2)
+      : '—';
 
     const targetPerWeekDisplay = Number.isFinite(targetNetPerWeek)
       ? formatCurrency(currencySymbol, targetNetPerWeek)
@@ -581,6 +623,8 @@ export function initializeCalculatorUI() {
       `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
       `Target utilization during active weeks: ${utilizationDisplay}%`,
       `Billable days before travel allowances: ${billableDaysPerYearDisplay} (after travel: ${billableDaysAfterTravelDisplay})`,
+      `Session length assumption: ${sessionLengthDisplay} hours`,
+      `Estimated billable hours per year: ${billableHoursDisplay}`,
       `Travel days planned per active month: ${travelDaysPerMonthDisplay}; ≈ ${travelDaysPerYearDisplay} days (${travelWeeksPerYearDisplay} weeks) per year`,
       `Travel allowance impact on availability: ${travelAllowanceDaysDisplay} days (${travelAllowanceSharePercent}% of active days; ${travelAllowanceBillablePercent}% of billable plan)`,
       `Safety margin applied to revenue: ${formatFixed(bufferPercent, 1)}%`,
@@ -593,7 +637,7 @@ export function initializeCalculatorUI() {
   }
 
   function renderDerivedViews(state, views) {
-    const inputs = extractInputsFromViews(views);
+    const inputs = extractInputsFromViews(views, state);
     const summary = computeRevenueSummary(inputs);
 
     if (summary && Number.isFinite(summary.baseRevenue)) {
@@ -627,6 +671,14 @@ export function initializeCalculatorUI() {
           basis: Number.isFinite(inputs.workingDaysPerYear) && inputs.workingDaysPerYear > 0
             ? `≈ ${formatFixed(inputs.workingDaysPerYear, 2)} active days`
             : '—'
+        },
+        {
+          label: 'Billable hour',
+          base: summary.hourlyBase,
+          buffered: summary.hourlyBuffered,
+          basis: Number.isFinite(summary.billableHours) && summary.billableHours > 0
+            ? `≈ ${formatFixed(summary.billableHours, 2)} billable hours`
+            : '—'
         }
       ];
     } else {
@@ -655,7 +707,7 @@ export function initializeCalculatorUI() {
       return;
     }
 
-    const header = 'Target,Base gross revenue,With margin,Basis';
+    const header = 'Period,Base gross revenue,Buffered gross revenue,Basis';
     const rows = latestResults.map(entry => {
       const base = Number.isFinite(entry.base) ? Math.round(entry.base) : '';
       const buffered = Number.isFinite(entry.buffered) ? Math.round(entry.buffered) : '';
@@ -903,6 +955,9 @@ export function initializeCalculatorUI() {
       case 'days-off-week':
         setDaysOffWeek(control.value);
         break;
+      case 'session-length':
+        setSessionLength(control.value);
+        break;
       case 'tax-rate':
         setTaxRatePercent(control.value);
         break;
@@ -933,6 +988,9 @@ export function initializeCalculatorUI() {
     const daysOffRaw = controls.daysOffWeek instanceof HTMLInputElement
       ? controls.daysOffWeek.value
       : calcState.capacity.daysOffWeek;
+    const sessionLengthRaw = controls.sessionLength instanceof HTMLInputElement
+      ? controls.sessionLength.value
+      : calcState.sessionLength;
 
     const capacityUpdates = {
       monthsOff: parseNumber(monthsOffRaw, calcState.capacity.monthsOff || 0, {
@@ -956,6 +1014,14 @@ export function initializeCalculatorUI() {
 
     const capacityMetrics = deriveCapacity(nextCapacity);
     const defaults = deriveTargetNetDefaults(capacityMetrics);
+
+    const sessionLength = Math.max(
+      parseNumber(sessionLengthRaw, calcState.sessionLength ?? 1.5, {
+        min: 0.25,
+        max: 12
+      }),
+      0.25
+    );
 
     const yearRaw = controls.targetNet instanceof HTMLInputElement
       ? controls.targetNet.value
@@ -1026,6 +1092,7 @@ export function initializeCalculatorUI() {
 
     patch({
       capacity: capacityUpdates,
+      sessionLength,
       config: {
         defaults: {
           incomeTargets: defaults
