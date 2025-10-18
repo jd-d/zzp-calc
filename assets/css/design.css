@@ -1,167 +1,218 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Inter:wght@100..900&display=swap");
+
 /* =====================================================================
    Design Tokens
    ===================================================================== */
-:root,
-:root.theme-dark {
-  color-scheme: dark;
+:root {
+  --bg: #0e1111;
+  --bg-elev: #15191a;
+  --text: #e7ecef;
+  --muted: #a7b0b5;
+  --border: #293033;
+
+  --citrus: #ffd166;
+  --nectarine: #ff7a59;
+  --grape: #7b66ff;
+  --apple: #28c76f;
+  --berry: #f5317f;
+
+  --ok: var(--apple);
+  --warn: #ffb000;
+  --danger: #ff4d4f;
+
+  --glass: rgba(255, 255, 255, 0.06);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+
+  --r-2: 6px;
+  --r-3: 10px;
+  --r-4: 16px;
+
+  --space-1: clamp(8px, 1.2vw, 14px);
+  --space-2: clamp(12px, 1.8vw, 20px);
+  --space-3: clamp(18px, 2.4vw, 28px);
+  --space-4: clamp(24px, 3.6vw, 40px);
+
+  --step--1: clamp(12px, 0.8vw, 14px);
+  --step-0: clamp(14px, 1.0vw, 16px);
+  --step-1: clamp(18px, 1.6vw, 22px);
+  --step-2: clamp(22px, 2.2vw, 28px);
+  --step-3: clamp(28px, 3.2vw, 38px);
+  --step-4: clamp(36px, 4.4vw, 54px);
+
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-heading: "Fraunces", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.85rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.1rem;
-  --font-size-xl: clamp(1.75rem, 3vw, 2.4rem);
+  --font-size-base: var(--step-0);
+  --font-size-lg: clamp(1.1rem, 1.8vw, 1.35rem);
+  --font-size-xl: var(--step-3);
   --line-height-tight: 1.15;
   --line-height-base: 1.65;
   --line-height-relaxed: 1.8;
+
   --space-0: 0;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
   --space-7: 32px;
   --space-8: 48px;
-  --radius-xs: 8px;
+
+  --radius-xs: var(--r-2);
   --radius-sm: 12px;
   --radius-md: 14px;
   --radius-lg: 18px;
   --radius-pill: 999px;
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 35px 70px rgba(0, 0, 0, 0.45);
-  --shadow-button: rgba(0, 0, 0, 0.3);
-  --surface-0: rgba(20, 24, 35, 0.85);
-  --surface-1: rgba(7, 9, 14, 0.75);
-  --surface-2: rgba(77, 163, 255, 0.18);
-  --surface-chip: rgba(77, 163, 255, 0.15);
-  --surface-chip-hover: rgba(77, 163, 255, 0.25);
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-accent: rgba(77, 163, 255, 0.45);
-  --border-chip: rgba(77, 163, 255, 0.45);
-  --border-row: rgba(255, 255, 255, 0.07);
-  --border-price: rgba(255, 255, 255, 0.05);
-  --border-buffer: rgba(77, 163, 255, 0.25);
-  --text-primary: #f5f7fb;
-  --text-muted: #b1b7c7;
+}
+
+:root.light {
+  --bg: #f6f8f9;
+  --bg-elev: #ffffff;
+  --text: #15191a;
+  --muted: #5b666b;
+  --border: #dbe2e6;
+  --glass: rgba(0, 0, 0, 0.04);
+}
+
+:root,
+:root.dark,
+:root.theme-dark {
+  color-scheme: dark;
+  --surface-0: var(--bg-elev);
+  --surface-1: color-mix(in srgb, var(--bg-elev) 88%, #050606);
+  --surface-2: color-mix(in srgb, var(--grape) 22%, transparent);
+  --surface-chip: color-mix(in srgb, var(--grape) 18%, transparent);
+  --surface-chip-hover: color-mix(in srgb, var(--grape) 28%, transparent);
+  --border-default: color-mix(in srgb, var(--border) 65%, transparent);
+  --border-strong: color-mix(in srgb, var(--border) 90%, transparent);
+  --border-accent: color-mix(in srgb, var(--grape) 70%, transparent);
+  --border-chip: color-mix(in srgb, var(--grape) 65%, transparent);
+  --border-row: color-mix(in srgb, var(--border) 55%, transparent);
+  --border-price: color-mix(in srgb, var(--border) 35%, transparent);
+  --border-buffer: color-mix(in srgb, var(--grape) 55%, transparent);
+  --text-primary: var(--text);
+  --text-muted: var(--muted);
   --text-inverse: #0c111d;
-  --accent: #4da3ff;
-  --accent-strong: #e5f1ff;
-  --focus-ring: rgba(77, 163, 255, 0.25);
-  --focus-outline: rgba(77, 163, 255, 0.55);
-  --toggle-track: rgba(255, 255, 255, 0.25);
-  --toggle-track-border: rgba(255, 255, 255, 0.35);
+  --accent: var(--grape);
+  --accent-strong: color-mix(in srgb, var(--grape) 80%, #ffffff);
+  --focus-ring: color-mix(in srgb, var(--grape) 35%, transparent);
+  --focus-outline: color-mix(in srgb, var(--grape) 55%, transparent);
+  --toggle-track: color-mix(in srgb, var(--border) 45%, transparent);
+  --toggle-track-border: color-mix(in srgb, var(--border) 65%, transparent);
   --toggle-thumb: var(--accent);
   --toggle-thumb-shadow: rgba(0, 0, 0, 0.35);
-  --inactive-bg: rgba(255, 76, 96, 0.12);
-  --inactive-border: rgba(255, 76, 96, 0.45);
-  --inactive-text: #ff93a6;
-  --inactive-strong: #ffb7c3;
-  --active-bg: rgba(77, 163, 255, 0.12);
-  --active-border: rgba(77, 163, 255, 0.45);
+  --inactive-bg: color-mix(in srgb, var(--danger) 18%, transparent);
+  --inactive-border: color-mix(in srgb, var(--danger) 45%, transparent);
+  --inactive-text: color-mix(in srgb, var(--danger) 60%, #ffffff);
+  --inactive-strong: color-mix(in srgb, var(--danger) 75%, #ffffff);
+  --active-bg: color-mix(in srgb, var(--accent) 18%, transparent);
+  --active-border: color-mix(in srgb, var(--accent) 45%, transparent);
   --bg-gradient: radial-gradient(circle at top left, #1e2330, #10131c 55%, #0a0c12 100%);
   --surface-border-gradient: linear-gradient(
     135deg,
-    rgba(77, 163, 255, 0.6),
-    rgba(149, 114, 255, 0.45)
+    color-mix(in srgb, var(--accent) 70%, transparent),
+    color-mix(in srgb, var(--berry) 45%, transparent)
   );
   --surface-highlight-gradient: linear-gradient(
     160deg,
     rgba(255, 255, 255, 0.08),
     rgba(255, 255, 255, 0.02)
   );
-  --info-bg: rgba(77, 163, 255, 0.15);
-  --info-border: rgba(77, 163, 255, 0.35);
-  --info-hover-bg: rgba(77, 163, 255, 0.25);
-  --info-hover-border: rgba(77, 163, 255, 0.55);
+  --info-bg: color-mix(in srgb, var(--accent) 22%, transparent);
+  --info-border: color-mix(in srgb, var(--accent) 48%, transparent);
+  --info-hover-bg: color-mix(in srgb, var(--accent) 32%, transparent);
+  --info-hover-border: color-mix(in srgb, var(--accent) 64%, transparent);
   --tooltip-bg: rgba(12, 16, 26, 0.95);
   --tooltip-color: var(--text-primary);
   --tooltip-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
   --button-bg: #f1f5ff;
   --button-color: #0c111d;
-  --secondary-button-bg: rgba(77, 163, 255, 0.15);
-  --secondary-button-border: rgba(77, 163, 255, 0.45);
-  --secondary-button-hover-bg: rgba(77, 163, 255, 0.25);
-  --table-header-bg: rgba(255, 255, 255, 0.04);
-  --table-header-text: var(--text-muted);
-  --row-header-bg: rgba(255, 255, 255, 0.02);
-  --price-line-bg: rgba(255, 255, 255, 0.03);
-  --price-buffer-bg: rgba(77, 163, 255, 0.08);
-  --breakdown-color-vat: #f97316;
-  --breakdown-color-variable: #8b5cf6;
+  --secondary-button-bg: color-mix(in srgb, var(--accent) 18%, transparent);
+  --secondary-button-border: color-mix(in srgb, var(--accent) 45%, transparent);
+  --secondary-button-hover-bg: color-mix(in srgb, var(--accent) 28%, transparent);
+  --table-header-bg: color-mix(in srgb, #ffffff 8%, transparent);
+  --table-header-text: var(--muted);
+  --row-header-bg: color-mix(in srgb, #ffffff 6%, transparent);
+  --price-line-bg: color-mix(in srgb, #ffffff 4%, transparent);
+  --price-buffer-bg: color-mix(in srgb, var(--accent) 24%, transparent);
+  --shadow-lg: var(--shadow);
+  --shadow-card: 0 35px 70px rgba(0, 0, 0, 0.45);
+  --shadow-button: rgba(0, 0, 0, 0.3);
+  --breakdown-color-vat: var(--nectarine);
+  --breakdown-color-variable: var(--grape);
   --breakdown-color-fixed: #38bdf8;
-  --breakdown-color-tax: #ef4444;
-  --breakdown-color-net: #22c55e;
+  --breakdown-color-tax: var(--danger);
+  --breakdown-color-net: var(--apple);
+}
+
+:root.light,
 :root.theme-light {
   color-scheme: light;
-  --font-heading: "Fraunces", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --bg-gradient: radial-gradient(circle at top left, #eff4ff, #dde7ff 55%, #d4e0ff 100%);
-  --surface-0: rgba(255, 255, 255, 0.92);
-  --surface-1: rgba(255, 255, 255, 0.85);
-  --surface-2: rgba(37, 99, 235, 0.14);
-  --surface-chip: rgba(37, 99, 235, 0.12);
-  --surface-chip-hover: rgba(37, 99, 235, 0.22);
-  --border-default: rgba(15, 23, 42, 0.08);
-  --border-strong: rgba(15, 23, 42, 0.14);
-  --border-accent: rgba(37, 99, 235, 0.35);
-  --border-chip: rgba(37, 99, 235, 0.3);
-  --border-row: rgba(15, 23, 42, 0.08);
-  --border-price: rgba(15, 23, 42, 0.1);
-  --border-buffer: rgba(37, 99, 235, 0.28);
-  --text-primary: #111827;
-  --text-muted: #4b5563;
+  --surface-0: var(--bg-elev);
+  --surface-1: color-mix(in srgb, var(--bg-elev) 90%, #f0f4f5);
+  --surface-2: color-mix(in srgb, var(--grape) 16%, transparent);
+  --surface-chip: color-mix(in srgb, var(--grape) 12%, transparent);
+  --surface-chip-hover: color-mix(in srgb, var(--grape) 22%, transparent);
+  --border-default: color-mix(in srgb, var(--border) 55%, transparent);
+  --border-strong: color-mix(in srgb, var(--border) 75%, transparent);
+  --border-accent: color-mix(in srgb, var(--grape) 35%, transparent);
+  --border-chip: color-mix(in srgb, var(--grape) 30%, transparent);
+  --border-row: color-mix(in srgb, var(--border) 55%, transparent);
+  --border-price: color-mix(in srgb, var(--border) 45%, transparent);
+  --border-buffer: color-mix(in srgb, var(--accent) 38%, transparent);
+  --text-primary: var(--text);
+  --text-muted: var(--muted);
   --text-inverse: #f8fafc;
-  --accent: #2563eb;
-  --accent-strong: #0b162d;
-  --focus-ring: rgba(37, 99, 235, 0.28);
-  --focus-outline: rgba(37, 99, 235, 0.55);
-  --toggle-track: rgba(15, 23, 42, 0.12);
-  --toggle-track-border: rgba(15, 23, 42, 0.22);
-  --toggle-thumb: #1d4ed8;
+  --accent: var(--berry);
+  --accent-strong: color-mix(in srgb, var(--berry) 70%, #0b162d);
+  --focus-ring: color-mix(in srgb, var(--accent) 32%, transparent);
+  --focus-outline: color-mix(in srgb, var(--accent) 55%, transparent);
+  --toggle-track: color-mix(in srgb, var(--border) 22%, transparent);
+  --toggle-track-border: color-mix(in srgb, var(--border) 32%, transparent);
+  --toggle-thumb: color-mix(in srgb, var(--accent) 85%, #ffffff);
   --toggle-thumb-shadow: rgba(15, 23, 42, 0.25);
-  --inactive-bg: rgba(239, 68, 68, 0.12);
-  --inactive-border: rgba(220, 38, 38, 0.35);
-  --inactive-text: #c53030;
-  --inactive-strong: #e53e3e;
-  --active-bg: rgba(37, 99, 235, 0.12);
-  --active-border: rgba(37, 99, 235, 0.35);
+  --inactive-bg: color-mix(in srgb, var(--danger) 18%, transparent);
+  --inactive-border: color-mix(in srgb, var(--danger) 35%, transparent);
+  --inactive-text: color-mix(in srgb, var(--danger) 58%, #ffffff);
+  --inactive-strong: color-mix(in srgb, var(--danger) 70%, #ffffff);
+  --active-bg: color-mix(in srgb, var(--accent) 18%, transparent);
+  --active-border: color-mix(in srgb, var(--accent) 35%, transparent);
+  --bg-gradient: radial-gradient(circle at top left, #eff4ff, #dde7ff 55%, #d4e0ff 100%);
   --surface-border-gradient: linear-gradient(
     135deg,
-    rgba(37, 99, 235, 0.35),
-    rgba(59, 130, 246, 0.15)
+    color-mix(in srgb, var(--accent) 35%, transparent),
+    color-mix(in srgb, var(--grape) 20%, transparent)
   );
   --surface-highlight-gradient: linear-gradient(
     160deg,
     rgba(255, 255, 255, 0.95),
     rgba(249, 250, 255, 0.85)
   );
-  --info-bg: rgba(37, 99, 235, 0.12);
-  --info-border: rgba(37, 99, 235, 0.32);
-  --info-hover-bg: rgba(37, 99, 235, 0.2);
-  --info-hover-border: rgba(37, 99, 235, 0.45);
+  --info-bg: color-mix(in srgb, var(--accent) 18%, transparent);
+  --info-border: color-mix(in srgb, var(--accent) 32%, transparent);
+  --info-hover-bg: color-mix(in srgb, var(--accent) 26%, transparent);
+  --info-hover-border: color-mix(in srgb, var(--accent) 45%, transparent);
   --tooltip-bg: rgba(15, 23, 42, 0.95);
   --tooltip-color: #f8fafc;
   --tooltip-shadow: 0 18px 36px rgba(15, 23, 42, 0.24);
-  --button-bg: #1d4ed8;
-  --button-color: #f8fafc;
-  --secondary-button-bg: rgba(37, 99, 235, 0.12);
-  --secondary-button-border: rgba(37, 99, 235, 0.3);
-  --secondary-button-hover-bg: rgba(37, 99, 235, 0.22);
-  --table-header-bg: rgba(37, 99, 235, 0.08);
+  --button-bg: color-mix(in srgb, var(--accent) 85%, #ffffff);
+  --button-color: #0b162d;
+  --secondary-button-bg: color-mix(in srgb, var(--accent) 18%, transparent);
+  --secondary-button-border: color-mix(in srgb, var(--accent) 30%, transparent);
+  --secondary-button-hover-bg: color-mix(in srgb, var(--accent) 28%, transparent);
+  --table-header-bg: color-mix(in srgb, var(--accent) 12%, #ffffff);
   --table-header-text: #1f2937;
-  --row-header-bg: rgba(226, 232, 240, 0.6);
-  --price-line-bg: rgba(15, 23, 42, 0.04);
-  --price-buffer-bg: rgba(37, 99, 235, 0.12);
+  --row-header-bg: color-mix(in srgb, #e2e8f0 80%, transparent);
+  --price-line-bg: color-mix(in srgb, var(--border) 12%, transparent);
+  --price-buffer-bg: color-mix(in srgb, var(--accent) 24%, transparent);
   --shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.12);
   --shadow-card: 0 35px 70px rgba(15, 23, 42, 0.24);
   --shadow-button: rgba(29, 78, 216, 0.3);
   --breakdown-color-vat: #ea580c;
   --breakdown-color-variable: #7c3aed;
   --breakdown-color-fixed: #2563eb;
-  --breakdown-color-tax: #dc2626;
-  --breakdown-color-net: #16a34a;
+  --breakdown-color-tax: var(--danger);
+  --breakdown-color-net: var(--apple);
 }
 
 /* =====================================================================
@@ -169,6 +220,10 @@
    ===================================================================== */
 * {
   box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark light;
 }
 
 html,

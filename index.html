@@ -13,8 +13,8 @@
 
       function setTheme(theme) {
         var normalized = theme === 'light' ? 'light' : 'dark';
-        root.classList.remove('theme-light', 'theme-dark');
-        root.classList.add('theme-' + normalized);
+        root.classList.remove('theme-light', 'theme-dark', 'light', 'dark');
+        root.classList.add('theme-' + normalized, normalized);
         root.dataset.theme = normalized;
       }
 
@@ -60,6 +60,7 @@
       }
 
       setTheme(storedTheme || detectAutomaticTheme());
+      root.dataset.themeLock = locked ? 'true' : 'false';
     })();
   </script>
   <link rel="icon" href="assets/favicon.png" type="image/png" />
