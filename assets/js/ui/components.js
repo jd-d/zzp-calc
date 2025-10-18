@@ -8,6 +8,35 @@ function resolveRoot(root) {
   return document;
 }
 
+function resolveElement(target, root = document) {
+  if (typeof target === 'string') {
+    return qs(target, root);
+  }
+
+  if (target instanceof EventTarget) {
+    return target;
+  }
+
+  return null;
+}
+
+function containsTarget(container, node) {
+  if (!(node instanceof Node)) {
+    return false;
+  }
+
+  if (container instanceof Element || container instanceof DocumentFragment) {
+    return container.contains(node);
+  }
+
+  if (container instanceof Document) {
+    const rootNode = container.documentElement;
+    return rootNode ? rootNode.contains(node) : false;
+  }
+
+  return container === node;
+}
+
 export function qs(selector, root = document) {
   if (typeof selector !== 'string' || !selector) {
     return null;
@@ -39,21 +68,53 @@ export function on(target, type, handler, options, root = document) {
     return () => {};
   }
 
-  let element = null;
-  if (typeof target === 'string') {
-    element = qs(target, root);
-  } else if (target instanceof EventTarget) {
-    element = target;
-  }
-
+  const element = resolveElement(target, root);
   if (!element || typeof element.addEventListener !== 'function') {
     return () => {};
   }
 
-  element.addEventListener(type, handler, options);
+  let delegateSelector = '';
+  let listenerOptions = options;
+
+  if (typeof options === 'object' && options !== null) {
+    delegateSelector = typeof options.delegate === 'string' ? options.delegate.trim() : '';
+    if (delegateSelector) {
+      listenerOptions = { ...options };
+      delete listenerOptions.delegate;
+    }
+  }
+
+  const listener = delegateSelector
+    ? event => {
+        const targetElement = event.target instanceof Element
+          ? event.target.closest(delegateSelector)
+          : null;
+
+        if (!targetElement || !containsTarget(element, targetElement)) {
+          return;
+        }
+
+        const hadDelegate = Object.prototype.hasOwnProperty.call(event, 'delegateTarget');
+        const previousDelegate = hadDelegate ? event.delegateTarget : undefined;
+
+        event.delegateTarget = targetElement;
+
+        try {
+          handler.call(targetElement, event);
+        } finally {
+          if (hadDelegate) {
+            event.delegateTarget = previousDelegate;
+          } else {
+            delete event.delegateTarget;
+          }
+        }
+      }
+    : handler;
+
+  element.addEventListener(type, listener, listenerOptions);
 
   return () => {
-    element.removeEventListener(type, handler, options);
+    element.removeEventListener(type, listener, listenerOptions);
   };
 }
 
@@ -64,6 +125,33 @@ export function setText(el, value = '') {
 
   const nextValue = value == null ? '' : String(value);
   el.textContent = nextValue;
+}
+
+let srStatusElement = null;
+
+export function announce(message, { politeness = 'polite' } = {}) {
+  if (!srStatusElement || !srStatusElement.isConnected) {
+    srStatusElement = qs('#sr-status');
+  }
+
+  if (!(srStatusElement instanceof HTMLElement)) {
+    return;
+  }
+
+  const politenessLevel = politeness === 'assertive' ? 'assertive' : 'polite';
+  srStatusElement.setAttribute('aria-live', politenessLevel);
+
+  setText(srStatusElement, '');
+
+  const nextMessage = message == null ? '' : String(message);
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      setText(srStatusElement, nextMessage);
+    });
+  } else {
+    setText(srStatusElement, nextMessage);
+  }
 }
 
 export const fmt = {
@@ -87,6 +175,175 @@ export const fmt = {
     return formatter.format(safeValue);
   }
 };
+
+function defaultParse(value) {
+  if (value === null || value === undefined) {
+    return NaN;
+  }
+
+  const normalized = typeof value === 'string' ? value.trim() : value;
+  if (normalized === '') {
+    return NaN;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+function defaultFormat(value) {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  return String(value);
+}
+
+function isRangeInput(input) {
+  return input instanceof HTMLInputElement && input.type === 'range';
+}
+
+export function registerSliderBinding(rangeTarget, inputTarget, options = {}) {
+  const settings = typeof options === 'object' && options !== null ? options : {};
+  const context = resolveRoot(settings.root);
+
+  const range = resolveElement(rangeTarget, context);
+  if (!isRangeInput(range)) {
+    return {
+      update() {},
+      destroy() {}
+    };
+  }
+
+  const inputElement = resolveElement(inputTarget, context);
+  const numberInput = inputElement instanceof HTMLInputElement ? inputElement : null;
+
+  const parseOption = typeof settings.parse === 'function' ? settings.parse : defaultParse;
+  const formatOption = typeof settings.format === 'function' ? settings.format : defaultFormat;
+  const onChange = typeof settings.onChange === 'function' ? settings.onChange : null;
+  const syncOnInit = settings.syncOnInit !== false;
+  const notifyOnInit = settings.notifyOnInit === true;
+
+  const parseValue = value => {
+    const parsed = parseOption(value);
+    if (typeof parsed === 'number') {
+      return Number.isFinite(parsed) ? parsed : NaN;
+    }
+    const numeric = Number(parsed);
+    return Number.isFinite(numeric) ? numeric : NaN;
+  };
+
+  const formatValue = (value, meta) => {
+    const formatted = formatOption(value, meta);
+    if (formatted == null) {
+      return '';
+    }
+    return typeof formatted === 'string' ? formatted : String(formatted);
+  };
+
+  const readInitialValue = () => {
+    if (Number.isFinite(range.valueAsNumber)) {
+      return range.valueAsNumber;
+    }
+
+    const fromRange = parseValue(range.value);
+    if (Number.isFinite(fromRange)) {
+      return fromRange;
+    }
+
+    if (numberInput) {
+      const fromInput = parseValue(numberInput.value);
+      if (Number.isFinite(fromInput)) {
+        return fromInput;
+      }
+    }
+
+    const min = Number(range.min);
+    if (Number.isFinite(min)) {
+      return min;
+    }
+
+    return 0;
+  };
+
+  let lastValue = readInitialValue();
+  let destroyed = false;
+
+  const applyValue = (value, meta = {}) => {
+    if (destroyed) {
+      return lastValue;
+    }
+
+    const nextValue = Number.isFinite(value) ? value : lastValue;
+    lastValue = nextValue;
+
+    const rangeValue = String(nextValue);
+    if (range.value !== rangeValue) {
+      range.value = rangeValue;
+    }
+
+    if (numberInput) {
+      const formatted = formatValue(nextValue, { ...meta, range, input: numberInput });
+      numberInput.value = formatted;
+    }
+
+    if (!meta.silent && onChange) {
+      onChange(nextValue, { ...meta, range, input: numberInput });
+    }
+
+    return nextValue;
+  };
+
+  const handleRangeInput = event => {
+    const nextValue = Number.isFinite(range.valueAsNumber)
+      ? range.valueAsNumber
+      : parseValue(range.value);
+    applyValue(nextValue, { source: 'range', event });
+  };
+
+  const handleInputChange = event => {
+    if (!numberInput) {
+      return;
+    }
+
+    const nextValue = parseValue(numberInput.value);
+    applyValue(nextValue, { source: 'input', event });
+  };
+
+  range.addEventListener('input', handleRangeInput);
+  range.addEventListener('change', handleRangeInput);
+
+  if (numberInput) {
+    numberInput.addEventListener('input', handleInputChange);
+    numberInput.addEventListener('change', handleInputChange);
+  }
+
+  if (syncOnInit) {
+    applyValue(lastValue, { source: 'init', event: null, silent: !notifyOnInit });
+  }
+
+  const destroy = () => {
+    if (destroyed) {
+      return;
+    }
+
+    destroyed = true;
+    range.removeEventListener('input', handleRangeInput);
+    range.removeEventListener('change', handleRangeInput);
+
+    if (numberInput) {
+      numberInput.removeEventListener('input', handleInputChange);
+      numberInput.removeEventListener('change', handleInputChange);
+    }
+  };
+
+  return {
+    update(value, meta = {}) {
+      const options = typeof meta === 'object' && meta !== null ? meta : {};
+      return applyValue(value, { ...options, source: options.source || 'external' });
+    },
+    destroy
+  };
+}
 
 export function renderSparkline(el, values, { width = 96, height = 32 } = {}) {
   if (!(el instanceof HTMLElement)) {
