@@ -19,7 +19,6 @@ The following increments can be triggered individually to deliver the full prici
 
 ### Sprint 4 – Portfolio Optimizer
 - [ ] Implement a brute-force or heuristic portfolio solver that respects hours, travel, and hands-on constraints.
-- [ ] Display portfolio summaries (revenue, costs, tax, net) and a compact weekly schedule preview.
 - [ ] Enforce pricing fences (minimum/target/stretch) and comfort buffers within the optimizer output.
 
 ### Sprint 5 – Advanced Tax and Experience Enhancers
@@ -37,3 +36,4 @@ The following increments can be triggered individually to deliver the full prici
 - [x] Swap the prominence of prices with and without VAT so the price including VAT is shown as the primary figure, with the VAT-exclusive amount secondary. (2025-09-30)
 - [x] Consolidate the pricing table to display only the buffered price, omitting separate breakeven and buffered values. (2025-09-30)
 - [x] Append hourly equivalents to gross revenue figures based on a configurable session length input. (2025-10-18)
+- [x] Display portfolio summaries (revenue, costs, tax, net) and a compact weekly schedule preview. (2025-10-19)
