@@ -1,6 +1,13 @@
 # zzp-calc
 Something for working out costs and income.
 
+## Design reference
+This project follows the guidance in `DESIGN-SPECIFICATION.md` for UI and
+experience decisions. Treat that document as the authoritative reference for
+design-related tasks unless a request explicitly overrides it. Future changes
+may implement the specification incrementally, so use it as context rather than
+an immediate to-do list.
+
 ## Deployment options
 This repository publishes the static site defined in `index.html` to
 GitHub Pages using the **Pages (prod + previews)** workflow in
