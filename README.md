@@ -1,4 +1,4 @@
-# course-pricing-calculator
+# zzp-calc
 Something for working out costs and income.
 
 ## Deployment options
