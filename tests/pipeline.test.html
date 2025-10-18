@@ -65,6 +65,13 @@
   <script type="module">
     import { deriveCapacity } from '../assets/js/capacity.js';
     import { computeCosts } from '../assets/js/costs.js';
+    import { calcState } from '../assets/js/state.js';
+    import {
+      calculateDutchTax2025,
+      ZELFSTANDIGENAFTREK_2025,
+      STARTERSAFTREK_2025,
+      MKB_VRIJSTELLING_RATE_2025
+    } from '../assets/js/tax.js';
 
     const EPSILON = 1e-9;
     const tests = [];
@@ -103,6 +110,40 @@
           }
         }
       }
+    }
+
+    function resetTaxOverrides() {
+      if (!calcState || !calcState.tax) {
+        return;
+      }
+      for (const key of Object.keys(calcState.tax)) {
+        delete calcState.tax[key];
+      }
+    }
+
+    function createIncomeState(targetNet) {
+      return {
+        incomeTargets: {
+          basis: 'year',
+          year: targetNet,
+          week: 0,
+          month: 0,
+          averageWeek: 0,
+          averageMonth: 0
+        },
+        costs: {
+          taxRatePercent: 40,
+          fixedCosts: 0,
+          variableCostPerClass: 0,
+          vatRatePercent: 21,
+          bufferPercent: 15
+        },
+        config: {
+          currencySymbol: '€',
+          defaults: { incomeTargets: {} }
+        },
+        tax: {}
+      };
     }
 
     addTest('deriveCapacity uses full availability when inputs are empty', () => {
@@ -270,6 +311,95 @@
           annualTotal: 2985
         }
       });
+    });
+
+    addTest('calculateDutchTax2025 applies Dutch entrepreneur deductions by default', () => {
+      resetTaxOverrides();
+      const capacity = deriveCapacity({});
+      const state = createIncomeState(55000);
+      const costs = computeCosts(state, capacity);
+      const result = calculateDutchTax2025(state, capacity, costs);
+
+      expectMatches(result, {
+        targetNet: 55000,
+        zelfstandigenaftrek: ZELFSTANDIGENAFTREK_2025,
+        startersaftrek: 0,
+        mkbVrijstellingRate: MKB_VRIJSTELLING_RATE_2025
+      });
+
+      const expectedReserve = result.incomeTax + result.zvwContribution;
+      if (Math.abs(result.taxReserve - expectedReserve) > EPSILON) {
+        throw new Error('Tax reserve should equal income tax plus Zvw contribution');
+      }
+
+      const profitBeforeTax = result.profitBeforeTax;
+      const recomputedReserve = profitBeforeTax - result.targetNet;
+      if (Math.abs(result.taxReserve - recomputedReserve) > 1) {
+        throw new Error('Tax reserve should bridge profit before tax to target net');
+      }
+
+      const effectiveRate = profitBeforeTax > 0 ? result.taxReserve / profitBeforeTax : 0;
+      if (Math.abs(effectiveRate - result.effectiveTaxRate) > 1e-6) {
+        throw new Error('Effective tax rate mismatch');
+      }
+    });
+
+    addTest('calculateDutchTax2025 respects calcState tax overrides', () => {
+      resetTaxOverrides();
+      const capacity = deriveCapacity({});
+      const baseState = createIncomeState(55000);
+      const costs = computeCosts(baseState, capacity);
+      const withDeductions = calculateDutchTax2025(baseState, capacity, costs);
+
+      calcState.tax.zelfstandigenaftrek = false;
+      calcState.tax.mkbVrijstelling = false;
+      calcState.tax.includeZvw = false;
+      calcState.tax.startersaftrek = false;
+
+      const overrideState = createIncomeState(55000);
+      const overrideCosts = computeCosts(overrideState, capacity);
+      const withoutDeductions = calculateDutchTax2025(overrideState, capacity, overrideCosts);
+
+      if (withoutDeductions.zelfstandigenaftrek !== 0) {
+        throw new Error('Zelfstandigenaftrek should be disabled via overrides');
+      }
+      if (withoutDeductions.mkbVrijstelling !== 0) {
+        throw new Error('MKB-vrijstelling should be disabled via overrides');
+      }
+      if (withoutDeductions.zvwContribution !== 0) {
+        throw new Error('Zvw contribution should be disabled via overrides');
+      }
+      if (withoutDeductions.taxReserve <= withDeductions.taxReserve) {
+        throw new Error('Tax reserve should increase when deductions are disabled');
+      }
+
+      resetTaxOverrides();
+    });
+
+    addTest('calculateDutchTax2025 starter deduction reduces taxable profit when enabled', () => {
+      resetTaxOverrides();
+      const capacity = deriveCapacity({});
+      const baseState = createIncomeState(40000);
+      const costs = computeCosts(baseState, capacity);
+
+      const withoutStarter = calculateDutchTax2025(baseState, capacity, costs);
+
+      calcState.tax.startersaftrek = true;
+      const starterState = createIncomeState(40000);
+      starterState.tax.startersaftrek = true;
+      const withStarter = calculateDutchTax2025(starterState, capacity, costs);
+
+      if (withStarter.startersaftrek !== STARTERSAFTREK_2025) {
+        throw new Error('Starter deduction should match 2025 amount when enabled');
+      }
+      if (withStarter.profitBeforeTax >= withoutStarter.profitBeforeTax) {
+        throw new Error('Starter deduction should reduce profit before tax requirement');
+      }
+      if (withStarter.taxableProfitAfterMkb >= withoutStarter.taxableProfitAfterMkb) {
+        throw new Error('Starter deduction should reduce taxable profit after MKB-vrijstelling');
+      }
+
+      resetTaxOverrides();
     });
 
     function recordResult(name, passed, error) {

@@ -10,6 +10,7 @@ export { initializeCalculatorUI } from './ui/calculator.js';
 export { initializePageUi } from './ui/main.js';
 export { mountScenarioToolbar } from './ui/scenario-toolbar.js';
 export { mountPortfolio } from './ui/portfolio.js';
+export { calculateDutchTax2025 } from './tax.js';
 
 export function initializeApp() {
   initializePageUi();
