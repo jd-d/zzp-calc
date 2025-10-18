@@ -1,10 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#eff4ff" />
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0c12" />
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var THEME_KEY = 'zzp-calc-theme';
+      var THEME_LOCK_KEY = 'zzp-calc-theme-lock';
+
+      function setTheme(theme) {
+        var normalized = theme === 'light' ? 'light' : 'dark';
+        root.classList.remove('theme-light', 'theme-dark');
+        root.classList.add('theme-' + normalized);
+        root.dataset.theme = normalized;
+      }
+
+      function detectAutomaticTheme() {
+        var hour = new Date().getHours();
+        var isNight = hour >= 19 || hour < 7;
+        var prefersDark = false;
+        var prefersLight = false;
+
+        if (typeof window.matchMedia === 'function') {
+          try {
+            prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+          } catch (error) {
+            prefersDark = isNight;
+          }
+        }
+
+        if (prefersDark) {
+          return 'dark';
+        }
+
+        if (prefersLight) {
+          return 'light';
+        }
+
+        return isNight ? 'dark' : 'light';
+      }
+
+      var locked = false;
+      var storedTheme = null;
+
+      try {
+        locked = localStorage.getItem(THEME_LOCK_KEY) === 'true';
+        storedTheme = locked ? localStorage.getItem(THEME_KEY) : null;
+      } catch (error) {
+        locked = false;
+        storedTheme = null;
+      }
+
+      if (storedTheme !== 'light' && storedTheme !== 'dark') {
+        storedTheme = null;
+      }
+
+      setTheme(storedTheme || detectAutomaticTheme());
+    })();
+  </script>
   <link rel="icon" href="assets/favicon.png" type="image/png" />
   <link rel="apple-touch-icon" href="assets/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,7 +79,7 @@
   <link rel="stylesheet" href="assets/css/theme.css" />
   <title>Course Pricing Calculator</title>
 </head>
-<body data-theme="dark">
+<body>
   <div class="page shell page-sheen">
     <div id="sr-status" class="visually-hidden" aria-live="polite"></div>
     <header class="hero surface-card motion-fade-in" aria-labelledby="hero-title">
@@ -30,12 +87,18 @@
         <div class="hero__top cluster cluster--end">
           <a href="#" id="how-to-link" class="chip chip--outline">How To Use This Tool</a>
           <a class="chip chip--outline" href="#privacy-info">Your Info Is Safe</a>
-          <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="true">
-            <span class="toggle-track" aria-hidden="true">
-              <span class="toggle-thumb"></span>
-            </span>
-            <span class="toggle-label">Dark mode</span>
-          </button>
+          <div class="theme-controls" role="group" aria-label="Color theme controls">
+            <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="true">
+              <span class="toggle-track" aria-hidden="true">
+                <span class="toggle-thumb"></span>
+              </span>
+              <span class="toggle-label">Dark mode</span>
+            </button>
+            <label class="theme-lock" for="theme-lock">
+              <input type="checkbox" id="theme-lock" />
+              <span class="theme-lock__label">Lock theme</span>
+            </label>
+          </div>
         </div>
         <div class="hero__body stack stack--tight">
           <span class="hero__eyebrow">Income planning lab</span>

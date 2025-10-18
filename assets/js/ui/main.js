@@ -411,12 +411,36 @@ export function initializePageUi() {
     });
   }
 
+  const themeRoot = document.documentElement;
   const themeToggleButton = document.getElementById('theme-toggle');
   const themeToggleLabel = themeToggleButton ? themeToggleButton.querySelector('.toggle-label') : null;
+  const themeLockCheckbox = document.getElementById('theme-lock');
   const THEME_STORAGE_KEY = 'zzp-calc-theme';
+  const THEME_LOCK_KEY = 'zzp-calc-theme-lock';
   const prefersDarkScheme = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-color-scheme: dark)')
-    : { matches: true };
+    : null;
+  const prefersLightScheme = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: light)')
+    : null;
+
+  function detectAutomaticTheme() {
+    const hour = new Date().getHours();
+    const isNight = hour >= 19 || hour < 7;
+
+    const prefersDark = prefersDarkScheme ? prefersDarkScheme.matches : false;
+    const prefersLight = prefersLightScheme ? prefersLightScheme.matches : false;
+
+    if (prefersDark) {
+      return 'dark';
+    }
+
+    if (prefersLight) {
+      return 'light';
+    }
+
+    return isNight ? 'dark' : 'light';
+  }
 
   function getStoredTheme() {
     try {
@@ -430,16 +454,62 @@ export function initializePageUi() {
     return null;
   }
 
-  function applyThemePreference(theme, { save = true } = {}) {
-    const normalized = theme === 'light' ? 'light' : 'dark';
-    document.body.dataset.theme = normalized;
+  function storeThemePreference(theme) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch (error) {
+      // Ignore storage access errors
+    }
+  }
 
-    if (save) {
-      try {
-        localStorage.setItem(THEME_STORAGE_KEY, normalized);
-      } catch (error) {
-        // Ignore storage access errors
+  function clearThemePreference() {
+    try {
+      localStorage.removeItem(THEME_STORAGE_KEY);
+    } catch (error) {
+      // Ignore storage access errors
+    }
+  }
+
+  function getStoredLockState() {
+    try {
+      return localStorage.getItem(THEME_LOCK_KEY) === 'true';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function persistLockState(locked) {
+    try {
+      if (locked) {
+        localStorage.setItem(THEME_LOCK_KEY, 'true');
+      } else {
+        localStorage.removeItem(THEME_LOCK_KEY);
       }
+    } catch (error) {
+      // Ignore storage access errors
+    }
+  }
+
+  function setThemeOnDocument(theme) {
+    const normalized = theme === 'light' ? 'light' : 'dark';
+    themeRoot.classList.remove('theme-light', 'theme-dark');
+    themeRoot.classList.add(`theme-${normalized}`);
+    themeRoot.dataset.theme = normalized;
+    return normalized;
+  }
+
+  function getCurrentTheme() {
+    return themeRoot.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+
+  function applyThemePreference(theme, { persist } = {}) {
+    const normalized = setThemeOnDocument(theme);
+    const shouldPersist = typeof persist === 'boolean' ? persist : themeLocked;
+
+    if (shouldPersist) {
+      storeThemePreference(normalized);
+    } else {
+      clearThemePreference();
     }
 
     if (themeToggleButton && themeToggleLabel) {
@@ -452,30 +522,80 @@ export function initializePageUi() {
     }
   }
 
-  const storedTheme = getStoredTheme();
-  let respectSystemPreference = !storedTheme;
+  function handleSystemPreferenceChange() {
+    if (!respectSystemPreference) {
+      return;
+    }
+    manualOverride = false;
+    applyThemePreference(detectAutomaticTheme(), { persist: false });
+  }
 
-  applyThemePreference(storedTheme || (prefersDarkScheme.matches ? 'dark' : 'light'), {
-    save: Boolean(storedTheme)
-  });
+  function setThemeLockState(locked) {
+    themeLocked = locked;
+    persistLockState(themeLocked);
 
-  function handlePreferenceChange(event) {
-    if (respectSystemPreference) {
-      applyThemePreference(event.matches ? 'dark' : 'light', { save: false });
+    if (themeLockCheckbox) {
+      themeLockCheckbox.checked = themeLocked;
+    }
+
+    if (themeLocked) {
+      manualOverride = false;
+      respectSystemPreference = false;
+      applyThemePreference(getCurrentTheme(), { persist: true });
+      return;
+    }
+
+    respectSystemPreference = !manualOverride;
+    clearThemePreference();
+
+    if (!manualOverride) {
+      applyThemePreference(detectAutomaticTheme(), { persist: false });
     }
   }
 
-  if (typeof prefersDarkScheme.addEventListener === 'function') {
-    prefersDarkScheme.addEventListener('change', handlePreferenceChange);
-  } else if (typeof prefersDarkScheme.addListener === 'function') {
-    prefersDarkScheme.addListener(handlePreferenceChange);
+  let themeLocked = getStoredLockState();
+  let manualOverride = false;
+  let respectSystemPreference = !themeLocked;
+
+  let storedTheme = themeLocked ? getStoredTheme() : null;
+  if (themeLocked && !storedTheme) {
+    themeLocked = false;
+    respectSystemPreference = true;
   }
+
+  const initialTheme = storedTheme || detectAutomaticTheme();
+  applyThemePreference(initialTheme, { persist: themeLocked });
+
+  if (themeLockCheckbox) {
+    themeLockCheckbox.checked = themeLocked;
+  }
+
+  const mediaListeners = [prefersDarkScheme, prefersLightScheme];
+  mediaListeners.forEach(media => {
+    if (!media) {
+      return;
+    }
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', handleSystemPreferenceChange);
+    } else if (typeof media.addListener === 'function') {
+      media.addListener(handleSystemPreferenceChange);
+    }
+  });
 
   if (themeToggleButton) {
     themeToggleButton.addEventListener('click', () => {
-      const nextTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
-      respectSystemPreference = false;
-      applyThemePreference(nextTheme);
+      const nextTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+      if (!themeLocked) {
+        manualOverride = true;
+        respectSystemPreference = false;
+      }
+      applyThemePreference(nextTheme, { persist: themeLocked });
+    });
+  }
+
+  if (themeLockCheckbox) {
+    themeLockCheckbox.addEventListener('change', event => {
+      setThemeLockState(event.target.checked);
     });
   }
 
