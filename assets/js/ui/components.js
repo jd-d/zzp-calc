@@ -1,3 +1,5 @@
+import { calcState } from '../state.js';
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 function resolveRoot(root) {
@@ -152,6 +154,239 @@ export function announce(message, { politeness = 'polite' } = {}) {
   } else {
     setText(srStatusElement, nextMessage);
   }
+}
+
+function toFiniteNumber(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function countStepDecimals(stepValue, rawStep) {
+  if (!Number.isFinite(stepValue) || stepValue <= 0) {
+    return 0;
+  }
+
+  const source = typeof rawStep === 'string' && rawStep.trim() ? rawStep : String(stepValue);
+  const parts = source.split('.');
+  if (parts.length === 2) {
+    return parts[1].length;
+  }
+
+  return 0;
+}
+
+function buildPatchPayload(path, value) {
+  let payload = value;
+  for (let index = path.length - 1; index >= 0; index -= 1) {
+    payload = { [path[index]]: payload };
+  }
+  return payload;
+}
+
+function deriveStatePath(stateKey) {
+  if (Array.isArray(stateKey)) {
+    return stateKey.filter(part => typeof part === 'string' && part);
+  }
+
+  if (typeof stateKey === 'string') {
+    return stateKey
+      .split('.')
+      .map(part => part.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function readStateValue(snapshot, path) {
+  if (!snapshot || !path.length) {
+    return null;
+  }
+
+  let current = snapshot;
+  for (const segment of path) {
+    if (!current || typeof current !== 'object') {
+      return null;
+    }
+    current = current[segment];
+  }
+
+  return toFiniteNumber(current);
+}
+
+function formatSliderValue(value, decimals) {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  if (decimals > 0) {
+    const fixed = value.toFixed(decimals);
+    return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+  }
+
+  return String(value);
+}
+
+export function bindSliderPair({ sliderId, inputId, stateKey }) {
+  const slider = typeof sliderId === 'string' ? document.getElementById(sliderId) : sliderId;
+  const input = typeof inputId === 'string' ? document.getElementById(inputId) : inputId;
+
+  if (!(slider instanceof HTMLInputElement) || slider.type !== 'range') {
+    return () => {};
+  }
+
+  if (!(input instanceof HTMLInputElement)) {
+    return () => {};
+  }
+
+  const path = deriveStatePath(stateKey);
+
+  const min = toFiniteNumber(slider.min);
+  const max = toFiniteNumber(slider.max);
+  const step = toFiniteNumber(slider.step);
+  const stepDecimals = countStepDecimals(step, slider.step);
+
+  const normalize = rawValue => {
+    const parsed = toFiniteNumber(rawValue);
+    if (parsed === null) {
+      return null;
+    }
+
+    let nextValue = parsed;
+
+    if (Number.isFinite(min)) {
+      nextValue = Math.max(nextValue, min);
+    }
+
+    if (Number.isFinite(max)) {
+      nextValue = Math.min(nextValue, max);
+    }
+
+    if (Number.isFinite(step) && step > 0) {
+      const offset = Number.isFinite(min) ? min : 0;
+      const stepCount = Math.round((nextValue - offset) / step);
+      nextValue = offset + stepCount * step;
+      if (stepDecimals > 0) {
+        nextValue = Number(nextValue.toFixed(stepDecimals));
+      }
+    }
+
+    return Number.isFinite(nextValue) ? nextValue : null;
+  };
+
+  const setElementValues = value => {
+    const display = formatSliderValue(value, stepDecimals);
+    if (slider.value !== display) {
+      slider.value = display;
+    }
+    if (input.value !== display) {
+      input.value = display;
+    }
+  };
+
+  const applyState = value => {
+    if (!path.length || typeof calcState.patch !== 'function') {
+      return;
+    }
+
+    const payload = buildPatchPayload(path, value);
+    calcState.patch(payload);
+  };
+
+  const readCurrentState = () => {
+    if (typeof calcState.get !== 'function') {
+      return null;
+    }
+    const snapshot = calcState.get();
+    const valueFromState = readStateValue(snapshot, path);
+    return normalize(valueFromState);
+  };
+
+  let currentValue = readCurrentState();
+
+  if (currentValue === null) {
+    const inputSeed = normalize(input.value);
+    const sliderSeed = normalize(slider.value);
+    currentValue = inputSeed !== null ? inputSeed : sliderSeed;
+  }
+
+  if (currentValue !== null) {
+    setElementValues(currentValue);
+  }
+
+  const commit = value => {
+    if (value === null) {
+      return;
+    }
+
+    if (currentValue !== null && Math.abs(currentValue - value) <= 1e-9) {
+      setElementValues(currentValue);
+      return;
+    }
+
+    currentValue = value;
+    setElementValues(currentValue);
+    applyState(currentValue);
+    announce('Scenario slider changed');
+  };
+
+  const handleSliderInput = () => {
+    const normalized = normalize(slider.value);
+    if (normalized === null) {
+      return;
+    }
+    commit(normalized);
+  };
+
+  const handleNumberInput = () => {
+    const normalized = normalize(input.value);
+    if (normalized === null) {
+      return;
+    }
+    commit(normalized);
+  };
+
+  slider.addEventListener('input', handleSliderInput);
+  input.addEventListener('input', handleNumberInput);
+
+  let unsubscribe = null;
+  if (path.length && typeof calcState.subscribe === 'function') {
+    unsubscribe = calcState.subscribe(nextState => {
+      const fromState = normalize(readStateValue(nextState, path));
+      if (fromState === null) {
+        return;
+      }
+
+      if (currentValue === null || Math.abs(currentValue - fromState) > 1e-6) {
+        currentValue = fromState;
+        setElementValues(currentValue);
+      }
+    });
+  }
+
+  return () => {
+    slider.removeEventListener('input', handleSliderInput);
+    input.removeEventListener('input', handleNumberInput);
+    if (typeof unsubscribe === 'function') {
+      unsubscribe();
+    }
+  };
 }
 
 export const fmt = {
