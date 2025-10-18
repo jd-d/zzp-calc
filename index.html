@@ -582,6 +582,19 @@
                 <input type="number" id="days-off-week" value="2" min="0" max="7" step="0.25" inputmode="decimal" />
               </div>
               <div class="control">
+                <label for="session-length">
+                  <span class="label-text">Session length (hours)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button" aria-expanded="false"
+                    aria-label="Average hours of hands-on delivery time per billable session."
+                    data-tooltip="Average hours of hands-on delivery time per billable session."
+                  >ℹ️</span>
+                </label>
+                <input type="number" id="session-length" value="1.5" min="0.25" max="12" step="0.25" inputmode="decimal" />
+              </div>
+              <div class="control">
                 <label>
                   <span class="label-text">Estimated working weeks per year</span>
                   <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Calculated from the schedule above." data-tooltip="Calculated from the schedule above.">ℹ️</span>
