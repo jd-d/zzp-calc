@@ -156,8 +156,15 @@
               value="50000"
               data-target="target-net"
               aria-controls="target-net"
+              aria-describedby="quick-target-net-display"
             />
-            <output id="quick-target-net-display" class="range-output" data-target-display="target-net">€50,000</output>
+            <output
+              id="quick-target-net-display"
+              class="range-output"
+              data-target-display="target-net"
+              role="status"
+              aria-live="polite"
+            >€50,000</output>
           </div>
           <div class="control control--range">
             <label for="quick-buffer">
@@ -172,8 +179,15 @@
               value="15"
               data-target="buffer"
               aria-controls="buffer"
+              aria-describedby="quick-buffer-display"
             />
-            <output id="quick-buffer-display" class="range-output" data-target-display="buffer">15%</output>
+            <output
+              id="quick-buffer-display"
+              class="range-output"
+              data-target-display="buffer"
+              role="status"
+              aria-live="polite"
+            >15%</output>
           </div>
           <div class="control control--range">
             <label for="quick-months-off">
@@ -188,11 +202,14 @@
               value="2"
               data-target="months-off"
               aria-controls="months-off"
+              aria-describedby="quick-months-off-display"
             />
             <output
               id="quick-months-off-display"
               class="range-output"
               data-target-display="months-off"
+              role="status"
+              aria-live="polite"
             >2 months</output>
           </div>
         </div>

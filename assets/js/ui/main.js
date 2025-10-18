@@ -1,3 +1,5 @@
+import { onLocaleChange, translate } from './i18n.js';
+
 export function initializePageUi() {
   const howToLink = document.getElementById('how-to-link');
   const readmeDialog = document.getElementById('readme-dialog');
@@ -415,6 +417,7 @@ export function initializePageUi() {
   const themeToggleButton = document.getElementById('theme-toggle');
   const themeToggleLabel = themeToggleButton ? themeToggleButton.querySelector('.toggle-label') : null;
   const themeLockCheckbox = document.getElementById('theme-lock');
+  const themeLockLabel = document.querySelector('.theme-lock__label');
   const THEME_STORAGE_KEY = 'zzp-calc-theme';
   const THEME_LOCK_KEY = 'zzp-calc-theme-lock';
   const prefersDarkScheme = typeof window.matchMedia === 'function'
@@ -502,6 +505,35 @@ export function initializePageUi() {
     return themeRoot.dataset.theme === 'light' ? 'light' : 'dark';
   }
 
+  function updateThemeToggleCopy(theme) {
+    if (!themeToggleButton || !themeToggleLabel) {
+      return;
+    }
+
+    const normalized = theme === 'light' ? 'light' : 'dark';
+    const isDark = normalized === 'dark';
+    const labelKey = isDark ? 'theme.toggleLabel.dark' : 'theme.toggleLabel.light';
+    const actionKey = isDark ? 'theme.action.switchToLight' : 'theme.action.switchToDark';
+    const fallbackAction = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+    const fallbackLabel = isDark ? 'Dark mode' : 'Light mode';
+    const actionLabel = translate(actionKey) || fallbackAction;
+    const toggleLabel = translate(labelKey) || fallbackLabel;
+
+    themeToggleLabel.textContent = toggleLabel;
+    themeToggleButton.setAttribute('aria-pressed', String(isDark));
+    themeToggleButton.setAttribute('aria-label', actionLabel);
+    themeToggleButton.setAttribute('title', actionLabel);
+  }
+
+  function updateThemeLockCopy() {
+    if (!themeLockLabel) {
+      return;
+    }
+
+    const label = translate('theme.lockLabel') || 'Lock theme';
+    themeLockLabel.textContent = label;
+  }
+
   function applyThemePreference(theme, { persist } = {}) {
     const normalized = setThemeOnDocument(theme);
     const shouldPersist = typeof persist === 'boolean' ? persist : themeLocked;
@@ -512,14 +544,8 @@ export function initializePageUi() {
       clearThemePreference();
     }
 
-    if (themeToggleButton && themeToggleLabel) {
-      const isDark = normalized === 'dark';
-      const actionLabel = `Switch to ${isDark ? 'light' : 'dark'} mode`;
-      themeToggleButton.setAttribute('aria-pressed', String(isDark));
-      themeToggleButton.setAttribute('aria-label', actionLabel);
-      themeToggleButton.setAttribute('title', actionLabel);
-      themeToggleLabel.textContent = isDark ? 'Dark mode' : 'Light mode';
-    }
+    updateThemeToggleCopy(normalized);
+    updateThemeLockCopy();
   }
 
   function handleSystemPreferenceChange() {
@@ -598,6 +624,11 @@ export function initializePageUi() {
       setThemeLockState(event.target.checked);
     });
   }
+
+  onLocaleChange(() => {
+    updateThemeToggleCopy(getCurrentTheme());
+    updateThemeLockCopy();
+  });
 
   return {
     setSectionExpanded
