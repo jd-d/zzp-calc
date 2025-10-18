@@ -18,6 +18,7 @@ const initialState = {
     averageWeek: 0,
     averageMonth: 0
   },
+  sessionLength: 1.5,
   capacity: {
     monthsOff: 0,
     weeksOffCycle: 0,
@@ -211,6 +212,13 @@ export function setDaysOffWeek(rawValue) {
     capacity: { daysOffWeek: normalized }
   });
   return refreshIncomeTargetDefaultsFromState();
+}
+
+export function setSessionLength(rawValue) {
+  const fallback = Number.isFinite(state.sessionLength) ? state.sessionLength : 1.5;
+  const normalized = parseNumber(rawValue, fallback, { min: 0.25, max: 12 });
+  patch({ sessionLength: normalized });
+  return normalized;
 }
 
 export function setTaxRatePercent(rawValue) {
