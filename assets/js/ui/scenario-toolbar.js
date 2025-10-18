@@ -1,4 +1,5 @@
 import { announce, fmt, on, qs, registerSliderBinding, setText } from './components.js';
+import { translate } from './i18n.js';
 
 const percentFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const monthFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
@@ -93,7 +94,7 @@ export function mountScenarioToolbar(calcState, root = document) {
 
       patch(presetPatch);
       markActivePreset(presetsContainer, presetElement);
-      announce('Scenario updated');
+      announce(translate('quickControls.status.updated'));
     };
 
     const detach = on(presetsContainer, 'click', handlePresetClick, { delegate: '[data-preset]' });
