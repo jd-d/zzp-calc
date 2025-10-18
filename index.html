@@ -604,6 +604,332 @@
         </div>
       </section>
 
+      <section class="service-cards motion-slide-up" id="services" aria-labelledby="services-heading">
+        <div class="surface-card service-cards__intro">
+          <div class="surface-content stack stack--tight">
+            <h2 id="services-heading" class="service-cards__heading">Service mix snapshot</h2>
+            <p class="field-note">
+              Track the rate and volume targets for each offer. Switch tabs to see the same metrics expressed as required
+              volume per month.
+            </p>
+          </div>
+        </div>
+        <div class="service-cards__grid">
+          <article class="surface-card service-card" data-service="representation">
+            <header class="service-card__header">
+              <div class="service-card__title">
+                <svg
+                  class="service-card__icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M0 0h24v24H0z" stroke="none"></path>
+                  <circle cx="9" cy="7" r="3"></circle>
+                  <circle cx="15" cy="7" r="3"></circle>
+                  <path d="M4 21v-2a4 4 0 0 1 4 -4h2"></path>
+                  <path d="M12 15h2a4 4 0 0 1 4 4v2"></path>
+                  <path d="M11 14h2"></path>
+                </svg>
+                <h3 class="service-card__name">Representation retainers</h3>
+              </div>
+              <nav class="tabs" role="tablist" aria-label="Representation views">
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-representation-tab-rate"
+                  aria-selected="true"
+                  aria-controls="service-representation-panel"
+                  class="is-active"
+                  data-tab="rate"
+                >
+                  Rate needed
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-representation-tab-volume"
+                  aria-selected="false"
+                  aria-controls="service-representation-panel"
+                  data-tab="volume"
+                >
+                  Volume needed
+                </button>
+              </nav>
+            </header>
+            <div
+              class="service-card__body"
+              id="service-representation-panel"
+              role="tabpanel"
+              aria-labelledby="service-representation-tab-rate"
+            >
+              <dl class="key-value-grid key-value-grid--two">
+                <div><dt>Units per month</dt><dd id="representation-units">—</dd></div>
+                <div><dt>Price per unit</dt><dd id="representation-price">—</dd></div>
+                <div><dt>Revenue</dt><dd id="representation-rev">—</dd></div>
+                <div><dt>Direct cost</dt><dd id="representation-cost">—</dd></div>
+                <div><dt>Tax reserve</dt><dd id="representation-tax">—</dd></div>
+                <div><dt>Net contribution</dt><dd id="representation-net">—</dd></div>
+              </dl>
+              <div class="service-card__spark" id="representation-spark" aria-hidden="true"></div>
+            </div>
+          </article>
+
+          <article class="surface-card service-card" data-service="operations">
+            <header class="service-card__header">
+              <div class="service-card__title">
+                <svg
+                  class="service-card__icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M0 0h24v24H0z" stroke="none"></path>
+                  <circle cx="13" cy="6" r="2"></circle>
+                  <circle cx="11" cy="12" r="2"></circle>
+                  <circle cx="15" cy="18" r="2"></circle>
+                  <path d="M4 6h7"></path>
+                  <path d="M15 6h5"></path>
+                  <path d="M4 12h3"></path>
+                  <path d="M13 12h7"></path>
+                  <path d="M4 18h9"></path>
+                  <path d="M17 18h3"></path>
+                </svg>
+                <h3 class="service-card__name">Operations support</h3>
+              </div>
+              <nav class="tabs" role="tablist" aria-label="Operations views">
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-operations-tab-rate"
+                  aria-selected="true"
+                  aria-controls="service-operations-panel"
+                  class="is-active"
+                  data-tab="rate"
+                >
+                  Rate needed
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-operations-tab-volume"
+                  aria-selected="false"
+                  aria-controls="service-operations-panel"
+                  data-tab="volume"
+                >
+                  Volume needed
+                </button>
+              </nav>
+            </header>
+            <div class="service-card__body" id="service-operations-panel" role="tabpanel" aria-labelledby="service-operations-tab-rate">
+              <dl class="key-value-grid key-value-grid--two">
+                <div><dt>Units per month</dt><dd id="operations-units">—</dd></div>
+                <div><dt>Price per unit</dt><dd id="operations-price">—</dd></div>
+                <div><dt>Revenue</dt><dd id="operations-rev">—</dd></div>
+                <div><dt>Direct cost</dt><dd id="operations-cost">—</dd></div>
+                <div><dt>Tax reserve</dt><dd id="operations-tax">—</dd></div>
+                <div><dt>Net contribution</dt><dd id="operations-net">—</dd></div>
+              </dl>
+              <div class="service-card__spark" id="operations-spark" aria-hidden="true"></div>
+            </div>
+          </article>
+
+          <article class="surface-card service-card" data-service="qc">
+            <header class="service-card__header">
+              <div class="service-card__title">
+                <svg
+                  class="service-card__icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M0 0h24v24H0z" stroke="none"></path>
+                  <path d="M12 3l7 4v5a9 9 0 0 1 -7 8a9 9 0 0 1 -7 -8v-5z"></path>
+                  <path d="M9 12l2 2l4 -4"></path>
+                </svg>
+                <h3 class="service-card__name">Quality control</h3>
+              </div>
+              <nav class="tabs" role="tablist" aria-label="Quality control views">
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-qc-tab-rate"
+                  aria-selected="true"
+                  aria-controls="service-qc-panel"
+                  class="is-active"
+                  data-tab="rate"
+                >
+                  Rate needed
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-qc-tab-volume"
+                  aria-selected="false"
+                  aria-controls="service-qc-panel"
+                  data-tab="volume"
+                >
+                  Volume needed
+                </button>
+              </nav>
+            </header>
+            <div class="service-card__body" id="service-qc-panel" role="tabpanel" aria-labelledby="service-qc-tab-rate">
+              <dl class="key-value-grid key-value-grid--two">
+                <div><dt>Units per month</dt><dd id="qc-units">—</dd></div>
+                <div><dt>Price per unit</dt><dd id="qc-price">—</dd></div>
+                <div><dt>Revenue</dt><dd id="qc-rev">—</dd></div>
+                <div><dt>Direct cost</dt><dd id="qc-cost">—</dd></div>
+                <div><dt>Tax reserve</dt><dd id="qc-tax">—</dd></div>
+                <div><dt>Net contribution</dt><dd id="qc-net">—</dd></div>
+              </dl>
+              <div class="service-card__spark" id="qc-spark" aria-hidden="true"></div>
+            </div>
+          </article>
+
+          <article class="surface-card service-card" data-service="training">
+            <header class="service-card__header">
+              <div class="service-card__title">
+                <svg
+                  class="service-card__icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M0 0h24v24H0z" stroke="none"></path>
+                  <path d="M4 19v-10l8 -5l8 5v10"></path>
+                  <path d="M4 13l8 5l8 -5"></path>
+                  <path d="M12 18v3"></path>
+                </svg>
+                <h3 class="service-card__name">Training intensives</h3>
+              </div>
+              <nav class="tabs" role="tablist" aria-label="Training views">
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-training-tab-rate"
+                  aria-selected="true"
+                  aria-controls="service-training-panel"
+                  class="is-active"
+                  data-tab="rate"
+                >
+                  Rate needed
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-training-tab-volume"
+                  aria-selected="false"
+                  aria-controls="service-training-panel"
+                  data-tab="volume"
+                >
+                  Volume needed
+                </button>
+              </nav>
+            </header>
+            <div class="service-card__body" id="service-training-panel" role="tabpanel" aria-labelledby="service-training-tab-rate">
+              <dl class="key-value-grid key-value-grid--two">
+                <div><dt>Units per month</dt><dd id="training-units">—</dd></div>
+                <div><dt>Price per unit</dt><dd id="training-price">—</dd></div>
+                <div><dt>Revenue</dt><dd id="training-rev">—</dd></div>
+                <div><dt>Direct cost</dt><dd id="training-cost">—</dd></div>
+                <div><dt>Tax reserve</dt><dd id="training-tax">—</dd></div>
+                <div><dt>Net contribution</dt><dd id="training-net">—</dd></div>
+              </dl>
+              <div class="service-card__spark" id="training-spark" aria-hidden="true"></div>
+            </div>
+          </article>
+
+          <article class="surface-card service-card" data-service="intel">
+            <header class="service-card__header">
+              <div class="service-card__title">
+                <svg
+                  class="service-card__icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M0 0h24v24H0z" stroke="none"></path>
+                  <path d="M9 18h6"></path>
+                  <path d="M10 22h4"></path>
+                  <path d="M12 3a6 6 0 0 1 6 6a6 6 0 0 1 -3 5"></path>
+                  <path d="M9 14a6 6 0 0 1 -3 -5a6 6 0 0 1 6 -6"></path>
+                </svg>
+                <h3 class="service-card__name">Intelligence research</h3>
+              </div>
+              <nav class="tabs" role="tablist" aria-label="Intelligence views">
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-intel-tab-rate"
+                  aria-selected="true"
+                  aria-controls="service-intel-panel"
+                  class="is-active"
+                  data-tab="rate"
+                >
+                  Rate needed
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="service-intel-tab-volume"
+                  aria-selected="false"
+                  aria-controls="service-intel-panel"
+                  data-tab="volume"
+                >
+                  Volume needed
+                </button>
+              </nav>
+            </header>
+            <div class="service-card__body" id="service-intel-panel" role="tabpanel" aria-labelledby="service-intel-tab-rate">
+              <dl class="key-value-grid key-value-grid--two">
+                <div><dt>Units per month</dt><dd id="intel-units">—</dd></div>
+                <div><dt>Price per unit</dt><dd id="intel-price">—</dd></div>
+                <div><dt>Revenue</dt><dd id="intel-rev">—</dd></div>
+                <div><dt>Direct cost</dt><dd id="intel-cost">—</dd></div>
+                <div><dt>Tax reserve</dt><dd id="intel-tax">—</dd></div>
+                <div><dt>Net contribution</dt><dd id="intel-net">—</dd></div>
+              </dl>
+              <div class="service-card__spark" id="intel-spark" aria-hidden="true"></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section class="tables surface-card motion-slide-up" aria-live="polite">
         <div class="surface-content stack">
           <div class="table-grid" id="tables-container">
