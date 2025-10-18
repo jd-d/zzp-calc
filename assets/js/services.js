@@ -1,6 +1,7 @@
 import { calcState } from './state.js';
 import { computeCosts } from './costs.js';
 import { deriveIncomeTargets } from './income.js';
+import { normalizeScenarioModifiers } from './modifiers.js';
 
 const SERVICE_COPY = {
   representation: {
@@ -141,6 +142,173 @@ function readServiceOverrides(id) {
 const HANDS_ON_SERVICE_IDS = new Set(['ops', 'qc', 'training']);
 const EPSILON = 1e-6;
 
+function clampScore(value) {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+  if (value <= 0) {
+    return 0;
+  }
+  if (value >= 1) {
+    return 1;
+  }
+  return value;
+}
+
+function ratioScore(actual, target) {
+  if (!Number.isFinite(actual) || !Number.isFinite(target)) {
+    return null;
+  }
+  if (target <= 0) {
+    return actual >= 0 ? 1 : 0;
+  }
+  if (actual >= target) {
+    return 1;
+  }
+  return clampScore(actual / target);
+}
+
+function remainingScore(limit, actual) {
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return null;
+  }
+  if (!Number.isFinite(actual) || actual <= 0) {
+    return 1;
+  }
+  if (actual >= limit) {
+    return 0;
+  }
+  return clampScore(1 - actual / limit);
+}
+
+function bandScore(actual, target, tolerance = 0.1) {
+  if (!Number.isFinite(actual) || !Number.isFinite(target)) {
+    return null;
+  }
+  const allowedDeviation = Math.max(tolerance, 0.01);
+  const delta = Math.abs(actual - target);
+  if (delta <= allowedDeviation) {
+    return 1;
+  }
+  return clampScore(Math.max(1 - delta / (allowedDeviation * 2), 0));
+}
+
+function computeComfortSnapshot({ totals = {}, constraints = {}, capacity = {}, modifiers = {} }) {
+  const parts = [];
+  const components = {};
+
+  const marginScore = ratioScore(totals.grossMargin, constraints.comfortFloor);
+  if (marginScore !== null) {
+    parts.push(marginScore);
+    components.margin = {
+      score: marginScore,
+      actual: totals.grossMargin,
+      target: constraints.comfortFloor
+    };
+  }
+
+  const serviceScore = remainingScore(constraints.maxServiceDays, totals.serviceDays);
+  if (serviceScore !== null) {
+    parts.push(serviceScore);
+    components.service = {
+      score: serviceScore,
+      used: totals.serviceDays,
+      limit: constraints.maxServiceDays
+    };
+  }
+
+  const travelScore = remainingScore(constraints.maxTravelDays, totals.travelDays);
+  if (travelScore !== null) {
+    parts.push(travelScore);
+    components.travel = {
+      score: travelScore,
+      used: totals.travelDays,
+      limit: constraints.maxTravelDays
+    };
+  }
+
+  const handsOnTarget = Number.isFinite(constraints.handsOnTarget)
+    ? constraints.handsOnTarget
+    : Number.isFinite(modifiers.handsOnQuota)
+      ? modifiers.handsOnQuota
+      : null;
+  const handsOnScore = bandScore(totals.handsOnShare, handsOnTarget, constraints.handsOnTolerance);
+  if (handsOnScore !== null) {
+    parts.push(handsOnScore);
+    components.handsOn = {
+      score: handsOnScore,
+      actual: totals.handsOnShare,
+      target: handsOnTarget,
+      tolerance: constraints.handsOnTolerance
+    };
+  }
+
+  const seasonalityScore = clampScore(1 - (modifiers.seasonality || 0));
+  if (seasonalityScore !== null) {
+    parts.push(seasonalityScore);
+    components.seasonality = {
+      score: seasonalityScore,
+      penalty: modifiers.seasonality || 0,
+      capacityShare: capacity.seasonalityPenalty
+    };
+  }
+
+  const travelFrictionScore = clampScore(1 / (1 + (modifiers.travelFriction || 0)));
+  if (travelFrictionScore !== null) {
+    parts.push(travelFrictionScore);
+    components.travelFriction = {
+      score: travelFrictionScore,
+      factor: modifiers.travelFriction || 0,
+      multiplier: capacity.travelFrictionMultiplier
+    };
+  }
+
+  const score = parts.length ? parts.reduce((sum, value) => sum + value, 0) / parts.length : null;
+  let level = 'unknown';
+  let summary = 'Adjust your scenario to compute comfort.';
+
+  if (score !== null) {
+    if (score >= 0.75) {
+      level = 'high';
+      summary = 'Comfortable margin across workload, travel, and delivery targets.';
+    } else if (score >= 0.5) {
+      level = 'medium';
+      summary = 'Mixed comfort. Review highlighted constraints to stay on track.';
+    } else {
+      level = 'low';
+      summary = 'Comfort risk detected. Adjust capacity, travel, or pricing inputs.';
+    }
+
+    const flagged = [];
+    if (marginScore !== null && marginScore < 0.75) {
+      flagged.push('margin');
+    }
+    if (serviceScore !== null && serviceScore < 0.75) {
+      flagged.push('service days');
+    }
+    if (travelScore !== null && travelScore < 0.75) {
+      flagged.push('travel days');
+    }
+    if (handsOnScore !== null && handsOnScore < 0.75) {
+      flagged.push('hands-on mix');
+    }
+
+    if (flagged.length === 1) {
+      summary = `Focus on ${flagged[0]} to improve comfort.`;
+    } else if (flagged.length > 1) {
+      summary = `Focus on ${flagged.slice(0, -1).join(', ')} and ${flagged.slice(-1)}.`;
+    }
+  }
+
+  return {
+    score,
+    scorePercent: score !== null ? Math.round(score * 100) : null,
+    level,
+    summary,
+    components
+  };
+}
+
 function resolveStateSnapshot(state) {
   if (!state) {
     if (calcState && typeof calcState.get === 'function') {
@@ -251,7 +419,7 @@ function buildUnitRange(entry, capacityMetrics) {
     .sort((a, b) => a - b);
 }
 
-function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs) {
+function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, modifiers) {
   const config = mergeConfig(entry.config, { unitsPerMonth });
   const hours = computeServiceHours(config, capacityMetrics);
   const revenueMetrics = computeServiceRevenue(config, hours, costs);
@@ -261,7 +429,8 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs) {
     toNumber(config.travelDaysPerUnit ?? config.travelPerUnit ?? 0, 0),
     0
   );
-  const travelDays = travelPerUnit * annualUnits;
+  const travelMultiplier = 1 + Math.max(modifiers?.travelFriction || 0, 0);
+  const travelDays = travelPerUnit * annualUnits * travelMultiplier;
 
   const capacityDays = Math.max(
     toNumber(capacityMetrics.billableDaysAfterTravel ?? capacityMetrics.billableDaysPerYear, 0),
@@ -351,7 +520,7 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs) {
   };
 }
 
-function normalizeSolverConstraints(snapshot, capacityMetrics, costs, serviceEntries) {
+function normalizeSolverConstraints(snapshot, capacityMetrics, costs, serviceEntries, modifiers) {
   const overridesSource = isPlainObject(snapshot?.portfolioConstraints)
     ? snapshot.portfolioConstraints
     : isPlainObject(snapshot?.portfolio)
@@ -378,6 +547,9 @@ function normalizeSolverConstraints(snapshot, capacityMetrics, costs, serviceEnt
 
   let handsOnTarget = toNumber(overridesSource.handsOnShareTarget, NaN);
   if (!Number.isFinite(handsOnTarget)) {
+    if (Number.isFinite(modifiers?.handsOnQuota)) {
+      handsOnTarget = modifiers.handsOnQuota;
+    }
     const estimated = estimateHandsOnTarget(serviceEntries, capacityMetrics);
     if (Number.isFinite(estimated)) {
       handsOnTarget = estimated;
@@ -409,7 +581,8 @@ function normalizeSolverConstraints(snapshot, capacityMetrics, costs, serviceEnt
     handsOnMax,
     comfortFloor,
     handsOnTarget: Number.isFinite(handsOnTarget) ? clamp(handsOnTarget, 0, 1) : null,
-    handsOnTolerance
+    handsOnTolerance,
+    modifiers
   };
 }
 
@@ -455,6 +628,7 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
     capacity
   );
   const targetNet = incomeTargets.targetNet || 0;
+  const modifiers = normalizeScenarioModifiers(snapshot.modifiers);
 
   const serviceEntries = descriptors.map((descriptor) => {
     const storeOverrides = readServiceOverrides(descriptor.id);
@@ -464,13 +638,13 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
     return { id: descriptor.id, descriptor, config: baseConfig };
   });
 
-  const constraints = normalizeSolverConstraints(snapshot, capacity, costs, serviceEntries);
+  const constraints = normalizeSolverConstraints(snapshot, capacity, costs, serviceEntries, modifiers);
 
   const serviceOptions = serviceEntries.map((entry) => {
     const candidates = buildUnitRange(entry, capacity);
     const normalizedCandidates = candidates.length > 0 ? candidates : [0];
     return normalizedCandidates.map((units) =>
-      evaluateServiceOption(entry, units, capacity, costs)
+      evaluateServiceOption(entry, units, capacity, costs, modifiers)
     );
   });
 
@@ -584,6 +758,12 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
     }
 
     const diff = totals.net - targetNet;
+    const comfort = computeComfortSnapshot({
+      totals: { ...totals, handsOnShare, grossMargin },
+      constraints,
+      capacity,
+      modifiers
+    });
     const candidate = {
       mix,
       totals: {
@@ -594,6 +774,7 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
         netGap: diff
       },
       violations,
+      comfort,
       metrics: {
         violationCount: violations.length,
         meetsTarget: diff >= -EPSILON,
@@ -669,7 +850,23 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       targetNet,
       netGap: -targetNet
     },
-    violations: []
+    violations: [],
+    comfort: computeComfortSnapshot({
+      totals: {
+        revenue: 0,
+        directCost: 0,
+        tax: 0,
+        net: 0,
+        serviceDays: 0,
+        travelDays: 0,
+        handsOnDays: 0,
+        handsOnShare: 0,
+        grossMargin: 0
+      },
+      constraints,
+      capacity,
+      modifiers
+    })
   };
 
   if (result.totals) {

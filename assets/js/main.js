@@ -30,6 +30,30 @@ export function initializeApp() {
     stateKey: ['capacity', 'hoursPerWeek']
   });
 
+  bindSliderPair({
+    sliderId: 'comfort-margin-slider',
+    inputId: 'comfort-margin',
+    stateKey: ['modifiers', 'comfortMarginPercent']
+  });
+
+  bindSliderPair({
+    sliderId: 'seasonality-slider',
+    inputId: 'seasonality',
+    stateKey: ['modifiers', 'seasonalityPercent']
+  });
+
+  bindSliderPair({
+    sliderId: 'travel-friction-slider',
+    inputId: 'travel-friction',
+    stateKey: ['modifiers', 'travelFrictionPercent']
+  });
+
+  bindSliderPair({
+    sliderId: 'hands-on-quota-slider',
+    inputId: 'hands-on-quota',
+    stateKey: ['modifiers', 'handsOnQuotaPercent']
+  });
+
   return {
     calculator,
     scenario,
