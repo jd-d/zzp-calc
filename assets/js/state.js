@@ -1,5 +1,6 @@
 import {
   TARGET_NET_BASIS_VALUES,
+  TARGET_INCOME_MODES,
   WEEKS_PER_YEAR,
   MONTHS_PER_YEAR,
   BASE_WORK_DAYS_PER_WEEK,
@@ -14,6 +15,7 @@ const TAX_MODE_VALUES = ['simple', 'dutch2025'];
 
 const initialState = {
   incomeTargets: {
+    mode: 'net',
     basis: 'year',
     year: 0,
     week: 0,
@@ -194,6 +196,16 @@ export function setTargetNetBasis(basis) {
   }
 }
 
+export function setIncomeTargetMode(mode) {
+  const normalized = typeof mode === 'string' && TARGET_INCOME_MODES.includes(mode)
+    ? mode
+    : initialState.incomeTargets.mode;
+  patch({
+    incomeTargets: { mode: normalized }
+  });
+  return normalized;
+}
+
 export function setIncomeTargetValue(key, rawValue) {
   const defaults = (state.config.defaults && state.config.defaults.incomeTargets) || {};
   const fallback = Number.isFinite(defaults[key]) ? defaults[key] : state.incomeTargets[key];
@@ -330,6 +342,7 @@ export const calcState = {
 export {
   initialState,
   TARGET_NET_BASIS_VALUES,
+  TARGET_INCOME_MODES,
   WEEKS_PER_YEAR,
   MONTHS_PER_YEAR,
   BASE_WORK_DAYS_PER_WEEK,

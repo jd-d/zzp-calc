@@ -26,7 +26,6 @@ The following increments can be triggered individually to deliver the full prici
 - [ ] Add one-click plan presets and an English/Spanish language toggle.
 
 ## Legacy Backlog
-- [ ] Pre-fill the form with a 50k preset and add a target gross/net radio button with corresponding calculation adjustments.
 - [ ] Auto-select light or dark mode by time of day while allowing manual overrides with a lock control.
 
 ## DONE
@@ -37,3 +36,4 @@ The following increments can be triggered individually to deliver the full prici
 - [x] Append hourly equivalents to gross revenue figures based on a configurable session length input. (2025-10-18)
 - [x] Display portfolio summaries (revenue, costs, tax, net) and a compact weekly schedule preview. (2025-10-19)
 - [x] Integrate comfort meter, seasonality sliders, travel friction, and hands-on quota constraints. (2025-10-18)
+- [x] Pre-fill the form with a 50k preset and add a target gross/net radio button with corresponding calculation adjustments. (2025-10-20)
