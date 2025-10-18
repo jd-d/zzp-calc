@@ -582,6 +582,94 @@ header {
   justify-content: flex-end;
 }
 
+.hero {
+  display: block;
+}
+
+header.hero {
+  display: block;
+  padding: 0;
+}
+
+.hero .surface-content {
+  gap: clamp(var(--space-5), 4vw, var(--space-7));
+}
+
+.hero__top {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.hero__body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.hero__eyebrow {
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--accent-strong);
+}
+
+.hero__lede {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  max-width: 60ch;
+}
+
+.hero-controls {
+  display: block;
+}
+
+.hero-controls .surface-content {
+  gap: clamp(var(--space-4), 3vw, var(--space-6));
+}
+
+.hero-controls__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.hero-controls__sliders {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.control--range {
+  gap: var(--space-2);
+}
+
+.control--range input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+  background: transparent;
+}
+
+.range-output {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-strong);
+}
+
+@media (max-width: 720px) {
+  .hero__top {
+    justify-content: flex-start;
+  }
+
+  .hero-controls__presets {
+    gap: var(--space-3);
+  }
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;
