@@ -6,6 +6,7 @@ import {
   TARGET_NET_DEFAULT
 } from './constants.js';
 import { deriveCapacity } from './capacity.js';
+import { computeCosts } from './costs.js';
 import { deriveTargetNetDefaults } from './income.js';
 
 const initialState = {
@@ -44,6 +45,7 @@ const initialState = {
 };
 
 let state = deepClone(initialState);
+let derivedState = buildDerivedState(state);
 
 const subscribers = new Set();
 
@@ -86,9 +88,25 @@ function mergeDeep(target, source) {
   return base;
 }
 
+function buildDerivedState(currentState) {
+  const safeState = currentState && typeof currentState === 'object'
+    ? currentState
+    : initialState;
+
+  const capacity = deriveCapacity(safeState.capacity || {});
+  const costs = computeCosts(safeState, capacity);
+
+  return {
+    capacity,
+    costs
+  };
+}
+
 function notify() {
+  const currentState = state;
+  const currentDerived = derivedState;
   for (const listener of subscribers) {
-    listener(state);
+    listener(currentState, currentDerived);
   }
 }
 
@@ -96,14 +114,20 @@ export function get() {
   return state;
 }
 
+export function getDerived() {
+  return deepClone(derivedState);
+}
+
 export function set(nextState) {
   state = deepClone(nextState);
+  derivedState = buildDerivedState(state);
   notify();
   return state;
 }
 
 export function patch(partialState) {
   state = mergeDeep(state, partialState);
+  derivedState = buildDerivedState(state);
   notify();
   return state;
 }
@@ -131,7 +155,7 @@ export function parseNumber(value, fallback = 0, { min = -Infinity, max = Infini
 }
 
 function refreshIncomeTargetDefaultsFromState() {
-  const capacityMetrics = deriveCapacity(state.capacity);
+  const capacityMetrics = derivedState.capacity || deriveCapacity(state.capacity);
   const defaults = deriveTargetNetDefaults(capacityMetrics);
   patch({
     config: {
