@@ -2493,7 +2493,6 @@
     const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
     let latestResults = [];
-    let targetNetBasis = 'year';
     let latestCurrencySymbol = '€';
     let latestRevenueSummary = null;
     const PERSISTED_TARGET_NET_BASIS_KEY = '__targetNetBasis';
@@ -2529,6 +2528,158 @@
       rememberInputs: document.getElementById('remember-inputs'),
       resetSavedInputs: document.getElementById('reset-saved-inputs')
     };
+
+    const calcState = {
+      incomeTargets: {
+        basis: 'year',
+        year: 0,
+        week: 0,
+        month: 0,
+        averageWeek: 0,
+        averageMonth: 0
+      },
+      capacity: {
+        monthsOff: 0,
+        weeksOffCycle: 0,
+        daysOffWeek: 0
+      },
+      costs: {
+        taxRatePercent: 40,
+        fixedCosts: 0,
+        variableCostPerClass: 0,
+        vatRatePercent: 21,
+        bufferPercent: 15
+      },
+      config: {
+        currencySymbol: '€',
+        defaults: {
+          incomeTargets: {
+            year: 0,
+            week: 0,
+            month: 0,
+            averageWeek: 0,
+            averageMonth: 0
+          }
+        }
+      }
+    };
+
+    function setTargetNetBasis(basis) {
+      if (TARGET_NET_BASIS_VALUES.includes(basis)) {
+        calcState.incomeTargets.basis = basis;
+      }
+    }
+
+    function setIncomeTargetValue(key, rawValue) {
+      const defaults = calcState.config.defaults.incomeTargets || {};
+      const fallback = Number.isFinite(defaults[key]) ? defaults[key] : calcState.incomeTargets[key];
+      const normalized = Math.max(parseNumber(rawValue, fallback || 0), 0);
+      calcState.incomeTargets[key] = normalized;
+    }
+
+    function refreshIncomeTargetDefaultsFromState() {
+      const capacityMetrics = computeCapacityMetrics(calcState.capacity);
+      const defaults = computeTargetNetDefaults(capacityMetrics);
+      calcState.config.defaults.incomeTargets = defaults;
+      return capacityMetrics;
+    }
+
+    function setMonthsOff(rawValue) {
+      const normalized = parseNumber(rawValue, calcState.capacity.monthsOff || 0, { min: 0, max: 12 });
+      calcState.capacity.monthsOff = normalized;
+      refreshIncomeTargetDefaultsFromState();
+    }
+
+    function setWeeksOffCycle(rawValue) {
+      const normalized = parseNumber(rawValue, calcState.capacity.weeksOffCycle || 0, { min: 0, max: 4 });
+      calcState.capacity.weeksOffCycle = normalized;
+      refreshIncomeTargetDefaultsFromState();
+    }
+
+    function setDaysOffWeek(rawValue) {
+      const normalized = parseNumber(rawValue, calcState.capacity.daysOffWeek || 0, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
+      calcState.capacity.daysOffWeek = normalized;
+      refreshIncomeTargetDefaultsFromState();
+    }
+
+    function setTaxRatePercent(rawValue) {
+      const fallback = Number.isFinite(calcState.costs.taxRatePercent) ? calcState.costs.taxRatePercent : 40;
+      const normalized = Math.min(Math.max(parseNumber(rawValue, fallback, { min: 0, max: 99.9 }), 0), 99.9);
+      calcState.costs.taxRatePercent = normalized;
+    }
+
+    function setVariableCostPerClass(rawValue) {
+      const fallback = Number.isFinite(calcState.costs.variableCostPerClass) ? calcState.costs.variableCostPerClass : 0;
+      const normalized = Math.max(parseNumber(rawValue, fallback, { min: 0 }), 0);
+      calcState.costs.variableCostPerClass = normalized;
+    }
+
+    function setVatRatePercent(rawValue) {
+      const fallback = Number.isFinite(calcState.costs.vatRatePercent) ? calcState.costs.vatRatePercent : 21;
+      const normalized = Math.max(parseNumber(rawValue, fallback, { min: 0 }), 0);
+      calcState.costs.vatRatePercent = normalized;
+    }
+
+    function setBufferPercent(rawValue) {
+      const fallback = Number.isFinite(calcState.costs.bufferPercent) ? calcState.costs.bufferPercent : 15;
+      const normalized = Math.max(parseNumber(rawValue, fallback, { min: 0 }), 0);
+      calcState.costs.bufferPercent = normalized;
+    }
+
+    function setCurrencySymbol(rawValue) {
+      const symbol = typeof rawValue === 'string' ? rawValue.trim() : '';
+      calcState.config.currencySymbol = symbol || '€';
+    }
+
+    function commitControlValueToState(control) {
+      if (!(control instanceof HTMLInputElement) || !control.id) {
+        return;
+      }
+
+      if (TARGET_NET_BASIS_BY_INPUT_ID[control.id]) {
+        const keyMap = {
+          'target-net': 'year',
+          'target-net-week': 'week',
+          'target-net-month': 'month',
+          'target-net-average-week': 'averageWeek',
+          'target-net-average-month': 'averageMonth'
+        };
+        const key = keyMap[control.id];
+        if (key) {
+          setIncomeTargetValue(key, control.value);
+        }
+        return;
+      }
+
+      switch (control.id) {
+        case 'months-off':
+          setMonthsOff(control.value);
+          break;
+        case 'weeks-off-cycle':
+          setWeeksOffCycle(control.value);
+          break;
+        case 'days-off-week':
+          setDaysOffWeek(control.value);
+          break;
+        case 'tax-rate':
+          setTaxRatePercent(control.value);
+          break;
+        case 'variable-cost-class':
+          setVariableCostPerClass(control.value);
+          break;
+        case 'vat-rate':
+          setVatRatePercent(control.value);
+          break;
+        case 'buffer':
+          setBufferPercent(control.value);
+          break;
+        case 'currency-symbol':
+          setCurrencySymbol(control.value);
+          break;
+        default:
+          break;
+      }
+    }
 
     const fixedCostFields = {
       location: {
@@ -2605,8 +2756,103 @@
         }
         return accumulator;
       }, {});
-      values[PERSISTED_TARGET_NET_BASIS_KEY] = targetNetBasis;
+      values[PERSISTED_TARGET_NET_BASIS_KEY] = calcState.incomeTargets.basis;
       return values;
+    }
+
+    function initializeCalcStateFromControls() {
+      const views = updateCalcStateFromControls();
+      applyCalcStateToControls(views);
+      return views;
+    }
+
+    function applyCalcStateToControls(views = {}) {
+      const { capacity = {}, income = {}, costs = {} } = views;
+      const basis = income.basis || calcState.incomeTargets.basis;
+
+      if (controls.targetNet instanceof HTMLInputElement) {
+        const yearValue = Number.isFinite(income.targetNet) ? income.targetNet : calcState.incomeTargets.year;
+        controls.targetNet.value = formatFixed(Math.max(yearValue || 0, 0), 2);
+      }
+
+      if (controls.targetNetWeek instanceof HTMLInputElement) {
+        const weekDisplayValue = basis === 'week' ? calcState.incomeTargets.week : income.targetNetPerWeek;
+        controls.targetNetWeek.value = weekDisplayValue == null || !Number.isFinite(weekDisplayValue)
+          ? ''
+          : formatFixed(weekDisplayValue, 2);
+      }
+
+      if (controls.targetNetMonth instanceof HTMLInputElement) {
+        const monthDisplayValue = basis === 'month' ? calcState.incomeTargets.month : income.targetNetPerMonth;
+        controls.targetNetMonth.value = monthDisplayValue == null || !Number.isFinite(monthDisplayValue)
+          ? ''
+          : formatFixed(monthDisplayValue, 2);
+      }
+
+      if (controls.targetNetAverageWeek instanceof HTMLInputElement) {
+        const averageWeekDisplayValue = basis === 'avgWeek'
+          ? calcState.incomeTargets.averageWeek
+          : income.targetNetAveragePerWeek;
+        controls.targetNetAverageWeek.value = averageWeekDisplayValue == null || !Number.isFinite(averageWeekDisplayValue)
+          ? ''
+          : formatFixed(averageWeekDisplayValue, 2);
+      }
+
+      if (controls.targetNetAverageMonth instanceof HTMLInputElement) {
+        const averageMonthDisplayValue = basis === 'avgMonth'
+          ? calcState.incomeTargets.averageMonth
+          : income.targetNetAveragePerMonth;
+        controls.targetNetAverageMonth.value = averageMonthDisplayValue == null || !Number.isFinite(averageMonthDisplayValue)
+          ? ''
+          : formatFixed(averageMonthDisplayValue, 2);
+      }
+
+      if (controls.taxRate instanceof HTMLInputElement) {
+        controls.taxRate.value = formatFixed(calcState.costs.taxRatePercent, 1);
+      }
+
+      if (controls.fixedCosts instanceof HTMLInputElement) {
+        const fixedCostsValue = Number.isFinite(costs.fixedCosts) ? costs.fixedCosts : calcState.costs.fixedCosts;
+        controls.fixedCosts.value = formatFixed(Math.max(fixedCostsValue || 0, 0), 2);
+      }
+
+      if (controls.variableCostPerClass instanceof HTMLInputElement) {
+        controls.variableCostPerClass.value = formatFixed(calcState.costs.variableCostPerClass, 2);
+      }
+
+      if (controls.vatRate instanceof HTMLInputElement) {
+        controls.vatRate.value = formatFixed(calcState.costs.vatRatePercent, 1);
+      }
+
+      if (controls.monthsOff instanceof HTMLInputElement) {
+        controls.monthsOff.value = formatFixed(calcState.capacity.monthsOff, 2);
+      }
+
+      if (controls.weeksOffCycle instanceof HTMLInputElement) {
+        controls.weeksOffCycle.value = formatFixed(calcState.capacity.weeksOffCycle, 2);
+      }
+
+      if (controls.daysOffWeek instanceof HTMLInputElement) {
+        controls.daysOffWeek.value = formatFixed(calcState.capacity.daysOffWeek, 2);
+      }
+
+      if (controls.buffer instanceof HTMLInputElement) {
+        controls.buffer.value = formatFixed(calcState.costs.bufferPercent, 1);
+      }
+
+      if (controls.currencySymbol instanceof HTMLInputElement) {
+        controls.currencySymbol.value = calcState.config.currencySymbol || '€';
+      }
+
+      if (controls.workingWeeksDisplay) {
+        const value = Number.isFinite(capacity.workingWeeks) ? capacity.workingWeeks : 0;
+        controls.workingWeeksDisplay.textContent = formatFixed(value, 2);
+      }
+
+      if (controls.workingDaysDisplay) {
+        const value = Number.isFinite(capacity.workingDaysPerYear) ? capacity.workingDaysPerYear : 0;
+        controls.workingDaysDisplay.textContent = formatFixed(value, 2);
+      }
     }
 
     const defaultInputValues = captureInputValues();
@@ -2651,7 +2897,7 @@
       }
       const storedBasis = values[PERSISTED_TARGET_NET_BASIS_KEY];
       if (typeof storedBasis === 'string' && TARGET_NET_BASIS_VALUES.includes(storedBasis)) {
-        targetNetBasis = storedBasis;
+        setTargetNetBasis(storedBasis);
       }
       const inputs = getPersistableInputs();
       inputs.forEach(input => {
@@ -2670,7 +2916,7 @@
             : String(storedValue);
         }
       });
-      updateFixedCostTotalDisplay();
+      initializeCalcStateFromControls();
       if (!skipRender) {
         render();
       }
@@ -2696,8 +2942,9 @@
       if (event && event.target instanceof HTMLInputElement) {
         const nextBasis = TARGET_NET_BASIS_BY_INPUT_ID[event.target.id];
         if (typeof nextBasis === 'string') {
-          targetNetBasis = nextBasis;
+          setTargetNetBasis(nextBasis);
         }
+        commitControlValueToState(event.target);
       }
       if (persistenceEnabled) {
         savePersistedInputs();
@@ -3040,10 +3287,12 @@
 
     function updateFixedCostTotalDisplay() {
       const total = getFixedCostTotal();
+      const normalized = Math.max(total, 0);
+      calcState.costs.fixedCosts = normalized;
       if (controls.fixedCosts instanceof HTMLInputElement) {
-        controls.fixedCosts.value = formatFixed(total, 2);
+        controls.fixedCosts.value = formatFixed(normalized, 2);
       }
-      return total;
+      return normalized;
     }
 
     function syncFixedCostPair(key, sourceType) {
@@ -3105,22 +3354,15 @@
       }
     });
 
-    function getInputs() {
-      const monthsOff = parseNumber(controls.monthsOff.value, 2, { min: 0, max: 12 });
-      const weeksOffPerCycle = parseNumber(controls.weeksOffCycle.value, 1, { min: 0, max: 4 });
-      const daysOffPerWeek = parseNumber(controls.daysOffWeek.value, 2, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
-
-      const taxRatePercent = Math.min(Math.max(parseNumber(controls.taxRate.value, 40), 0), 99.9);
-      const taxRate = taxRatePercent / 100;
-      const fixedCosts = updateFixedCostTotalDisplay();
-      const variableCostPerClass = Math.max(parseNumber(controls.variableCostPerClass.value, 0), 0);
-      const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
-      const bufferPercent = Math.max(parseNumber(controls.buffer.value, 15), 0);
-      const buffer = bufferPercent / 100;
-      const currencySymbol = controls.currencySymbol.value.trim() || '€';
-
-      const activeMonthShare = Math.min(Math.max((12 - monthsOff) / 12, 0), 1);
-      const activeMonths = 12 * activeMonthShare;
+    function computeCapacityMetrics(capacityState) {
+      const monthsOff = Math.min(Math.max(Number(capacityState.monthsOff) || 0, 0), 12);
+      const weeksOffPerCycle = Math.min(Math.max(Number(capacityState.weeksOffCycle) || 0, 0), 4);
+      const daysOffPerWeek = Math.min(
+        Math.max(Number(capacityState.daysOffWeek) || 0, 0),
+        BASE_WORK_DAYS_PER_WEEK
+      );
+      const activeMonthShare = Math.min(Math.max((MONTHS_PER_YEAR - monthsOff) / MONTHS_PER_YEAR, 0), 1);
+      const activeMonths = MONTHS_PER_YEAR * activeMonthShare;
       const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
       const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
       const workingDaysPerWeek = Math.max(
@@ -3129,112 +3371,238 @@
       );
       const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
 
-      const defaultTargetNetWeek = workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT;
-      const defaultTargetNetMonth = activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT;
-      const defaultTargetNetAverageWeek = TARGET_NET_DEFAULT / WEEKS_PER_YEAR;
-      const defaultTargetNetAverageMonth = TARGET_NET_DEFAULT / MONTHS_PER_YEAR;
+      return {
+        monthsOff,
+        weeksOffPerCycle,
+        daysOffPerWeek,
+        activeMonthShare,
+        activeMonths,
+        weeksShare,
+        workingWeeks,
+        workingDaysPerWeek,
+        workingDaysPerYear
+      };
+    }
 
-      const targetNetYearInput = Math.max(parseNumber(controls.targetNet.value, TARGET_NET_DEFAULT), 0);
-      const targetNetWeekInput = Math.max(parseNumber(controls.targetNetWeek.value, defaultTargetNetWeek), 0);
-      const targetNetMonthInput = Math.max(parseNumber(controls.targetNetMonth.value, defaultTargetNetMonth), 0);
-      const targetNetAverageWeekInput = Math.max(
-        parseNumber(controls.targetNetAverageWeek.value, defaultTargetNetAverageWeek),
-        0
-      );
-      const targetNetAverageMonthInput = Math.max(
-        parseNumber(controls.targetNetAverageMonth.value, defaultTargetNetAverageMonth),
-        0
-      );
+    function computeTargetNetDefaults(capacityMetrics) {
+      const { workingWeeks, activeMonths } = capacityMetrics;
+      return {
+        year: TARGET_NET_DEFAULT,
+        week: workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT,
+        month: activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT,
+        averageWeek: TARGET_NET_DEFAULT / WEEKS_PER_YEAR,
+        averageMonth: TARGET_NET_DEFAULT / MONTHS_PER_YEAR
+      };
+    }
 
-      const hasWorkingWeeks = workingWeeks > 0;
-      const hasActiveMonths = activeMonths > 0;
+    function computeIncomeTargets(state, capacityMetrics) {
+      const defaults = state.config.defaults.incomeTargets || computeTargetNetDefaults(capacityMetrics);
+      const basis = TARGET_NET_BASIS_VALUES.includes(state.incomeTargets.basis)
+        ? state.incomeTargets.basis
+        : 'year';
+      const year = Math.max(state.incomeTargets.year, 0);
+      const week = Math.max(state.incomeTargets.week, 0);
+      const month = Math.max(state.incomeTargets.month, 0);
+      const averageWeek = Math.max(state.incomeTargets.averageWeek, 0);
+      const averageMonth = Math.max(state.incomeTargets.averageMonth, 0);
 
-      let targetNet;
-      if (targetNetBasis === 'week') {
-        targetNet = hasWorkingWeeks ? targetNetWeekInput * workingWeeks : targetNetYearInput;
-      } else if (targetNetBasis === 'month') {
-        targetNet = hasActiveMonths ? targetNetMonthInput * activeMonths : targetNetYearInput;
-      } else if (targetNetBasis === 'avgWeek') {
-        targetNet = targetNetAverageWeekInput * WEEKS_PER_YEAR;
-      } else if (targetNetBasis === 'avgMonth') {
-        targetNet = targetNetAverageMonthInput * MONTHS_PER_YEAR;
-      } else {
-        targetNet = targetNetYearInput;
+      let targetNet = year;
+      if (basis === 'week') {
+        targetNet = capacityMetrics.workingWeeks > 0 ? week * capacityMetrics.workingWeeks : year;
+      } else if (basis === 'month') {
+        targetNet = capacityMetrics.activeMonths > 0 ? month * capacityMetrics.activeMonths : year;
+      } else if (basis === 'avgWeek') {
+        targetNet = averageWeek * WEEKS_PER_YEAR;
+      } else if (basis === 'avgMonth') {
+        targetNet = averageMonth * MONTHS_PER_YEAR;
       }
 
       targetNet = Math.max(targetNet, 0);
 
-      const targetNetPerWeek = hasWorkingWeeks ? targetNet / workingWeeks : null;
-      const targetNetPerMonth = hasActiveMonths ? targetNet / activeMonths : null;
-      const targetNetAveragePerWeek = targetNet / WEEKS_PER_YEAR;
-      const targetNetAveragePerMonth = targetNet / MONTHS_PER_YEAR;
-
-      controls.targetNet.value = formatFixed(targetNet, 2);
-
-      const weekDisplayValue = targetNetBasis === 'week' ? targetNetWeekInput : targetNetPerWeek;
-      controls.targetNetWeek.value = weekDisplayValue == null || !Number.isFinite(weekDisplayValue)
-        ? ''
-        : formatFixed(weekDisplayValue, 2);
-
-      const monthDisplayValue = targetNetBasis === 'month' ? targetNetMonthInput : targetNetPerMonth;
-      controls.targetNetMonth.value = monthDisplayValue == null || !Number.isFinite(monthDisplayValue)
-        ? ''
-        : formatFixed(monthDisplayValue, 2);
-
-      const averageWeekDisplayValue = targetNetBasis === 'avgWeek'
-        ? targetNetAverageWeekInput
-        : targetNetAveragePerWeek;
-      controls.targetNetAverageWeek.value = averageWeekDisplayValue == null || !Number.isFinite(averageWeekDisplayValue)
-        ? ''
-        : formatFixed(averageWeekDisplayValue, 2);
-
-      const averageMonthDisplayValue = targetNetBasis === 'avgMonth'
-        ? targetNetAverageMonthInput
-        : targetNetAveragePerMonth;
-      controls.targetNetAverageMonth.value = averageMonthDisplayValue == null || !Number.isFinite(averageMonthDisplayValue)
-        ? ''
-        : formatFixed(averageMonthDisplayValue, 2);
-
-      controls.taxRate.value = formatFixed(taxRate * 100, 1);
-      controls.fixedCosts.value = formatFixed(fixedCosts, 2);
-      if (controls.variableCostPerClass instanceof HTMLInputElement) {
-        controls.variableCostPerClass.value = formatFixed(variableCostPerClass, 2);
-      }
-      controls.vatRate.value = formatFixed(vatRate * 100, 1);
-      controls.monthsOff.value = formatFixed(monthsOff, 2);
-      controls.weeksOffCycle.value = formatFixed(weeksOffPerCycle, 2);
-      controls.daysOffWeek.value = formatFixed(daysOffPerWeek, 2);
-      controls.buffer.value = formatFixed(buffer * 100, 1);
-      controls.currencySymbol.value = currencySymbol;
-
-      controls.workingWeeksDisplay.textContent = formatFixed(workingWeeks, 2);
-      controls.workingDaysDisplay.textContent = formatFixed(workingDaysPerYear, 2);
-
-      const annualVariableCosts = variableCostPerClass * workingDaysPerYear;
+      const hasWorkingWeeks = capacityMetrics.workingWeeks > 0;
+      const hasActiveMonths = capacityMetrics.activeMonths > 0;
 
       return {
+        basis,
+        year,
+        week,
+        month,
+        averageWeek,
+        averageMonth,
         targetNet,
-        targetNetPerWeek,
-        targetNetPerMonth,
-        targetNetAveragePerWeek,
-        targetNetAveragePerMonth,
+        targetNetPerWeek: hasWorkingWeeks ? targetNet / capacityMetrics.workingWeeks : null,
+        targetNetPerMonth: hasActiveMonths ? targetNet / capacityMetrics.activeMonths : null,
+        targetNetAveragePerWeek: targetNet / WEEKS_PER_YEAR,
+        targetNetAveragePerMonth: targetNet / MONTHS_PER_YEAR,
+        hasWorkingWeeks,
+        hasActiveMonths,
+        defaults
+      };
+    }
+
+    function computeCostMetrics(state, capacityMetrics) {
+      const taxRatePercent = Math.min(Math.max(state.costs.taxRatePercent, 0), 99.9);
+      const taxRate = taxRatePercent / 100;
+      const fixedCosts = Math.max(state.costs.fixedCosts, 0);
+      const variableCostPerClass = Math.max(state.costs.variableCostPerClass, 0);
+      const vatRatePercent = Math.max(state.costs.vatRatePercent, 0);
+      const vatRate = vatRatePercent / 100;
+      const bufferPercent = Math.max(state.costs.bufferPercent, 0);
+      const buffer = bufferPercent / 100;
+      const workingDaysPerYear = Number.isFinite(capacityMetrics.workingDaysPerYear)
+        ? capacityMetrics.workingDaysPerYear
+        : 0;
+      const annualVariableCosts = variableCostPerClass * workingDaysPerYear;
+      const currencySymbol = state.config.currencySymbol || '€';
+
+      return {
         taxRate,
+        taxRatePercent,
         fixedCosts,
         variableCostPerClass,
         vatRate,
-        annualVariableCosts,
-        workingWeeks,
+        vatRatePercent,
         buffer,
         bufferPercent,
-        currencySymbol,
-        monthsOff,
-        weeksOffPerCycle,
-        daysOffPerWeek,
-        workingDaysPerWeek,
-        workingDaysPerYear,
-        activeMonths,
-        activeMonthShare,
-        weeksShare
+        annualVariableCosts,
+        currencySymbol
+      };
+    }
+
+    function deriveCalcViews(capacityMetrics, defaults) {
+      const capacity = capacityMetrics || computeCapacityMetrics(calcState.capacity);
+      const incomeDefaults = defaults || computeTargetNetDefaults(capacity);
+      calcState.config.defaults.incomeTargets = incomeDefaults;
+      const income = computeIncomeTargets(calcState, capacity);
+      const costs = computeCostMetrics(calcState, capacity);
+      return { capacity, defaults: incomeDefaults, income, costs };
+    }
+
+    function updateCalcStateFromControls() {
+      const monthsOffRaw = controls.monthsOff instanceof HTMLInputElement
+        ? controls.monthsOff.value
+        : calcState.capacity.monthsOff;
+      const weeksOffRaw = controls.weeksOffCycle instanceof HTMLInputElement
+        ? controls.weeksOffCycle.value
+        : calcState.capacity.weeksOffCycle;
+      const daysOffRaw = controls.daysOffWeek instanceof HTMLInputElement
+        ? controls.daysOffWeek.value
+        : calcState.capacity.daysOffWeek;
+
+      calcState.capacity.monthsOff = parseNumber(monthsOffRaw, calcState.capacity.monthsOff || 0, {
+        min: 0,
+        max: 12
+      });
+      calcState.capacity.weeksOffCycle = parseNumber(weeksOffRaw, calcState.capacity.weeksOffCycle || 0, {
+        min: 0,
+        max: 4
+      });
+      calcState.capacity.daysOffWeek = parseNumber(daysOffRaw, calcState.capacity.daysOffWeek || 0, {
+        min: 0,
+        max: BASE_WORK_DAYS_PER_WEEK
+      });
+
+      const capacityMetrics = computeCapacityMetrics(calcState.capacity);
+      const defaults = computeTargetNetDefaults(capacityMetrics);
+      calcState.config.defaults.incomeTargets = defaults;
+
+      const yearRaw = controls.targetNet instanceof HTMLInputElement
+        ? controls.targetNet.value
+        : calcState.incomeTargets.year;
+      const weekRaw = controls.targetNetWeek instanceof HTMLInputElement
+        ? controls.targetNetWeek.value
+        : calcState.incomeTargets.week;
+      const monthRaw = controls.targetNetMonth instanceof HTMLInputElement
+        ? controls.targetNetMonth.value
+        : calcState.incomeTargets.month;
+      const averageWeekRaw = controls.targetNetAverageWeek instanceof HTMLInputElement
+        ? controls.targetNetAverageWeek.value
+        : calcState.incomeTargets.averageWeek;
+      const averageMonthRaw = controls.targetNetAverageMonth instanceof HTMLInputElement
+        ? controls.targetNetAverageMonth.value
+        : calcState.incomeTargets.averageMonth;
+
+      calcState.incomeTargets.year = Math.max(parseNumber(yearRaw, defaults.year), 0);
+      calcState.incomeTargets.week = Math.max(parseNumber(weekRaw, defaults.week), 0);
+      calcState.incomeTargets.month = Math.max(parseNumber(monthRaw, defaults.month), 0);
+      calcState.incomeTargets.averageWeek = Math.max(parseNumber(averageWeekRaw, defaults.averageWeek), 0);
+      calcState.incomeTargets.averageMonth = Math.max(parseNumber(averageMonthRaw, defaults.averageMonth), 0);
+
+      if (!TARGET_NET_BASIS_VALUES.includes(calcState.incomeTargets.basis)) {
+        calcState.incomeTargets.basis = 'year';
+      }
+
+      const taxRateRaw = controls.taxRate instanceof HTMLInputElement
+        ? controls.taxRate.value
+        : calcState.costs.taxRatePercent;
+      const variableCostRaw = controls.variableCostPerClass instanceof HTMLInputElement
+        ? controls.variableCostPerClass.value
+        : calcState.costs.variableCostPerClass;
+      const vatRateRaw = controls.vatRate instanceof HTMLInputElement
+        ? controls.vatRate.value
+        : calcState.costs.vatRatePercent;
+      const bufferRaw = controls.buffer instanceof HTMLInputElement
+        ? controls.buffer.value
+        : calcState.costs.bufferPercent;
+      const currencySymbolRaw = controls.currencySymbol instanceof HTMLInputElement
+        ? controls.currencySymbol.value
+        : calcState.config.currencySymbol;
+
+      calcState.costs.taxRatePercent = Math.min(
+        Math.max(parseNumber(taxRateRaw, calcState.costs.taxRatePercent ?? 40), 0),
+        99.9
+      );
+      calcState.costs.variableCostPerClass = Math.max(
+        parseNumber(variableCostRaw, calcState.costs.variableCostPerClass ?? 0),
+        0
+      );
+      calcState.costs.vatRatePercent = Math.max(
+        parseNumber(vatRateRaw, calcState.costs.vatRatePercent ?? 21),
+        0
+      );
+      calcState.costs.bufferPercent = Math.max(
+        parseNumber(bufferRaw, calcState.costs.bufferPercent ?? 15),
+        0
+      );
+      calcState.config.currencySymbol = typeof currencySymbolRaw === 'string' && currencySymbolRaw.trim()
+        ? currencySymbolRaw.trim()
+        : '€';
+
+      const fixedCosts = getFixedCostTotal();
+      calcState.costs.fixedCosts = Math.max(fixedCosts, 0);
+
+      return deriveCalcViews(capacityMetrics, defaults);
+    }
+
+    function getInputs() {
+      const views = updateCalcStateFromControls();
+      applyCalcStateToControls(views);
+
+      const { capacity, income, costs } = views;
+
+      return {
+        targetNet: income.targetNet,
+        targetNetPerWeek: income.targetNetPerWeek,
+        targetNetPerMonth: income.targetNetPerMonth,
+        targetNetAveragePerWeek: income.targetNetAveragePerWeek,
+        targetNetAveragePerMonth: income.targetNetAveragePerMonth,
+        taxRate: costs.taxRate,
+        fixedCosts: costs.fixedCosts,
+        variableCostPerClass: costs.variableCostPerClass,
+        vatRate: costs.vatRate,
+        annualVariableCosts: costs.annualVariableCosts,
+        workingWeeks: capacity.workingWeeks,
+        buffer: costs.buffer,
+        bufferPercent: costs.bufferPercent,
+        currencySymbol: costs.currencySymbol,
+        monthsOff: capacity.monthsOff,
+        weeksOffPerCycle: capacity.weeksOffPerCycle,
+        daysOffPerWeek: capacity.daysOffPerWeek,
+        workingDaysPerWeek: capacity.workingDaysPerWeek,
+        workingDaysPerYear: capacity.workingDaysPerYear,
+        activeMonths: capacity.activeMonths,
+        activeMonthShare: capacity.activeMonthShare,
+        weeksShare: capacity.weeksShare
       };
     }
 
@@ -3550,7 +3918,7 @@
     ].forEach(({ control, basis }) => {
       if (!(control instanceof HTMLInputElement)) return;
       const updateBasis = () => {
-        targetNetBasis = basis;
+        setTargetNetBasis(basis);
       };
       control.addEventListener('input', updateBasis);
       control.addEventListener('change', updateBasis);
@@ -3558,8 +3926,14 @@
 
     Object.values(controls).forEach(control => {
       if (!(control instanceof HTMLInputElement)) return;
-      control.addEventListener('change', render);
+      control.addEventListener('change', event => {
+        if (!(event.target instanceof HTMLInputElement)) return;
+        commitControlValueToState(event.target);
+        render();
+      });
       control.addEventListener('input', event => {
+        if (!(event.target instanceof HTMLInputElement)) return;
+        commitControlValueToState(event.target);
         if (event.target.type === 'text') return;
         render();
       });
@@ -3571,6 +3945,7 @@
     controls.downloadCsv.addEventListener('click', downloadCsv);
 
     initializePersistence();
+    initializeCalcStateFromControls();
     render();
   </script>
 </body>
