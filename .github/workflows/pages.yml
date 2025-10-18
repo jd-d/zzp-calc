@@ -59,6 +59,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: dist
+          keep_files: true
 
   deploy_preview:
     needs: build
@@ -84,6 +85,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: dist
+          keep_files: true
           destination_dir: ${{ steps.pr.outputs.dir }}
 
       - name: Comment preview status on PR
