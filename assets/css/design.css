@@ -659,6 +659,27 @@ header.hero {
   background: transparent;
 }
 
+.control--pair .control-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 5rem);
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.control--pair input[type='number'] {
+  width: 100%;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.control--pair input[type='number']:focus {
+  outline: 2px solid var(--focus-outline);
+  outline-offset: 2px;
+}
+
 .range-output {
   display: inline-flex;
   align-items: center;
@@ -916,6 +937,86 @@ header.hero {
 
 .portfolio-status.is-negative {
   color: var(--inactive-strong);
+}
+
+.comfort-meter {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--surface-1);
+  display: grid;
+  gap: var(--space-3);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.comfort-meter__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.comfort-meter__title {
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.comfort-meter__value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.comfort-meter__track {
+  position: relative;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.comfort-meter__fill {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent), rgba(149, 114, 255, 0.9));
+  transition: width 0.3s ease;
+}
+
+.comfort-meter__summary {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.comfort-meter.is-high {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.comfort-meter.is-high .comfort-meter__fill {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.comfort-meter.is-medium {
+  border-color: rgba(250, 204, 21, 0.35);
+}
+
+.comfort-meter.is-medium .comfort-meter__fill {
+  background: linear-gradient(90deg, #facc15, #f97316);
+}
+
+.comfort-meter.is-low {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.comfort-meter.is-low .comfort-meter__fill {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.comfort-meter.is-unknown .comfort-meter__fill {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
 }
 
 .metric-violation {

@@ -15,12 +15,17 @@ import {
   setVatRatePercent,
   setBufferPercent,
   setCurrencySymbol,
+  setComfortMarginPercent,
+  setSeasonalityPercent,
+  setTravelFrictionPercent,
+  setHandsOnQuotaPercent,
   TARGET_NET_BASIS_VALUES,
   BASE_WORK_DAYS_PER_WEEK
 } from '../state.js';
 import { deriveCapacity } from '../capacity.js';
 import { deriveTargetNetDefaults, deriveIncomeTargets } from '../income.js';
 import { computeCosts } from '../costs.js';
+import { normalizeScenarioModifiers } from '../modifiers.js';
 
 export function initializeCalculatorUI() {
   const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
@@ -40,6 +45,10 @@ export function initializeCalculatorUI() {
     daysOffWeek: document.getElementById('days-off-week'),
     sessionLength: document.getElementById('session-length'),
     buffer: document.getElementById('buffer'),
+    comfortMargin: document.getElementById('comfort-margin'),
+    seasonality: document.getElementById('seasonality'),
+    travelFriction: document.getElementById('travel-friction'),
+    handsOnQuota: document.getElementById('hands-on-quota'),
     currencySymbol: document.getElementById('currency-symbol'),
     recalcButton: document.getElementById('recalculate'),
     downloadCsv: document.getElementById('download-csv'),
@@ -135,13 +144,14 @@ export function initializeCalculatorUI() {
   return unsubscribe;
 
   function deriveCalcViews(state, derived) {
+    const modifiers = normalizeScenarioModifiers(state.modifiers);
     const capacity = derived && derived.capacity
       ? derived.capacity
-      : deriveCapacity(state.capacity);
+      : deriveCapacity(state.capacity, state.modifiers);
     const costs = derived && derived.costs ? derived.costs : computeCosts(state, capacity);
     const defaults = deriveTargetNetDefaults(capacity);
     const income = deriveIncomeTargets(state, capacity);
-    return { capacity, defaults, income, costs };
+    return { capacity, defaults, income, costs, modifiers };
   }
 
   function formatFixed(value, fractionDigits = 1) {
@@ -241,7 +251,7 @@ export function initializeCalculatorUI() {
   }
 
   function applyCalcStateToControls(state, views = {}) {
-    const { capacity = {}, income = {} } = views;
+    const { capacity = {}, income = {}, modifiers = {} } = views;
     const basis = income.basis || state.incomeTargets.basis;
 
     if (controls.targetNet instanceof HTMLInputElement) {
@@ -317,6 +327,34 @@ export function initializeCalculatorUI() {
 
     if (controls.buffer instanceof HTMLInputElement) {
       controls.buffer.value = formatFixed(state.costs.bufferPercent ?? 15, 1);
+    }
+
+    if (controls.comfortMargin instanceof HTMLInputElement) {
+      const value = Number.isFinite(modifiers.comfortMarginPercent)
+        ? modifiers.comfortMarginPercent
+        : state.modifiers?.comfortMarginPercent;
+      controls.comfortMargin.value = formatFixed(value ?? 0, 1);
+    }
+
+    if (controls.seasonality instanceof HTMLInputElement) {
+      const value = Number.isFinite(modifiers.seasonalityPercent)
+        ? modifiers.seasonalityPercent
+        : state.modifiers?.seasonalityPercent;
+      controls.seasonality.value = formatFixed(value ?? 0, 1);
+    }
+
+    if (controls.travelFriction instanceof HTMLInputElement) {
+      const value = Number.isFinite(modifiers.travelFrictionPercent)
+        ? modifiers.travelFrictionPercent
+        : state.modifiers?.travelFrictionPercent;
+      controls.travelFriction.value = formatFixed(value ?? 0, 1);
+    }
+
+    if (controls.handsOnQuota instanceof HTMLInputElement) {
+      const value = Number.isFinite(modifiers.handsOnQuotaPercent)
+        ? modifiers.handsOnQuotaPercent
+        : state.modifiers?.handsOnQuotaPercent;
+      controls.handsOnQuota.value = formatFixed(value ?? 0, 1);
     }
 
     if (controls.currencySymbol instanceof HTMLInputElement) {
@@ -481,6 +519,19 @@ export function initializeCalculatorUI() {
     const { capacity = {}, income = {}, costs = {} } = views || {};
     const currentState = stateSnapshot && typeof stateSnapshot === 'object' ? stateSnapshot : {};
     const sessionLength = Number.isFinite(currentState.sessionLength) ? currentState.sessionLength : 1.5;
+    const modifiersView = views && views.modifiers
+      ? views.modifiers
+      : normalizeScenarioModifiers(currentState.modifiers);
+    const bufferPercentBase = Number.isFinite(costs.bufferPercentBase)
+      ? costs.bufferPercentBase
+      : Number.isFinite(currentState.costs?.bufferPercent)
+        ? currentState.costs.bufferPercent
+        : 15;
+    const comfortMarginPercent = Number.isFinite(costs.comfortMarginPercent)
+      ? costs.comfortMarginPercent
+      : modifiersView.comfortMarginPercent;
+    const bufferPercentEffective = bufferPercentBase + comfortMarginPercent;
+    const bufferEffective = bufferPercentEffective / 100;
     const effectiveBillableDays = Number.isFinite(capacity.billableDaysAfterTravel)
       ? capacity.billableDaysAfterTravel
       : capacity.billableDaysPerYear;
@@ -499,8 +550,10 @@ export function initializeCalculatorUI() {
       vatRate: costs.vatRate,
       annualVariableCosts: costs.annualVariableCosts,
       workingWeeks: capacity.workingWeeks,
-      buffer: costs.buffer,
-      bufferPercent: costs.bufferPercent,
+      buffer: bufferEffective,
+      bufferPercent: bufferPercentEffective,
+      bufferPercentBase,
+      comfortMarginPercent,
       currencySymbol: costs.currencySymbol,
       monthsOff: capacity.monthsOff,
       weeksOffPerCycle: capacity.weeksOffPerCycle,
@@ -521,6 +574,9 @@ export function initializeCalculatorUI() {
       travelAllowanceDays: capacity.travelAllowanceDays,
       travelAllowanceShare: capacity.travelAllowanceShare,
       travelAllowanceBillableShare: capacity.travelAllowanceBillableShare,
+      seasonalityPercent: modifiersView.seasonalityPercent,
+      travelFrictionPercent: modifiersView.travelFrictionPercent,
+      handsOnQuotaPercent: modifiersView.handsOnQuotaPercent,
       sessionLength,
       billableHours
     };
@@ -552,6 +608,8 @@ export function initializeCalculatorUI() {
       workingDaysPerYear,
       workingWeeks,
       bufferPercent,
+      bufferPercentBase,
+      comfortMarginPercent,
       vatRate,
       utilizationPercent,
       billableDaysPerYear,
@@ -562,6 +620,9 @@ export function initializeCalculatorUI() {
       travelAllowanceDays,
       travelAllowanceShare,
       travelAllowanceBillableShare,
+      seasonalityPercent,
+      travelFrictionPercent,
+      handsOnQuotaPercent,
       sessionLength,
       billableHours
     } = inputs;
@@ -582,6 +643,12 @@ export function initializeCalculatorUI() {
     const billableHoursDisplay = Number.isFinite(billableHours)
       ? formatFixed(billableHours, 2)
       : '—';
+    const bufferBaseDisplay = formatFixed(bufferPercentBase ?? 0, 1);
+    const comfortMarginDisplay = formatFixed(comfortMarginPercent ?? 0, 1);
+    const bufferEffectiveDisplay = formatFixed(bufferPercent ?? 0, 1);
+    const seasonalityDisplay = formatFixed(seasonalityPercent ?? 0, 1);
+    const travelFrictionDisplay = formatFixed(travelFrictionPercent ?? 0, 1);
+    const handsOnQuotaDisplay = formatFixed(handsOnQuotaPercent ?? 0, 1);
 
     const targetPerWeekDisplay = Number.isFinite(targetNetPerWeek)
       ? formatCurrency(currencySymbol, targetNetPerWeek)
@@ -627,7 +694,10 @@ export function initializeCalculatorUI() {
       `Estimated billable hours per year: ${billableHoursDisplay}`,
       `Travel days planned per active month: ${travelDaysPerMonthDisplay}; ≈ ${travelDaysPerYearDisplay} days (${travelWeeksPerYearDisplay} weeks) per year`,
       `Travel allowance impact on availability: ${travelAllowanceDaysDisplay} days (${travelAllowanceSharePercent}% of active days; ${travelAllowanceBillablePercent}% of billable plan)`,
-      `Safety margin applied to revenue: ${formatFixed(bufferPercent, 1)}%`,
+      `Safety margin applied to revenue: ${bufferEffectiveDisplay}% (base ${bufferBaseDisplay}% + comfort uplift ${comfortMarginDisplay}%)`,
+      `Seasonality drag on availability: ${seasonalityDisplay}%`,
+      `Travel friction overhead applied to travel days: ${travelFrictionDisplay}%`,
+      `Hands-on delivery quota target: ${handsOnQuotaDisplay}% of delivery days`,
       `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
       `Currency symbol: ${currencySymbol}`,
       'Values are rounded to whole currency units for display and CSV export.'
@@ -970,6 +1040,18 @@ export function initializeCalculatorUI() {
       case 'buffer':
         setBufferPercent(control.value);
         break;
+      case 'comfort-margin':
+        setComfortMarginPercent(control.value);
+        break;
+      case 'seasonality':
+        setSeasonalityPercent(control.value);
+        break;
+      case 'travel-friction':
+        setTravelFrictionPercent(control.value);
+        break;
+      case 'hands-on-quota':
+        setHandsOnQuotaPercent(control.value);
+        break;
       case 'currency-symbol':
         setCurrencySymbol(control.value);
         break;
@@ -991,6 +1073,18 @@ export function initializeCalculatorUI() {
     const sessionLengthRaw = controls.sessionLength instanceof HTMLInputElement
       ? controls.sessionLength.value
       : calcState.sessionLength;
+    const comfortMarginRaw = controls.comfortMargin instanceof HTMLInputElement
+      ? controls.comfortMargin.value
+      : calcState.modifiers?.comfortMarginPercent;
+    const seasonalityRaw = controls.seasonality instanceof HTMLInputElement
+      ? controls.seasonality.value
+      : calcState.modifiers?.seasonalityPercent;
+    const travelFrictionRaw = controls.travelFriction instanceof HTMLInputElement
+      ? controls.travelFriction.value
+      : calcState.modifiers?.travelFrictionPercent;
+    const handsOnQuotaRaw = controls.handsOnQuota instanceof HTMLInputElement
+      ? controls.handsOnQuota.value
+      : calcState.modifiers?.handsOnQuotaPercent;
 
     const capacityUpdates = {
       monthsOff: parseNumber(monthsOffRaw, calcState.capacity.monthsOff || 0, {
@@ -1022,6 +1116,30 @@ export function initializeCalculatorUI() {
       }),
       0.25
     );
+
+    const modifierFallbacks = normalizeScenarioModifiers(calcState.modifiers);
+    const modifiersUpdates = {
+      comfortMarginPercent: Math.max(parseNumber(
+        comfortMarginRaw,
+        modifierFallbacks.comfortMarginPercent,
+        { min: 0, max: 60 }
+      ), 0),
+      seasonalityPercent: Math.max(parseNumber(
+        seasonalityRaw,
+        modifierFallbacks.seasonalityPercent,
+        { min: 0, max: 75 }
+      ), 0),
+      travelFrictionPercent: Math.max(parseNumber(
+        travelFrictionRaw,
+        modifierFallbacks.travelFrictionPercent,
+        { min: 0, max: 150 }
+      ), 0),
+      handsOnQuotaPercent: Math.max(parseNumber(
+        handsOnQuotaRaw,
+        modifierFallbacks.handsOnQuotaPercent,
+        { min: 0, max: 100 }
+      ), 0)
+    };
 
     const yearRaw = controls.targetNet instanceof HTMLInputElement
       ? controls.targetNet.value
@@ -1109,7 +1227,8 @@ export function initializeCalculatorUI() {
         vatRatePercent,
         bufferPercent,
         fixedCosts
-      }
+      },
+      modifiers: modifiersUpdates
     });
   }
 

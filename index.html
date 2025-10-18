@@ -542,7 +542,7 @@
             </div>
           </fieldset>
 
-          
+
 
           <fieldset class="control-section" data-collapsible>
             <legend class="section-legend visually-hidden" id="section-time-off-legend">Time-off planner</legend>
@@ -620,6 +620,105 @@
                   <span class="toggle-label">Collapse section</span>
                 </button>
               </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-section" data-collapsible>
+            <legend class="section-legend visually-hidden" id="section-modifiers-legend">Comfort tuning</legend>
+            <div class="section-header">
+              <span class="section-title" aria-hidden="true">Comfort tuning</span>
+              <button
+                type="button"
+                class="section-toggle section-toggle--top"
+                data-expanded-text="Collapse"
+                data-collapsed-text="Expand"
+                aria-expanded="true"
+                aria-controls="section-modifiers"
+              >
+                <span class="toggle-label">Collapse</span>
+              </button>
+            </div>
+            <div class="section-body" id="section-modifiers">
+              <div class="control control--range control--pair">
+                <label for="comfort-margin">
+                  <span class="label-text">Comfort margin uplift (%)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Adds an extra cushion on top of the pricing safety margin."
+                    data-tooltip="Adds an extra cushion on top of the pricing safety margin."
+                  >ℹ️</span>
+                </label>
+                <div class="control-pair">
+                  <input type="range" id="comfort-margin-slider" min="0" max="60" step="1" value="10" aria-controls="comfort-margin" />
+                  <input type="number" id="comfort-margin" value="10" min="0" max="60" step="1" inputmode="decimal" />
+                </div>
+              </div>
+              <div class="control control--range control--pair">
+                <label for="seasonality">
+                  <span class="label-text">Seasonality drag (%)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Reduces effective availability to reflect quieter months."
+                    data-tooltip="Reduces effective availability to reflect quieter months."
+                  >ℹ️</span>
+                </label>
+                <div class="control-pair">
+                  <input type="range" id="seasonality-slider" min="0" max="75" step="1" value="0" aria-controls="seasonality" />
+                  <input type="number" id="seasonality" value="0" min="0" max="75" step="1" inputmode="decimal" />
+                </div>
+              </div>
+              <div class="control control--range control--pair">
+                <label for="travel-friction">
+                  <span class="label-text">Travel friction overhead (%)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Adds extra travel time per engagement to reserve more buffer days."
+                    data-tooltip="Adds extra travel time per engagement to reserve more buffer days."
+                  >ℹ️</span>
+                </label>
+                <div class="control-pair">
+                  <input type="range" id="travel-friction-slider" min="0" max="150" step="1" value="0" aria-controls="travel-friction" />
+                  <input type="number" id="travel-friction" value="0" min="0" max="150" step="1" inputmode="decimal" />
+                </div>
+              </div>
+              <div class="control control--range control--pair">
+                <label for="hands-on-quota">
+                  <span class="label-text">Hands-on delivery quota (%)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Targets the share of delivery days that should remain hands-on."
+                    data-tooltip="Targets the share of delivery days that should remain hands-on."
+                  >ℹ️</span>
+                </label>
+                <div class="control-pair">
+                  <input type="range" id="hands-on-quota-slider" min="0" max="100" step="1" value="50" aria-controls="hands-on-quota" />
+                  <input type="number" id="hands-on-quota" value="50" min="0" max="100" step="1" inputmode="decimal" />
+                </div>
+              </div>
+            </div>
+            <div class="section-footer">
+              <button
+                type="button"
+                class="section-toggle section-toggle--bottom"
+                data-expanded-text="Collapse section"
+                data-collapsed-text="Expand section"
+                aria-expanded="true"
+                aria-controls="section-modifiers"
+              >
+                <span class="toggle-label">Collapse section</span>
+              </button>
             </div>
           </fieldset>
 
@@ -993,6 +1092,16 @@
                 </dd>
               </div>
             </dl>
+            <div class="comfort-meter" id="portfolio-comfort" aria-live="polite" aria-busy="true">
+              <div class="comfort-meter__header">
+                <span class="comfort-meter__title">Comfort index</span>
+                <span class="comfort-meter__value" data-comfort-value>N/A</span>
+              </div>
+              <div class="comfort-meter__track" role="presentation">
+                <div class="comfort-meter__fill" data-comfort-fill style="width: 0%;"></div>
+              </div>
+              <p class="comfort-meter__summary" data-comfort-summary>Comfort score will appear once the solver runs.</p>
+            </div>
           </div>
           <div>
             <h2>Weekly plan</h2>

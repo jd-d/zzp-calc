@@ -260,6 +260,56 @@ function updateStatus(statusElement, totals, symbol) {
   }
 }
 
+function updateComfortIndicator(container, comfort) {
+  if (!(container instanceof HTMLElement)) {
+    return;
+  }
+
+  const valueEl = container.querySelector('[data-comfort-value]');
+  const summaryEl = container.querySelector('[data-comfort-summary]');
+  const fillEl = container.querySelector('[data-comfort-fill]');
+
+  container.classList.remove('is-high', 'is-medium', 'is-low', 'is-unknown');
+
+  if (!comfort || !Number.isFinite(comfort.score)) {
+    container.classList.add('is-unknown');
+    container.setAttribute('aria-busy', 'true');
+    if (valueEl) {
+      setText(valueEl, 'N/A');
+    }
+    if (summaryEl) {
+      setText(summaryEl, 'Comfort score will appear once the solver runs.');
+    }
+    if (fillEl instanceof HTMLElement) {
+      fillEl.style.width = '0%';
+    }
+    return;
+  }
+
+  container.removeAttribute('aria-busy');
+
+  const percent = Number.isFinite(comfort.scorePercent)
+    ? Math.max(Math.min(comfort.scorePercent, 100), 0)
+    : Math.max(Math.min(Math.round(comfort.score * 100), 100), 0);
+
+  if (valueEl) {
+    setText(valueEl, `${percent}%`);
+  }
+
+  if (fillEl instanceof HTMLElement) {
+    fillEl.style.width = `${percent}%`;
+  }
+
+  const levelClass = typeof comfort.level === 'string' && comfort.level
+    ? `is-${comfort.level}`
+    : 'is-medium';
+  container.classList.add(levelClass);
+
+  if (summaryEl) {
+    setText(summaryEl, comfort.summary || 'Comfort summary ready.');
+  }
+}
+
 export function mountPortfolio(calcState, root = document) {
   const context = root instanceof Document || root instanceof HTMLElement ? root : document;
   const section = qs('#portfolio', context);
@@ -276,6 +326,7 @@ export function mountPortfolio(calcState, root = document) {
 
   const weekList = qs('#p-week', section);
   const statusElement = qs('#portfolio-status', section);
+  const comfortElement = qs('#portfolio-comfort', section);
   const violationsBlock = qs('#portfolio-violations', section);
   const violationsList = qs('#portfolio-violations-list', section);
 
@@ -303,6 +354,7 @@ export function mountPortfolio(calcState, root = document) {
     const totals = portfolio && typeof portfolio === 'object' ? portfolio.totals : null;
     updateTotals(totalsElements, totals, symbol);
     updateStatus(statusElement, totals, symbol);
+    updateComfortIndicator(comfortElement, portfolio ? portfolio.comfort : null);
     renderWeeklyPlan(weekList, portfolio ? portfolio.mix : null, capacity, symbol);
 
     const summary = renderViolations(violationsBlock, violationsList, portfolio ? portfolio.violations : []);

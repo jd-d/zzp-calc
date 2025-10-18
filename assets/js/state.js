@@ -7,6 +7,7 @@ import {
 } from './constants.js';
 import { deriveCapacity } from './capacity.js';
 import { computeCosts } from './costs.js';
+import { DEFAULT_MODIFIERS, applyModifierDefaults } from './modifiers.js';
 import { deriveTargetNetDefaults } from './income.js';
 
 const initialState = {
@@ -17,6 +18,9 @@ const initialState = {
     month: 0,
     averageWeek: 0,
     averageMonth: 0
+  },
+  modifiers: {
+    ...DEFAULT_MODIFIERS
   },
   sessionLength: 1.5,
   capacity: {
@@ -96,7 +100,7 @@ function buildDerivedState(currentState) {
     ? currentState
     : initialState;
 
-  const capacity = deriveCapacity(safeState.capacity || {});
+  const capacity = deriveCapacity(safeState.capacity || {}, safeState.modifiers || {});
   const costs = computeCosts(safeState, capacity);
 
   return {
@@ -158,7 +162,8 @@ export function parseNumber(value, fallback = 0, { min = -Infinity, max = Infini
 }
 
 function refreshIncomeTargetDefaultsFromState() {
-  const capacityMetrics = derivedState.capacity || deriveCapacity(state.capacity);
+  const capacityMetrics = derivedState.capacity
+    || deriveCapacity(state.capacity, state.modifiers);
   const defaults = deriveTargetNetDefaults(capacityMetrics);
   patch({
     config: {
@@ -260,6 +265,34 @@ export function setCurrencySymbol(rawValue) {
   patch({
     config: { currencySymbol: symbol || '€' }
   });
+}
+
+function setModifierValue(key, rawValue, { min = 0, max = 100 } = {}) {
+  const defaults = applyModifierDefaults(state.modifiers || {});
+  const base = Number.isFinite(state.modifiers?.[key])
+    ? state.modifiers[key]
+    : defaults[key];
+  const normalized = parseNumber(rawValue, base, { min, max });
+  patch({
+    modifiers: { [key]: normalized }
+  });
+  return normalized;
+}
+
+export function setComfortMarginPercent(rawValue) {
+  return setModifierValue('comfortMarginPercent', rawValue, { min: 0, max: 60 });
+}
+
+export function setSeasonalityPercent(rawValue) {
+  return setModifierValue('seasonalityPercent', rawValue, { min: 0, max: 75 });
+}
+
+export function setTravelFrictionPercent(rawValue) {
+  return setModifierValue('travelFrictionPercent', rawValue, { min: 0, max: 150 });
+}
+
+export function setHandsOnQuotaPercent(rawValue) {
+  return setModifierValue('handsOnQuotaPercent', rawValue, { min: 0, max: 100 });
 }
 
 export const calcState = {
