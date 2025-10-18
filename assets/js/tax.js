@@ -248,9 +248,10 @@ export function calculateDutchTax2025(state, capacity, costs, incomeTargets) {
     mkbVrijstelling: breakdown.mkbVrijstelling,
     taxableProfitBeforeMkb: breakdown.taxableProfitBeforeMkb,
     taxableProfitAfterMkb: breakdown.taxableProfitAfterMkb,
-    zvwBase: breakdown.zvwBase
+    zvwBase: breakdown.zvwBase,
+    netIncome: breakdown.netIncome
   };
-} 
+}
 
 export function calculateSimpleTaxReserve(state, capacity, costs, incomeTargets) {
   const safeCapacity = capacity && typeof capacity === 'object' ? capacity : {};
@@ -279,7 +280,8 @@ export function calculateSimpleTaxReserve(state, capacity, costs, incomeTargets)
     mkbVrijstelling: null,
     taxableProfitBeforeMkb: profitBeforeTax,
     taxableProfitAfterMkb: profitBeforeTax,
-    zvwBase: null
+    zvwBase: null,
+    netIncome: targetNet
   };
 }
 
@@ -293,3 +295,57 @@ export function calculateTaxReserve(state, capacity, costs, incomeTargets) {
 }
 
 export { computeTaxBreakdown as _internalComputeTaxBreakdown };
+
+export function calculateTaxFromProfit(state, costs, profitBeforeTax) {
+  const normalizedProfit = Number.isFinite(profitBeforeTax) ? Math.max(profitBeforeTax, 0) : 0;
+  const safeState = normalizeStateForTax(state);
+  const mode = resolveTaxMode(state);
+
+  if (mode === 'dutch2025') {
+    const settings = resolveTaxSettings(safeState);
+    const breakdown = computeTaxBreakdown(normalizedProfit, settings);
+    const effectiveTaxRate = normalizedProfit > 0
+      ? breakdown.taxReserve / normalizedProfit
+      : 0;
+
+    return {
+      mode: 'dutch2025',
+      profitBeforeTax: normalizedProfit,
+      incomeTax: breakdown.incomeTax,
+      zvwContribution: breakdown.zvwContribution,
+      taxReserve: breakdown.taxReserve,
+      effectiveTaxRate,
+      zelfstandigenaftrek: breakdown.zelfstandigenaftrek,
+      startersaftrek: breakdown.startersaftrek,
+      mkbVrijstellingRate: breakdown.mkbVrijstellingRate,
+      mkbVrijstelling: breakdown.mkbVrijstelling,
+      taxableProfitBeforeMkb: breakdown.taxableProfitBeforeMkb,
+      taxableProfitAfterMkb: breakdown.taxableProfitAfterMkb,
+      zvwBase: breakdown.zvwBase,
+      netIncome: breakdown.netIncome
+    };
+  }
+
+  const manualRate = costs && Number.isFinite(costs.taxRate)
+    ? Math.min(Math.max(costs.taxRate, 0), 0.999)
+    : 0;
+  const taxReserve = normalizedProfit * manualRate;
+  const netIncome = normalizedProfit - taxReserve;
+
+  return {
+    mode: 'simple',
+    profitBeforeTax: normalizedProfit,
+    incomeTax: taxReserve,
+    zvwContribution: 0,
+    taxReserve,
+    effectiveTaxRate: manualRate,
+    zelfstandigenaftrek: null,
+    startersaftrek: null,
+    mkbVrijstellingRate: 0,
+    mkbVrijstelling: null,
+    taxableProfitBeforeMkb: normalizedProfit,
+    taxableProfitAfterMkb: normalizedProfit,
+    zvwBase: null,
+    netIncome
+  };
+}
