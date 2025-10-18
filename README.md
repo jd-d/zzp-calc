@@ -32,3 +32,9 @@ optionally `pull-requests: write`) to keep that automation functioning.
 ### Preview cleanup
 Preview directories are removed automatically when a pull request
 closes, courtesy of `.github/workflows/cleanup-preview.yml`.
+
+## Manual pipeline regression checks
+To verify the browser-driven harness:
+
+1. Open `tests/pipeline.test.html` in a modern desktop browser such as Chrome, Firefox, or Edge.
+2. Observe the results summary that appears on the page; detailed logs are also printed in the "Debug log" panel and the browser console.
