@@ -350,6 +350,20 @@
               </button>
             </div>
             <div class="section-body" id="section-taxes-costs">
+              <div class="control control--tax-mode">
+                <span class="label-text" id="tax-mode-label">Tax strategy</span>
+                <div class="tax-mode-options" role="radiogroup" aria-labelledby="tax-mode-label">
+                  <label class="tax-mode-option">
+                    <input type="radio" name="tax-mode" id="tax-mode-simple" value="simple" checked />
+                    <span>Simple reserve</span>
+                  </label>
+                  <label class="tax-mode-option">
+                    <input type="radio" name="tax-mode" id="tax-mode-dutch" value="dutch2025" />
+                    <span>Dutch 2025 (deductions)</span>
+                  </label>
+                </div>
+                <p class="field-note">Choose how the calculator estimates your tax reserve.</p>
+              </div>
               <div class="control">
                 <label for="tax-rate">
                   <span class="label-text">Effective income tax rate (%)</span>

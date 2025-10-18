@@ -10,6 +10,8 @@ import { computeCosts } from './costs.js';
 import { DEFAULT_MODIFIERS, applyModifierDefaults } from './modifiers.js';
 import { deriveTargetNetDefaults } from './income.js';
 
+const TAX_MODE_VALUES = ['simple', 'dutch2025'];
+
 const initialState = {
   incomeTargets: {
     basis: 'year',
@@ -36,6 +38,7 @@ const initialState = {
     bufferPercent: 15
   },
   tax: {
+    mode: 'simple',
     zelfstandigenaftrek: true,
     startersaftrek: false,
     mkbVrijstelling: true,
@@ -62,6 +65,7 @@ const subscribers = new Set();
 
 const serviceOverrides = Object.create(null);
 const taxOverrides = Object.create(null);
+taxOverrides.mode = initialState.tax.mode;
 
 function deepClone(value) {
   if (Array.isArray(value)) {
@@ -233,6 +237,17 @@ export function setSessionLength(rawValue) {
   return normalized;
 }
 
+export function setTaxMode(nextMode) {
+  const mode = typeof nextMode === 'string' && TAX_MODE_VALUES.includes(nextMode)
+    ? nextMode
+    : initialState.tax.mode;
+  taxOverrides.mode = mode;
+  patch({
+    tax: { mode }
+  });
+  return mode;
+}
+
 export function setTaxRatePercent(rawValue) {
   const fallback = Number.isFinite(state.costs.taxRatePercent) ? state.costs.taxRatePercent : 40;
   const normalized = Math.min(Math.max(parseNumber(rawValue, fallback, { min: 0, max: 99.9 }), 0), 99.9);
@@ -318,5 +333,6 @@ export {
   WEEKS_PER_YEAR,
   MONTHS_PER_YEAR,
   BASE_WORK_DAYS_PER_WEEK,
-  TARGET_NET_DEFAULT
+  TARGET_NET_DEFAULT,
+  TAX_MODE_VALUES
 };
