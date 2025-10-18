@@ -2,6 +2,7 @@ import { calcState } from './state.js';
 import { computeCosts } from './costs.js';
 import { deriveIncomeTargets } from './income.js';
 import { normalizeScenarioModifiers } from './modifiers.js';
+import { calculateTaxReserve } from './tax.js';
 
 const SERVICE_COPY = {
   representation: {
@@ -419,7 +420,7 @@ function buildUnitRange(entry, capacityMetrics) {
     .sort((a, b) => a - b);
 }
 
-function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, modifiers) {
+function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, modifiers, taxStrategy) {
   const config = mergeConfig(entry.config, { unitsPerMonth });
   const hours = computeServiceHours(config, capacityMetrics);
   const revenueMetrics = computeServiceRevenue(config, hours, costs);
@@ -448,7 +449,12 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, mod
   const revenueAnnual = revenueMetrics.pricePerUnit * annualUnits;
   const directCostAnnual = directCostPerUnit * annualUnits + fixedAnnual + variableAnnual;
 
-  const taxRate = clamp(toNumber(config.taxRate, costs.taxRate ?? 0), 0, 1);
+  const manualTaxRate = clamp(toNumber(config.taxRate, costs.taxRate ?? 0), 0, 1);
+  const strategyRate = Number.isFinite(taxStrategy?.effectiveTaxRate)
+    ? clamp(taxStrategy.effectiveTaxRate, 0, 1)
+    : null;
+  const usesDutchStrategy = taxStrategy && taxStrategy.mode === 'dutch2025' && strategyRate !== null;
+  const taxRate = usesDutchStrategy ? strategyRate : manualTaxRate;
   const taxAnnual = revenueAnnual * taxRate;
   const netAnnual = revenueAnnual - directCostAnnual - taxAnnual;
 
@@ -629,6 +635,7 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
   );
   const targetNet = incomeTargets.targetNet || 0;
   const modifiers = normalizeScenarioModifiers(snapshot.modifiers);
+  const taxStrategy = calculateTaxReserve(safeState, capacity, costs, incomeTargets);
 
   const serviceEntries = descriptors.map((descriptor) => {
     const storeOverrides = readServiceOverrides(descriptor.id);
@@ -644,7 +651,7 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
     const candidates = buildUnitRange(entry, capacity);
     const normalizedCandidates = candidates.length > 0 ? candidates : [0];
     return normalizedCandidates.map((units) =>
-      evaluateServiceOption(entry, units, capacity, costs, modifiers)
+      evaluateServiceOption(entry, units, capacity, costs, modifiers, taxStrategy)
     );
   });
 
@@ -663,7 +670,8 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       net: 0,
       serviceDays: 0,
       travelDays: 0,
-      handsOnDays: 0
+      handsOnDays: 0,
+      taxMode: taxStrategy ? taxStrategy.mode : null
     };
     const violations = [];
 
@@ -796,7 +804,14 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
 
     const options = serviceOptions[depth] || [];
     if (options.length === 0) {
-      selection[depth] = evaluateServiceOption(serviceEntries[depth], 0, capacity, costs);
+      selection[depth] = evaluateServiceOption(
+        serviceEntries[depth],
+        0,
+        capacity,
+        costs,
+        modifiers,
+        taxStrategy
+      );
       iterate(depth + 1);
       return;
     }
@@ -820,6 +835,7 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
         handsOnDays: 0,
         handsOnShare: 0,
         grossMargin: 0,
+        taxMode: taxStrategy ? taxStrategy.mode : null,
         targetNet,
         netGap: -targetNet
       },
@@ -847,6 +863,7 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       handsOnDays: 0,
       handsOnShare: 0,
       grossMargin: 0,
+      taxMode: taxStrategy ? taxStrategy.mode : null,
       targetNet,
       netGap: -targetNet
     },

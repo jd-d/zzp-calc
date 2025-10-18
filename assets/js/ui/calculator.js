@@ -19,14 +19,17 @@ import {
   setSeasonalityPercent,
   setTravelFrictionPercent,
   setHandsOnQuotaPercent,
+  setTaxMode,
   TARGET_NET_BASIS_VALUES,
-  BASE_WORK_DAYS_PER_WEEK
+  BASE_WORK_DAYS_PER_WEEK,
+  TAX_MODE_VALUES
 } from '../state.js';
 import { deriveCapacity } from '../capacity.js';
 import { deriveTargetNetDefaults, deriveIncomeTargets } from '../income.js';
-import { calculateDutchTax2025 } from '../tax.js';
+import { calculateTaxReserve, resolveTaxMode } from '../tax.js';
 import { computeCosts } from '../costs.js';
 import { normalizeScenarioModifiers } from '../modifiers.js';
+import { announce } from './components.js';
 
 export function initializeCalculatorUI() {
   const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
@@ -38,6 +41,8 @@ export function initializeCalculatorUI() {
     targetNetAverageWeek: document.getElementById('target-net-average-week'),
     targetNetAverageMonth: document.getElementById('target-net-average-month'),
     taxRate: document.getElementById('tax-rate'),
+    taxModeSimple: document.getElementById('tax-mode-simple'),
+    taxModeDutch: document.getElementById('tax-mode-dutch'),
     fixedCosts: document.getElementById('fixed-costs'),
     variableCostPerClass: document.getElementById('variable-cost-class'),
     vatRate: document.getElementById('vat-rate'),
@@ -152,7 +157,7 @@ export function initializeCalculatorUI() {
     const costs = derived && derived.costs ? derived.costs : computeCosts(state, capacity);
     const defaults = deriveTargetNetDefaults(capacity);
     const income = deriveIncomeTargets(state, capacity);
-    const tax = calculateDutchTax2025(state, capacity, costs);
+    const tax = calculateTaxReserve(state, capacity, costs, income);
     return { capacity, defaults, income, costs, modifiers, tax };
   }
 
@@ -299,6 +304,18 @@ export function initializeCalculatorUI() {
       controls.taxRate.value = formatFixed(state.costs.taxRatePercent ?? 40, 1);
     }
 
+    const taxMode = views.tax && typeof views.tax.mode === 'string'
+      ? views.tax.mode
+      : resolveTaxMode(state);
+
+    if (controls.taxModeSimple instanceof HTMLInputElement) {
+      controls.taxModeSimple.checked = taxMode === 'simple';
+    }
+
+    if (controls.taxModeDutch instanceof HTMLInputElement) {
+      controls.taxModeDutch.checked = taxMode === 'dutch2025';
+    }
+
     if (controls.variableCostPerClass instanceof HTMLInputElement) {
       const value = state.costs.variableCostPerClass;
       controls.variableCostPerClass.value = Number.isFinite(value)
@@ -382,6 +399,7 @@ export function initializeCalculatorUI() {
       effectiveTaxRate,
       incomeTax,
       zvwContribution,
+      taxMode,
       fixedCosts,
       annualVariableCosts,
       buffer,
@@ -449,7 +467,8 @@ export function initializeCalculatorUI() {
       taxReserve: totalTaxReserve,
       incomeTax: Number.isFinite(incomeTax) ? incomeTax : null,
       zvwContribution: Number.isFinite(zvwContribution) ? zvwContribution : null,
-      effectiveTaxRate: normalizedEffectiveTaxRate
+      effectiveTaxRate: normalizedEffectiveTaxRate,
+      taxMode
     };
   }
 
@@ -566,6 +585,9 @@ export function initializeCalculatorUI() {
       ? effectiveBillableDays * sessionLength
       : null;
     const taxInfo = tax && typeof tax === 'object' ? tax : {};
+    const taxMode = typeof taxInfo.mode === 'string'
+      ? taxInfo.mode
+      : resolveTaxMode(currentState);
     const targetNet = Number.isFinite(income.targetNet) ? income.targetNet : 0;
     const manualTaxRate = Number.isFinite(costs.taxRate) ? costs.taxRate : 0;
     const effectiveTaxRate = Number.isFinite(taxInfo.effectiveTaxRate)
@@ -786,6 +808,18 @@ export function initializeCalculatorUI() {
 
     const listItems = [];
 
+    const strategyMode = summary && typeof summary.taxMode === 'string'
+      ? summary.taxMode
+      : taxMode;
+    const normalizedMode = TAX_MODE_VALUES.includes(strategyMode) ? strategyMode : TAX_MODE_VALUES[0];
+    const isDutchStrategy = normalizedMode === 'dutch2025';
+    const taxStrategyDescription = isDutchStrategy
+      ? 'Dutch 2025 (entrepreneur deductions + Zvw)'
+      : 'Simple reserve (manual effective rate)';
+    const taxReserveLine = isDutchStrategy
+      ? `Estimated Dutch tax reserve (income + Zvw): ${taxReserveDisplay}`
+      : `Estimated tax reserve (manual rate): ${taxReserveDisplay}`;
+
     if (summary && Number.isFinite(summary.baseRevenue)) {
       const baseDisplay = formatCurrency(currencySymbol, summary.baseRevenue);
       const bufferedDisplay = Number.isFinite(summary.bufferedRevenue)
@@ -794,45 +828,50 @@ export function initializeCalculatorUI() {
       listItems.push(`Gross revenue needed: ${baseDisplay} (with margin: ${bufferedDisplay})`);
     }
 
-    listItems.push(
-      `Net income per year: ${formatCurrency(currencySymbol, targetNet)}`,
-      `Net income per active week: ${targetPerWeekDisplay}`,
-      `Net income per active month: ${targetPerMonthDisplay}`,
-      `Average weekly net income: ${targetAveragePerWeekDisplay}`,
-      `Average monthly net income: ${targetAveragePerMonthDisplay}`,
-      `Estimated profit before income tax: ${profitBeforeTaxDisplay}`,
-      `Estimated Dutch tax reserve (income + Zvw): ${taxReserveDisplay}`,
-      `Income tax portion: ${incomeTaxDisplay}`,
-      `Zvw health contribution: ${zvwContributionDisplay}`,
-      `Effective income tax rate: ${effectiveRateDisplay}%`,
-      `Entrepreneur deduction (zelfstandigenaftrek): ${zelfstandigenaftrekDisplay}`,
-      `Starter deduction (startersaftrek): ${startersaftrekDisplay}`,
-      `MKB-vrijstelling (${mkbVrijstellingRateDisplay}%): ${mkbVrijstellingDisplay}`,
-      `Taxable profit before MKB-vrijstelling: ${taxableBeforeMkbDisplay}`,
-      `Taxable profit after MKB-vrijstelling: ${taxableAfterMkbDisplay}`,
-      `Zvw contribution base: ${zvwBaseDisplay}`,
-      `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
-      `Variable cost per working day: ${formatCurrency(currencySymbol, variableCostPerClass)}`,
-      `Estimated annual variable costs: ${formatCurrency(currencySymbol, annualVariableCosts)}`,
-      `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
-      `Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`,
-      `Days off per week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
-      `Estimated working weeks per year: ${formatFixed(workingWeeks, 2)}`,
-      `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
-      `Target utilization during active weeks: ${utilizationDisplay}%`,
-      `Billable days before travel allowances: ${billableDaysPerYearDisplay} (after travel: ${billableDaysAfterTravelDisplay})`,
-      `Session length assumption: ${sessionLengthDisplay} hours`,
-      `Estimated billable hours per year: ${billableHoursDisplay}`,
-      `Travel days planned per active month: ${travelDaysPerMonthDisplay}; ≈ ${travelDaysPerYearDisplay} days (${travelWeeksPerYearDisplay} weeks) per year`,
-      `Travel allowance impact on availability: ${travelAllowanceDaysDisplay} days (${travelAllowanceSharePercent}% of active days; ${travelAllowanceBillablePercent}% of billable plan)`,
-      `Safety margin applied to revenue: ${bufferEffectiveDisplay}% (base ${bufferBaseDisplay}% + comfort uplift ${comfortMarginDisplay}%)`,
-      `Seasonality drag on availability: ${seasonalityDisplay}%`,
-      `Travel friction overhead applied to travel days: ${travelFrictionDisplay}%`,
-      `Hands-on delivery quota target: ${handsOnQuotaDisplay}% of delivery days`,
-      `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
-      `Currency symbol: ${currencySymbol}`,
-      'Values are rounded to whole currency units for display and CSV export.'
-    );
+    listItems.push(`Net income per year: ${formatCurrency(currencySymbol, targetNet)}`);
+    listItems.push(`Net income per active week: ${targetPerWeekDisplay}`);
+    listItems.push(`Net income per active month: ${targetPerMonthDisplay}`);
+    listItems.push(`Average weekly net income: ${targetAveragePerWeekDisplay}`);
+    listItems.push(`Average monthly net income: ${targetAveragePerMonthDisplay}`);
+    listItems.push(`Estimated profit before income tax: ${profitBeforeTaxDisplay}`);
+    listItems.push(`Tax strategy: ${taxStrategyDescription}`);
+    listItems.push(taxReserveLine);
+    listItems.push(`Income tax portion: ${incomeTaxDisplay}`);
+    if (isDutchStrategy) {
+      listItems.push(`Zvw health contribution: ${zvwContributionDisplay}`);
+    }
+    listItems.push(`Effective income tax rate: ${effectiveRateDisplay}%`);
+    if (isDutchStrategy) {
+      listItems.push(`Entrepreneur deduction (zelfstandigenaftrek): ${zelfstandigenaftrekDisplay}`);
+      listItems.push(`Starter deduction (startersaftrek): ${startersaftrekDisplay}`);
+      listItems.push(`MKB-vrijstelling (${mkbVrijstellingRateDisplay}%): ${mkbVrijstellingDisplay}`);
+      listItems.push(`Taxable profit before MKB-vrijstelling: ${taxableBeforeMkbDisplay}`);
+      listItems.push(`Taxable profit after MKB-vrijstelling: ${taxableAfterMkbDisplay}`);
+      listItems.push(`Zvw contribution base: ${zvwBaseDisplay}`);
+    } else {
+      listItems.push('Dutch entrepreneur deductions are not applied in simple mode.');
+    }
+    listItems.push(`Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`);
+    listItems.push(`Variable cost per working day: ${formatCurrency(currencySymbol, variableCostPerClass)}`);
+    listItems.push(`Estimated annual variable costs: ${formatCurrency(currencySymbol, annualVariableCosts)}`);
+    listItems.push(`Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`);
+    listItems.push(`Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`);
+    listItems.push(`Days off per week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`);
+    listItems.push(`Estimated working weeks per year: ${formatFixed(workingWeeks, 2)}`);
+    listItems.push(`Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`);
+    listItems.push(`Target utilization during active weeks: ${utilizationDisplay}%`);
+    listItems.push(`Billable days before travel allowances: ${billableDaysPerYearDisplay} (after travel: ${billableDaysAfterTravelDisplay})`);
+    listItems.push(`Session length assumption: ${sessionLengthDisplay} hours`);
+    listItems.push(`Estimated billable hours per year: ${billableHoursDisplay}`);
+    listItems.push(`Travel days planned per active month: ${travelDaysPerMonthDisplay}; ≈ ${travelDaysPerYearDisplay} days (${travelWeeksPerYearDisplay} weeks) per year`);
+    listItems.push(`Travel allowance impact on availability: ${travelAllowanceDaysDisplay} days (${travelAllowanceSharePercent}% of active days; ${travelAllowanceBillablePercent}% of billable plan)`);
+    listItems.push(`Safety margin applied to revenue: ${bufferEffectiveDisplay}% (base ${bufferBaseDisplay}% + comfort uplift ${comfortMarginDisplay}%)`);
+    listItems.push(`Seasonality drag on availability: ${seasonalityDisplay}%`);
+    listItems.push(`Travel friction overhead applied to travel days: ${travelFrictionDisplay}%`);
+    listItems.push(`Hands-on delivery quota target: ${handsOnQuotaDisplay}% of delivery days`);
+    listItems.push(`VAT rate: ${formatFixed(vatRate * 100, 1)}%`);
+    listItems.push(`Currency symbol: ${currencySymbol}`);
+    listItems.push('Values are rounded to whole currency units for display and CSV export.');
 
     assumptionsList.innerHTML = listItems.map(item => `<li>${item}</li>`).join('');
   }
@@ -1162,6 +1201,18 @@ export function initializeCalculatorUI() {
       case 'tax-rate':
         setTaxRatePercent(control.value);
         break;
+      case 'tax-mode-simple':
+        if (control.checked) {
+          setTaxMode('simple');
+          announce('Tax strategy updated');
+        }
+        break;
+      case 'tax-mode-dutch':
+        if (control.checked) {
+          setTaxMode('dutch2025');
+          announce('Tax strategy updated');
+        }
+        break;
       case 'variable-cost-class':
         setVariableCostPerClass(control.value);
         break;
@@ -1216,6 +1267,17 @@ export function initializeCalculatorUI() {
     const handsOnQuotaRaw = controls.handsOnQuota instanceof HTMLInputElement
       ? controls.handsOnQuota.value
       : calcState.modifiers?.handsOnQuotaPercent;
+
+    let selectedTaxMode = 'simple';
+    if (controls.taxModeDutch instanceof HTMLInputElement && controls.taxModeDutch.checked) {
+      selectedTaxMode = 'dutch2025';
+    } else if (controls.taxModeSimple instanceof HTMLInputElement && controls.taxModeSimple.checked) {
+      selectedTaxMode = 'simple';
+    } else if (calcState.tax && typeof calcState.tax.mode === 'string' && TAX_MODE_VALUES.includes(calcState.tax.mode)) {
+      selectedTaxMode = calcState.tax.mode;
+    }
+
+    setTaxMode(selectedTaxMode);
 
     const capacityUpdates = {
       monthsOff: parseNumber(monthsOffRaw, calcState.capacity.monthsOff || 0, {
