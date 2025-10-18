@@ -1,9 +1,12 @@
-const WEEKS_PER_YEAR = 52;
-const MONTHS_PER_YEAR = 12;
-const BASE_WORK_DAYS_PER_WEEK = 7;
-const TARGET_NET_DEFAULT = 50000;
-
-const TARGET_NET_BASIS_VALUES = ['year', 'week', 'month', 'avgWeek', 'avgMonth'];
+import {
+  TARGET_NET_BASIS_VALUES,
+  WEEKS_PER_YEAR,
+  MONTHS_PER_YEAR,
+  BASE_WORK_DAYS_PER_WEEK,
+  TARGET_NET_DEFAULT
+} from './constants.js';
+import { deriveCapacity } from './capacity.js';
+import { deriveTargetNetDefaults } from './income.js';
 
 const initialState = {
   incomeTargets: {
@@ -127,50 +130,9 @@ export function parseNumber(value, fallback = 0, { min = -Infinity, max = Infini
   return Math.min(Math.max(parsed, min), max);
 }
 
-export function computeCapacityMetrics(capacityState) {
-  const monthsOff = Math.min(Math.max(Number(capacityState.monthsOff) || 0, 0), 12);
-  const weeksOffPerCycle = Math.min(Math.max(Number(capacityState.weeksOffCycle) || 0, 0), 4);
-  const daysOffPerWeek = Math.min(
-    Math.max(Number(capacityState.daysOffWeek) || 0, 0),
-    BASE_WORK_DAYS_PER_WEEK
-  );
-  const activeMonthShare = Math.min(Math.max((MONTHS_PER_YEAR - monthsOff) / MONTHS_PER_YEAR, 0), 1);
-  const activeMonths = MONTHS_PER_YEAR * activeMonthShare;
-  const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
-  const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
-  const workingDaysPerWeek = Math.max(
-    0,
-    Math.min(BASE_WORK_DAYS_PER_WEEK, BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek)
-  );
-  const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
-
-  return {
-    monthsOff,
-    weeksOffPerCycle,
-    daysOffPerWeek,
-    activeMonthShare,
-    activeMonths,
-    weeksShare,
-    workingWeeks,
-    workingDaysPerWeek,
-    workingDaysPerYear
-  };
-}
-
-export function computeTargetNetDefaults(capacityMetrics) {
-  const { workingWeeks, activeMonths } = capacityMetrics;
-  return {
-    year: TARGET_NET_DEFAULT,
-    week: workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT,
-    month: activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT,
-    averageWeek: TARGET_NET_DEFAULT / WEEKS_PER_YEAR,
-    averageMonth: TARGET_NET_DEFAULT / MONTHS_PER_YEAR
-  };
-}
-
 function refreshIncomeTargetDefaultsFromState() {
-  const capacityMetrics = computeCapacityMetrics(state.capacity);
-  const defaults = computeTargetNetDefaults(capacityMetrics);
+  const capacityMetrics = deriveCapacity(state.capacity);
+  const defaults = deriveTargetNetDefaults(capacityMetrics);
   patch({
     config: {
       defaults: {

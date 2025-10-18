@@ -609,8 +609,6 @@
       patch,
       subscribe,
       parseNumber,
-      computeCapacityMetrics,
-      computeTargetNetDefaults,
       setTargetNetBasis,
       setIncomeTargetValue,
       setMonthsOff,
@@ -627,6 +625,9 @@
       BASE_WORK_DAYS_PER_WEEK,
       TARGET_NET_DEFAULT
     } from './assets/js/state.js';
+    import { deriveCapacity } from './assets/js/capacity.js';
+    import { deriveTargetNetDefaults, deriveIncomeTargets } from './assets/js/income.js';
+    import { computeCosts } from './assets/js/costs.js';
 
     const howToLink = document.getElementById('how-to-link');
     const readmeDialog = document.getElementById('readme-dialog');
@@ -1896,126 +1897,11 @@
       }
     });
 
-    function computeCapacityMetrics(capacityState) {
-      const monthsOff = Math.min(Math.max(Number(capacityState.monthsOff) || 0, 0), 12);
-      const weeksOffPerCycle = Math.min(Math.max(Number(capacityState.weeksOffCycle) || 0, 0), 4);
-      const daysOffPerWeek = Math.min(
-        Math.max(Number(capacityState.daysOffWeek) || 0, 0),
-        BASE_WORK_DAYS_PER_WEEK
-      );
-      const activeMonthShare = Math.min(Math.max((MONTHS_PER_YEAR - monthsOff) / MONTHS_PER_YEAR, 0), 1);
-      const activeMonths = MONTHS_PER_YEAR * activeMonthShare;
-      const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
-      const workingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
-      const workingDaysPerWeek = Math.max(
-        0,
-        Math.min(BASE_WORK_DAYS_PER_WEEK, BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek)
-      );
-      const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
-
-      return {
-        monthsOff,
-        weeksOffPerCycle,
-        daysOffPerWeek,
-        activeMonthShare,
-        activeMonths,
-        weeksShare,
-        workingWeeks,
-        workingDaysPerWeek,
-        workingDaysPerYear
-      };
-    }
-
-    function computeTargetNetDefaults(capacityMetrics) {
-      const { workingWeeks, activeMonths } = capacityMetrics;
-      return {
-        year: TARGET_NET_DEFAULT,
-        week: workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT,
-        month: activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT,
-        averageWeek: TARGET_NET_DEFAULT / WEEKS_PER_YEAR,
-        averageMonth: TARGET_NET_DEFAULT / MONTHS_PER_YEAR
-      };
-    }
-
-    function computeIncomeTargets(state, capacityMetrics) {
-      const defaults = state.config.defaults.incomeTargets || computeTargetNetDefaults(capacityMetrics);
-      const basis = TARGET_NET_BASIS_VALUES.includes(state.incomeTargets.basis)
-        ? state.incomeTargets.basis
-        : 'year';
-      const year = Math.max(state.incomeTargets.year, 0);
-      const week = Math.max(state.incomeTargets.week, 0);
-      const month = Math.max(state.incomeTargets.month, 0);
-      const averageWeek = Math.max(state.incomeTargets.averageWeek, 0);
-      const averageMonth = Math.max(state.incomeTargets.averageMonth, 0);
-
-      let targetNet = year;
-      if (basis === 'week') {
-        targetNet = capacityMetrics.workingWeeks > 0 ? week * capacityMetrics.workingWeeks : year;
-      } else if (basis === 'month') {
-        targetNet = capacityMetrics.activeMonths > 0 ? month * capacityMetrics.activeMonths : year;
-      } else if (basis === 'avgWeek') {
-        targetNet = averageWeek * WEEKS_PER_YEAR;
-      } else if (basis === 'avgMonth') {
-        targetNet = averageMonth * MONTHS_PER_YEAR;
-      }
-
-      targetNet = Math.max(targetNet, 0);
-
-      const hasWorkingWeeks = capacityMetrics.workingWeeks > 0;
-      const hasActiveMonths = capacityMetrics.activeMonths > 0;
-
-      return {
-        basis,
-        year,
-        week,
-        month,
-        averageWeek,
-        averageMonth,
-        targetNet,
-        targetNetPerWeek: hasWorkingWeeks ? targetNet / capacityMetrics.workingWeeks : null,
-        targetNetPerMonth: hasActiveMonths ? targetNet / capacityMetrics.activeMonths : null,
-        targetNetAveragePerWeek: targetNet / WEEKS_PER_YEAR,
-        targetNetAveragePerMonth: targetNet / MONTHS_PER_YEAR,
-        hasWorkingWeeks,
-        hasActiveMonths,
-        defaults
-      };
-    }
-
-    function computeCostMetrics(state, capacityMetrics) {
-      const taxRatePercent = Math.min(Math.max(state.costs.taxRatePercent, 0), 99.9);
-      const taxRate = taxRatePercent / 100;
-      const fixedCosts = Math.max(state.costs.fixedCosts, 0);
-      const variableCostPerClass = Math.max(state.costs.variableCostPerClass, 0);
-      const vatRatePercent = Math.max(state.costs.vatRatePercent, 0);
-      const vatRate = vatRatePercent / 100;
-      const bufferPercent = Math.max(state.costs.bufferPercent, 0);
-      const buffer = bufferPercent / 100;
-      const workingDaysPerYear = Number.isFinite(capacityMetrics.workingDaysPerYear)
-        ? capacityMetrics.workingDaysPerYear
-        : 0;
-      const annualVariableCosts = variableCostPerClass * workingDaysPerYear;
-      const currencySymbol = state.config.currencySymbol || '€';
-
-      return {
-        taxRate,
-        taxRatePercent,
-        fixedCosts,
-        variableCostPerClass,
-        vatRate,
-        vatRatePercent,
-        buffer,
-        bufferPercent,
-        annualVariableCosts,
-        currencySymbol
-      };
-    }
-
     function deriveCalcViews(capacityMetrics, defaults) {
-      const capacity = capacityMetrics || computeCapacityMetrics(calcState.capacity);
-      const incomeDefaults = defaults || computeTargetNetDefaults(capacity);
-      const income = computeIncomeTargets(calcState, capacity);
-      const costs = computeCostMetrics(calcState, capacity);
+      const capacity = capacityMetrics || deriveCapacity(calcState.capacity);
+      const incomeDefaults = defaults || deriveTargetNetDefaults(capacity);
+      const income = deriveIncomeTargets(calcState, capacity);
+      const costs = computeCosts(calcState, capacity);
       return { capacity, defaults: incomeDefaults, income, costs };
     }
 
@@ -2050,8 +1936,8 @@
         ...capacityUpdates
       };
 
-      const capacityMetrics = computeCapacityMetrics(nextCapacity);
-      const defaults = computeTargetNetDefaults(capacityMetrics);
+      const capacityMetrics = deriveCapacity(nextCapacity);
+      const defaults = deriveTargetNetDefaults(capacityMetrics);
 
       const yearRaw = controls.targetNet instanceof HTMLInputElement
         ? controls.targetNet.value
