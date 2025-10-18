@@ -1243,17 +1243,20 @@ header.hero {
   gap: var(--space-2);
 }
 
-.control--tax-mode {
+.control--tax-mode,
+.control--target-mode {
   gap: var(--space-2);
 }
 
-.tax-mode-options {
+.tax-mode-options,
+.target-mode-options {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
 }
 
-.tax-mode-option {
+.tax-mode-option,
+.target-mode-option {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -1264,10 +1267,15 @@ header.hero {
   cursor: pointer;
 }
 
-.tax-mode-option input[type='radio'] {
+.tax-mode-option input[type='radio'],
+.target-mode-option input[type='radio'] {
   width: 1rem;
   height: 1rem;
   accent-color: var(--accent-strong);
+}
+
+.income-target-presets {
+  gap: var(--space-2);
 }
 
 .control label {

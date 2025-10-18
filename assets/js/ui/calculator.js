@@ -20,13 +20,17 @@ import {
   setTravelFrictionPercent,
   setHandsOnQuotaPercent,
   setTaxMode,
+  setIncomeTargetMode,
   TARGET_NET_BASIS_VALUES,
+  TARGET_INCOME_MODES,
+  WEEKS_PER_YEAR,
+  MONTHS_PER_YEAR,
   BASE_WORK_DAYS_PER_WEEK,
   TAX_MODE_VALUES
 } from '../state.js';
 import { deriveCapacity } from '../capacity.js';
 import { deriveTargetNetDefaults, deriveIncomeTargets } from '../income.js';
-import { calculateTaxReserve, resolveTaxMode } from '../tax.js';
+import { calculateTaxReserve, calculateTaxFromProfit, resolveTaxMode } from '../tax.js';
 import { computeCosts } from '../costs.js';
 import { normalizeScenarioModifiers } from '../modifiers.js';
 import { announce } from './components.js';
@@ -43,6 +47,8 @@ export function initializeCalculatorUI() {
     taxRate: document.getElementById('tax-rate'),
     taxModeSimple: document.getElementById('tax-mode-simple'),
     taxModeDutch: document.getElementById('tax-mode-dutch'),
+    targetModeNet: document.getElementById('target-mode-net'),
+    targetModeGross: document.getElementById('target-mode-gross'),
     fixedCosts: document.getElementById('fixed-costs'),
     variableCostPerClass: document.getElementById('variable-cost-class'),
     vatRate: document.getElementById('vat-rate'),
@@ -62,11 +68,63 @@ export function initializeCalculatorUI() {
     workingWeeksDisplay: document.getElementById('working-weeks-display'),
     workingDaysDisplay: document.getElementById('working-days-display'),
     rememberInputs: document.getElementById('remember-inputs'),
-    resetSavedInputs: document.getElementById('reset-saved-inputs')
+    resetSavedInputs: document.getElementById('reset-saved-inputs'),
+    incomePresetContainer: document.getElementById('income-target-presets')
   };
 
   const tablesContainer = document.getElementById('tables-container');
   const assumptionsList = document.getElementById('assumptions-list');
+
+  const incomeLabelElements = {
+    year: document.querySelector('[data-target-label="year"]'),
+    week: document.querySelector('[data-target-label="week"]'),
+    month: document.querySelector('[data-target-label="month"]'),
+    avgWeek: document.querySelector('[data-target-label="avgWeek"]'),
+    avgMonth: document.querySelector('[data-target-label="avgMonth"]')
+  };
+
+  const incomeTooltipElements = {
+    year: document.querySelector('[data-target-tooltip="year"]'),
+    week: document.querySelector('[data-target-tooltip="week"]'),
+    month: document.querySelector('[data-target-tooltip="month"]'),
+    avgWeek: document.querySelector('[data-target-tooltip="avgWeek"]'),
+    avgMonth: document.querySelector('[data-target-tooltip="avgMonth"]')
+  };
+
+  const incomeTargetCopy = {
+    net: {
+      labels: {
+        year: 'Net income per year',
+        week: 'Net income per active week',
+        month: 'Net income per active month',
+        avgWeek: 'Average weekly net income',
+        avgMonth: 'Average monthly net income'
+      },
+      tooltips: {
+        year: 'Amount you want to take home after income taxes.',
+        week: 'Weeks you are actively teaching after factoring in planned time off.',
+        month: 'Active months exclude the time off set below.',
+        avgWeek: 'Average over every week in the year, including planned time off.',
+        avgMonth: 'Average over every month in the year, including planned time off.'
+      }
+    },
+    gross: {
+      labels: {
+        year: 'Gross revenue per year',
+        week: 'Gross revenue per active week',
+        month: 'Gross revenue per active month',
+        avgWeek: 'Average weekly gross revenue',
+        avgMonth: 'Average monthly gross revenue'
+      },
+      tooltips: {
+        year: 'Total revenue before costs and income taxes.',
+        week: 'Revenue per active teaching week before costs and taxes.',
+        month: 'Revenue per active month before costs and taxes.',
+        avgWeek: 'Average weekly revenue across the full year before costs and taxes.',
+        avgMonth: 'Average monthly revenue across the full year before costs and taxes.'
+      }
+    }
+  };
 
   const TARGET_NET_BASIS_BY_INPUT_ID = {
     'target-net': 'year',
@@ -75,6 +133,11 @@ export function initializeCalculatorUI() {
     'target-net-average-week': 'avgWeek',
     'target-net-average-month': 'avgMonth'
   };
+
+  const incomePresetButtons = controls.incomePresetContainer instanceof HTMLElement
+    ? Array.from(controls.incomePresetContainer.querySelectorAll('button[data-target-value]'))
+    : [];
+  let activeIncomePresetButton = null;
 
   const fixedCostFields = {
     location: {
@@ -125,6 +188,7 @@ export function initializeCalculatorUI() {
   let calcState = get();
   let calcDerived = getDerived();
   let latestResults = [];
+  let latestSummary = null;
   let persistenceEnabled = false;
   let persistableInputsCache = null;
   let tablesLayoutUpdateScheduled = false;
@@ -156,8 +220,47 @@ export function initializeCalculatorUI() {
       : deriveCapacity(state.capacity, state.modifiers);
     const costs = derived && derived.costs ? derived.costs : computeCosts(state, capacity);
     const defaults = deriveTargetNetDefaults(capacity);
-    const income = deriveIncomeTargets(state, capacity);
-    const tax = calculateTaxReserve(state, capacity, costs, income);
+    const incomeBase = deriveIncomeTargets(state, capacity);
+    const income = { ...incomeBase };
+    const targetMode = TARGET_INCOME_MODES.includes(income.mode) ? income.mode : 'net';
+
+    let tax;
+
+    if (targetMode === 'gross') {
+      const fixedCosts = Number.isFinite(costs.fixedCosts) ? costs.fixedCosts : 0;
+      const annualVariableCosts = Number.isFinite(costs.annualVariableCosts) ? costs.annualVariableCosts : 0;
+      const targetGross = Number.isFinite(income.targetGross)
+        ? Math.max(income.targetGross, 0)
+        : Math.max(income.targetAnnual || 0, 0);
+      const profitBeforeTax = Math.max(targetGross - fixedCosts - annualVariableCosts, 0);
+      const grossTax = calculateTaxFromProfit(state, costs, profitBeforeTax);
+      const netIncome = Number.isFinite(grossTax?.netIncome)
+        ? Math.max(grossTax.netIncome, 0)
+        : Math.max(profitBeforeTax - Math.max(grossTax?.taxReserve || 0, 0), 0);
+
+      income.targetGross = targetGross;
+      income.targetNet = netIncome;
+      income.resultingNet = netIncome;
+
+      tax = grossTax && typeof grossTax === 'object'
+        ? {
+          ...grossTax,
+          targetNet: netIncome,
+          netIncome
+        }
+        : grossTax;
+    } else {
+      tax = calculateTaxReserve(state, capacity, costs, income);
+      const netIncome = Number.isFinite(income.targetNet) ? Math.max(income.targetNet, 0) : 0;
+      income.resultingNet = netIncome;
+      if (tax && typeof tax === 'object') {
+        tax = {
+          ...tax,
+          netIncome: Number.isFinite(tax.netIncome) ? tax.netIncome : netIncome
+        };
+      }
+    }
+
     return { capacity, defaults, income, costs, modifiers, tax };
   }
 
@@ -175,6 +278,49 @@ export function initializeCalculatorUI() {
     const rounded = Math.round(value);
     const formatted = numberFormatter.format(Math.abs(rounded));
     return rounded < 0 ? `-${symbol}${formatted}` : `${symbol}${formatted}`;
+  }
+
+  function applyTargetModeCopy(mode) {
+    const copy = incomeTargetCopy[mode] || incomeTargetCopy.net;
+    Object.entries(copy.labels).forEach(([key, text]) => {
+      const element = incomeLabelElements[key];
+      if (element) {
+        element.textContent = text;
+      }
+    });
+    Object.entries(copy.tooltips).forEach(([key, text]) => {
+      const tooltip = incomeTooltipElements[key];
+      if (tooltip) {
+        tooltip.setAttribute('aria-label', text);
+        tooltip.setAttribute('data-tooltip', text);
+      }
+    });
+  }
+
+  function setActiveIncomePreset(button) {
+    if (activeIncomePresetButton === button) {
+      return;
+    }
+    if (activeIncomePresetButton) {
+      activeIncomePresetButton.classList.remove('is-active');
+      activeIncomePresetButton.setAttribute('aria-pressed', 'false');
+    }
+    if (button) {
+      button.classList.add('is-active');
+      button.setAttribute('aria-pressed', 'true');
+    }
+    activeIncomePresetButton = button || null;
+  }
+
+  function syncIncomePresetHighlight(targetAnnualValue) {
+    if (!incomePresetButtons.length) {
+      return;
+    }
+    const matched = incomePresetButtons.find(button => {
+      const value = Number(button.dataset.targetValue);
+      return Number.isFinite(value) && Math.abs(value - targetAnnualValue) < 1;
+    });
+    setActiveIncomePreset(matched || null);
   }
 
   function getFixedCostTotal() {
@@ -260,23 +406,44 @@ export function initializeCalculatorUI() {
   function applyCalcStateToControls(state, views = {}) {
     const { capacity = {}, income = {}, modifiers = {} } = views;
     const basis = income.basis || state.incomeTargets.basis;
+    const modeFromState = TARGET_INCOME_MODES.includes(state.incomeTargets.mode)
+      ? state.incomeTargets.mode
+      : 'net';
+    const targetMode = TARGET_INCOME_MODES.includes(income.mode)
+      ? income.mode
+      : modeFromState;
+
+    applyTargetModeCopy(targetMode);
+
+    if (controls.targetModeNet instanceof HTMLInputElement) {
+      controls.targetModeNet.checked = targetMode === 'net';
+    }
+
+    if (controls.targetModeGross instanceof HTMLInputElement) {
+      controls.targetModeGross.checked = targetMode === 'gross';
+    }
+
+    const targetAnnual = Number.isFinite(income.targetAnnual)
+      ? income.targetAnnual
+      : Number.isFinite(state.incomeTargets.year)
+        ? state.incomeTargets.year
+        : 0;
 
     if (controls.targetNet instanceof HTMLInputElement) {
-      const yearValue = Number.isFinite(income.targetNet) ? income.targetNet : state.incomeTargets.year;
-      controls.targetNet.value = yearValue == null || !Number.isFinite(yearValue)
+      controls.targetNet.value = targetAnnual == null || !Number.isFinite(targetAnnual)
         ? ''
-        : formatFixed(Math.max(yearValue || 0, 0), 2);
+        : formatFixed(Math.max(targetAnnual || 0, 0), 2);
     }
 
     if (controls.targetNetWeek instanceof HTMLInputElement) {
-      const displayValue = basis === 'week' ? state.incomeTargets.week : income.targetNetPerWeek;
+      const displayValue = basis === 'week' ? state.incomeTargets.week : income.targetPerWeek;
       controls.targetNetWeek.value = displayValue == null || !Number.isFinite(displayValue)
         ? ''
         : formatFixed(displayValue, 2);
     }
 
     if (controls.targetNetMonth instanceof HTMLInputElement) {
-      const displayValue = basis === 'month' ? state.incomeTargets.month : income.targetNetPerMonth;
+      const displayValue = basis === 'month' ? state.incomeTargets.month : income.targetPerMonth;
       controls.targetNetMonth.value = displayValue == null || !Number.isFinite(displayValue)
         ? ''
         : formatFixed(displayValue, 2);
@@ -285,7 +452,7 @@ export function initializeCalculatorUI() {
     if (controls.targetNetAverageWeek instanceof HTMLInputElement) {
       const displayValue = basis === 'avgWeek'
         ? state.incomeTargets.averageWeek
-        : income.targetNetAveragePerWeek;
+        : income.targetAveragePerWeek;
       controls.targetNetAverageWeek.value = displayValue == null || !Number.isFinite(displayValue)
         ? ''
         : formatFixed(displayValue, 2);
@@ -294,11 +461,13 @@ export function initializeCalculatorUI() {
     if (controls.targetNetAverageMonth instanceof HTMLInputElement) {
       const displayValue = basis === 'avgMonth'
         ? state.incomeTargets.averageMonth
-        : income.targetNetAveragePerMonth;
+        : income.targetAveragePerMonth;
       controls.targetNetAverageMonth.value = displayValue == null || !Number.isFinite(displayValue)
         ? ''
         : formatFixed(displayValue, 2);
     }
+
+    syncIncomePresetHighlight(targetAnnual);
 
     if (controls.taxRate instanceof HTMLInputElement) {
       controls.taxRate.value = formatFixed(state.costs.taxRatePercent ?? 40, 1);
@@ -393,7 +562,12 @@ export function initializeCalculatorUI() {
 
   function computeRevenueSummary(inputs) {
     const {
+      targetMode,
+      targetLabel,
+      targetAnnual,
+      targetGross,
       targetNet,
+      netIncome,
       profitBeforeTax,
       taxReserve,
       effectiveTaxRate,
@@ -410,15 +584,35 @@ export function initializeCalculatorUI() {
       billableHours
     } = inputs;
 
-    const normalizedProfitBeforeTax = Number.isFinite(profitBeforeTax) && profitBeforeTax > 0
+    const normalizedMode = TARGET_INCOME_MODES.includes(targetMode) ? targetMode : 'net';
+    const normalizedTargetAnnual = Number.isFinite(targetAnnual) ? Math.max(targetAnnual, 0) : 0;
+    const normalizedTargetNet = Number.isFinite(targetNet)
+      ? Math.max(targetNet, 0)
+      : normalizedMode === 'net'
+        ? normalizedTargetAnnual
+        : 0;
+    const normalizedNetIncome = Number.isFinite(netIncome)
+      ? Math.max(netIncome, 0)
+      : normalizedTargetNet;
+    const grossTargetValue = Number.isFinite(targetGross)
+      ? Math.max(targetGross, 0)
+      : normalizedMode === 'gross'
+        ? normalizedTargetAnnual
+        : normalizedTargetNet + fixedCosts + annualVariableCosts;
+
+    const fallbackProfit = normalizedMode === 'gross'
+      ? Math.max(grossTargetValue - fixedCosts - annualVariableCosts, 0)
+      : normalizedTargetNet;
+
+    const normalizedProfitBeforeTax = Number.isFinite(profitBeforeTax) && profitBeforeTax >= 0
       ? profitBeforeTax
-      : targetNet;
+      : fallbackProfit;
     const normalizedTaxReserve = Number.isFinite(taxReserve)
       ? Math.max(taxReserve, 0)
-      : Math.max(normalizedProfitBeforeTax - targetNet, 0);
+      : Math.max(normalizedProfitBeforeTax - normalizedNetIncome, 0);
     const derivedProfitBeforeTax = normalizedProfitBeforeTax > 0
       ? normalizedProfitBeforeTax
-      : targetNet + normalizedTaxReserve;
+      : normalizedNetIncome + normalizedTaxReserve;
     const totalTaxReserve = normalizedTaxReserve;
     const baseRevenue = derivedProfitBeforeTax + fixedCosts + annualVariableCosts;
     const bufferedRevenue = baseRevenue * (1 + buffer);
@@ -450,6 +644,18 @@ export function initializeCalculatorUI() {
       ? bufferedRevenue / billableHours
       : null;
 
+    const netMonthly = Number.isFinite(activeMonths) && activeMonths > 0
+      ? normalizedNetIncome / activeMonths
+      : null;
+    const netWeekly = Number.isFinite(workingWeeks) && workingWeeks > 0
+      ? normalizedNetIncome / workingWeeks
+      : null;
+    const netDaily = Number.isFinite(workingDaysPerYear) && workingDaysPerYear > 0
+      ? normalizedNetIncome / workingDaysPerYear
+      : null;
+    const netAverageWeek = normalizedNetIncome / WEEKS_PER_YEAR;
+    const netAverageMonth = normalizedNetIncome / MONTHS_PER_YEAR;
+
     return {
       baseRevenue,
       bufferedRevenue,
@@ -468,7 +674,18 @@ export function initializeCalculatorUI() {
       incomeTax: Number.isFinite(incomeTax) ? incomeTax : null,
       zvwContribution: Number.isFinite(zvwContribution) ? zvwContribution : null,
       effectiveTaxRate: normalizedEffectiveTaxRate,
-      taxMode
+      taxMode,
+      targetMode: normalizedMode,
+      targetLabel: targetLabel || (normalizedMode === 'gross' ? 'Gross revenue' : 'Net income'),
+      targetAnnual: normalizedTargetAnnual,
+      targetGross: grossTargetValue,
+      targetNet: normalizedNetIncome,
+      netIncome: normalizedNetIncome,
+      netMonthly,
+      netWeekly,
+      netDaily,
+      netAverageWeek,
+      netAverageMonth
     };
   }
 
@@ -481,12 +698,19 @@ export function initializeCalculatorUI() {
       `;
     }
 
+    const modeLabel = summary.targetMode === 'gross'
+      ? 'Gross revenue target'
+      : 'Gross revenue needed';
+    const baseBasis = summary.targetMode === 'gross'
+      ? 'Before safety margin. Subtracts fixed and estimated variable costs to show expected profit before tax.'
+      : 'Includes fixed costs and estimated variable costs before applying the safety margin.';
+
     const rows = [
       {
         label: 'Annual total',
         base: summary.baseRevenue,
         buffered: summary.bufferedRevenue,
-        basis: 'Includes fixed costs and estimated variable costs before applying the safety margin.'
+        basis: baseBasis
       },
       {
         label: 'Active month',
@@ -543,7 +767,7 @@ export function initializeCalculatorUI() {
         <div class="card">
           <table>
             <caption>
-              Gross revenue needed (base vs. safety margin +${bufferLabel}%)
+              ${modeLabel} (base vs. safety margin +${bufferLabel}%)
             </caption>
             <thead>
               <tr>
@@ -588,21 +812,69 @@ export function initializeCalculatorUI() {
     const taxMode = typeof taxInfo.mode === 'string'
       ? taxInfo.mode
       : resolveTaxMode(currentState);
-    const targetNet = Number.isFinite(income.targetNet) ? income.targetNet : 0;
+    const targetMode = TARGET_INCOME_MODES.includes(income.mode)
+      ? income.mode
+      : (TARGET_INCOME_MODES.includes(currentState?.incomeTargets?.mode)
+        ? currentState.incomeTargets.mode
+        : 'net');
+    const targetLabel = typeof income.label === 'string'
+      ? income.label
+      : targetMode === 'gross'
+        ? 'Gross revenue'
+        : 'Net income';
+    const targetAnnual = Number.isFinite(income.targetAnnual)
+      ? income.targetAnnual
+      : Number.isFinite(currentState.incomeTargets?.year)
+        ? currentState.incomeTargets.year
+        : 0;
+    const targetPerWeek = income.targetPerWeek;
+    const targetPerMonth = income.targetPerMonth;
+    const targetAveragePerWeek = income.targetAveragePerWeek;
+    const targetAveragePerMonth = income.targetAveragePerMonth;
+    const targetGross = Number.isFinite(income.targetGross)
+      ? income.targetGross
+      : targetMode === 'gross'
+        ? targetAnnual
+        : null;
+    const targetNet = Number.isFinite(income.targetNet)
+      ? income.targetNet
+      : targetMode === 'net'
+        ? targetAnnual
+        : Number.isFinite(taxInfo.netIncome)
+          ? taxInfo.netIncome
+          : Number.isFinite(income.resultingNet)
+            ? income.resultingNet
+            : null;
+    const netIncomeValue = Number.isFinite(taxInfo.netIncome)
+      ? taxInfo.netIncome
+      : Number.isFinite(income.resultingNet)
+        ? income.resultingNet
+        : targetNet;
+    const normalizedNet = Number.isFinite(netIncomeValue) ? Math.max(netIncomeValue, 0) : 0;
     const manualTaxRate = Number.isFinite(costs.taxRate) ? costs.taxRate : 0;
     const effectiveTaxRate = Number.isFinite(taxInfo.effectiveTaxRate)
       ? taxInfo.effectiveTaxRate
       : manualTaxRate;
     const boundedRate = Math.min(Math.max(effectiveTaxRate, 0), 0.99);
-    const fallbackProfitBeforeTax = boundedRate < 0.999
-      ? targetNet / Math.max(1 - boundedRate, 0.0001)
-      : targetNet;
-    const profitBeforeTax = Number.isFinite(taxInfo.profitBeforeTax) && taxInfo.profitBeforeTax > 0
-      ? taxInfo.profitBeforeTax
-      : fallbackProfitBeforeTax;
+
+    let profitBeforeTax;
+    if (Number.isFinite(taxInfo.profitBeforeTax) && taxInfo.profitBeforeTax >= 0) {
+      profitBeforeTax = taxInfo.profitBeforeTax;
+    } else if (targetMode === 'gross') {
+      const fixed = Number.isFinite(costs.fixedCosts) ? costs.fixedCosts : 0;
+      const variable = Number.isFinite(costs.annualVariableCosts) ? costs.annualVariableCosts : 0;
+      const grossValue = Number.isFinite(targetGross) ? Math.max(targetGross, 0) : Math.max(targetAnnual, 0);
+      profitBeforeTax = Math.max(grossValue - fixed - variable, 0);
+    } else {
+      const normalizedTargetNet = Number.isFinite(targetNet) ? Math.max(targetNet, 0) : Math.max(targetAnnual, 0);
+      profitBeforeTax = boundedRate < 0.999
+        ? normalizedTargetNet / Math.max(1 - boundedRate, 0.0001)
+        : normalizedTargetNet;
+    }
+
     const taxReserve = Number.isFinite(taxInfo.taxReserve)
       ? taxInfo.taxReserve
-      : Math.max(profitBeforeTax - targetNet, 0);
+      : Math.max(profitBeforeTax - normalizedNet, 0);
     const incomeTax = Number.isFinite(taxInfo.incomeTax) ? taxInfo.incomeTax : null;
     const zvwContribution = Number.isFinite(taxInfo.zvwContribution) ? taxInfo.zvwContribution : null;
     const zelfstandigenaftrek = Number.isFinite(taxInfo.zelfstandigenaftrek) ? taxInfo.zelfstandigenaftrek : null;
@@ -613,11 +885,16 @@ export function initializeCalculatorUI() {
     const taxableProfitAfterMkb = Number.isFinite(taxInfo.taxableProfitAfterMkb) ? taxInfo.taxableProfitAfterMkb : null;
     const zvwBase = Number.isFinite(taxInfo.zvwBase) ? taxInfo.zvwBase : null;
     return {
+      targetMode,
+      targetLabel,
+      targetAnnual,
+      targetPerWeek,
+      targetPerMonth,
+      targetAveragePerWeek,
+      targetAveragePerMonth,
       targetNet,
-      targetNetPerWeek: income.targetNetPerWeek,
-      targetNetPerMonth: income.targetNetPerMonth,
-      targetNetAveragePerWeek: income.targetNetAveragePerWeek,
-      targetNetAveragePerMonth: income.targetNetAveragePerMonth,
+      targetGross,
+      netIncome: normalizedNet,
       effectiveTaxRate,
       taxReserve,
       incomeTax,
@@ -674,11 +951,16 @@ export function initializeCalculatorUI() {
 
     const {
       currencySymbol,
+      targetMode,
+      targetLabel,
+      targetAnnual,
       targetNet,
-      targetNetPerWeek,
-      targetNetPerMonth,
-      targetNetAveragePerWeek,
-      targetNetAveragePerMonth,
+      targetPerWeek,
+      targetPerMonth,
+      targetAveragePerWeek,
+      targetAveragePerMonth,
+      targetGross,
+      netIncome,
       effectiveTaxRate,
       taxReserve,
       incomeTax,
@@ -746,17 +1028,17 @@ export function initializeCalculatorUI() {
     const travelFrictionDisplay = formatFixed(travelFrictionPercent ?? 0, 1);
     const handsOnQuotaDisplay = formatFixed(handsOnQuotaPercent ?? 0, 1);
 
-    const targetPerWeekDisplay = Number.isFinite(targetNetPerWeek)
-      ? formatCurrency(currencySymbol, targetNetPerWeek)
+    const targetPerWeekDisplay = Number.isFinite(targetPerWeek)
+      ? formatCurrency(currencySymbol, targetPerWeek)
       : '—';
-    const targetPerMonthDisplay = Number.isFinite(targetNetPerMonth)
-      ? formatCurrency(currencySymbol, targetNetPerMonth)
+    const targetPerMonthDisplay = Number.isFinite(targetPerMonth)
+      ? formatCurrency(currencySymbol, targetPerMonth)
       : '—';
-    const targetAveragePerWeekDisplay = Number.isFinite(targetNetAveragePerWeek)
-      ? formatCurrency(currencySymbol, targetNetAveragePerWeek)
+    const targetAveragePerWeekDisplay = Number.isFinite(targetAveragePerWeek)
+      ? formatCurrency(currencySymbol, targetAveragePerWeek)
       : '—';
-    const targetAveragePerMonthDisplay = Number.isFinite(targetNetAveragePerMonth)
-      ? formatCurrency(currencySymbol, targetNetAveragePerMonth)
+    const targetAveragePerMonthDisplay = Number.isFinite(targetAveragePerMonth)
+      ? formatCurrency(currencySymbol, targetAveragePerMonth)
       : '—';
     const profitBeforeTaxValue = summary && Number.isFinite(summary.profitBeforeTax)
       ? summary.profitBeforeTax
@@ -806,6 +1088,24 @@ export function initializeCalculatorUI() {
       ? formatCurrency(currencySymbol, zvwBase)
       : '—';
 
+    const normalizedTargetLabel = targetLabel || (targetMode === 'gross' ? 'Gross revenue' : 'Net income');
+    const summaryNetIncome = summary && Number.isFinite(summary.netIncome)
+      ? summary.netIncome
+      : Number.isFinite(netIncome)
+        ? netIncome
+        : Number.isFinite(targetNet)
+          ? targetNet
+          : 0;
+    const summaryNetWeekly = summary && Number.isFinite(summary.netWeekly) ? summary.netWeekly : null;
+    const summaryNetMonthly = summary && Number.isFinite(summary.netMonthly) ? summary.netMonthly : null;
+    const summaryNetDaily = summary && Number.isFinite(summary.netDaily) ? summary.netDaily : null;
+    const summaryNetAverageWeek = summary && Number.isFinite(summary.netAverageWeek)
+      ? summary.netAverageWeek
+      : (summaryNetIncome / WEEKS_PER_YEAR);
+    const summaryNetAverageMonth = summary && Number.isFinite(summary.netAverageMonth)
+      ? summary.netAverageMonth
+      : (summaryNetIncome / MONTHS_PER_YEAR);
+
     const listItems = [];
 
     const strategyMode = summary && typeof summary.taxMode === 'string'
@@ -825,14 +1125,44 @@ export function initializeCalculatorUI() {
       const bufferedDisplay = Number.isFinite(summary.bufferedRevenue)
         ? formatCurrency(currencySymbol, summary.bufferedRevenue)
         : '—';
-      listItems.push(`Gross revenue needed: ${baseDisplay} (with margin: ${bufferedDisplay})`);
+      const revenueLabel = summary.targetMode === 'gross'
+        ? 'Gross revenue target'
+        : 'Gross revenue needed';
+      listItems.push(`${revenueLabel}: ${baseDisplay} (with margin: ${bufferedDisplay})`);
     }
 
-    listItems.push(`Net income per year: ${formatCurrency(currencySymbol, targetNet)}`);
-    listItems.push(`Net income per active week: ${targetPerWeekDisplay}`);
-    listItems.push(`Net income per active month: ${targetPerMonthDisplay}`);
-    listItems.push(`Average weekly net income: ${targetAveragePerWeekDisplay}`);
-    listItems.push(`Average monthly net income: ${targetAveragePerMonthDisplay}`);
+    const annualTargetDisplay = formatCurrency(currencySymbol, Number.isFinite(targetAnnual) ? targetAnnual : targetNet);
+    listItems.push(`${normalizedTargetLabel} per year: ${annualTargetDisplay}`);
+    listItems.push(`${normalizedTargetLabel} per active week: ${targetPerWeekDisplay}`);
+    listItems.push(`${normalizedTargetLabel} per active month: ${targetPerMonthDisplay}`);
+    listItems.push(`Average weekly ${normalizedTargetLabel.toLowerCase()}: ${targetAveragePerWeekDisplay}`);
+    listItems.push(`Average monthly ${normalizedTargetLabel.toLowerCase()}: ${targetAveragePerMonthDisplay}`);
+
+    if (targetMode === 'gross') {
+      const netAnnualDisplay = formatCurrency(currencySymbol, summaryNetIncome);
+      const netWeeklyDisplay = Number.isFinite(summaryNetWeekly)
+        ? formatCurrency(currencySymbol, summaryNetWeekly)
+        : '—';
+      const netMonthlyDisplay = Number.isFinite(summaryNetMonthly)
+        ? formatCurrency(currencySymbol, summaryNetMonthly)
+        : '—';
+      const netDailyDisplay = Number.isFinite(summaryNetDaily)
+        ? formatCurrency(currencySymbol, summaryNetDaily)
+        : '—';
+      const netAvgWeekDisplay = Number.isFinite(summaryNetAverageWeek)
+        ? formatCurrency(currencySymbol, summaryNetAverageWeek)
+        : '—';
+      const netAvgMonthDisplay = Number.isFinite(summaryNetAverageMonth)
+        ? formatCurrency(currencySymbol, summaryNetAverageMonth)
+        : '—';
+      listItems.push(`Estimated net after taxes per year: ${netAnnualDisplay}`);
+      listItems.push(`Estimated net per active week: ${netWeeklyDisplay}`);
+      listItems.push(`Estimated net per active month: ${netMonthlyDisplay}`);
+      listItems.push(`Estimated net per active day: ${netDailyDisplay}`);
+      listItems.push(`Average weekly net after taxes: ${netAvgWeekDisplay}`);
+      listItems.push(`Average monthly net after taxes: ${netAvgMonthDisplay}`);
+    }
+
     listItems.push(`Estimated profit before income tax: ${profitBeforeTaxDisplay}`);
     listItems.push(`Tax strategy: ${taxStrategyDescription}`);
     listItems.push(taxReserveLine);
@@ -880,13 +1210,18 @@ export function initializeCalculatorUI() {
     const inputs = extractInputsFromViews(views, state);
     const summary = computeRevenueSummary(inputs);
 
+    latestSummary = summary && Number.isFinite(summary.baseRevenue) ? summary : null;
+
     if (summary && Number.isFinite(summary.baseRevenue)) {
+      const baseBasis = summary.targetMode === 'gross'
+        ? 'Before safety margin. Subtracts fixed and estimated variable costs to show expected profit before tax.'
+        : 'Includes fixed and estimated variable costs.';
       latestResults = [
         {
           label: 'Annual total',
           base: summary.baseRevenue,
           buffered: summary.bufferedRevenue,
-          basis: 'Includes fixed and estimated variable costs.'
+          basis: baseBasis
         },
         {
           label: 'Active month',
@@ -947,12 +1282,15 @@ export function initializeCalculatorUI() {
       return;
     }
 
-    const header = 'Period,Base gross revenue,Buffered gross revenue,Basis';
+    const focusDescription = latestSummary && latestSummary.targetMode === 'gross'
+      ? 'Gross revenue target'
+      : 'Gross revenue needed for net take-home';
+    const header = 'Period,Base gross revenue,Buffered gross revenue,Basis,Target focus';
     const rows = latestResults.map(entry => {
       const base = Number.isFinite(entry.base) ? Math.round(entry.base) : '';
       const buffered = Number.isFinite(entry.buffered) ? Math.round(entry.buffered) : '';
       const basis = entry.basis ? entry.basis.replace(/,/g, ';') : '';
-      return [entry.label, base, buffered, basis].join(',');
+      return [entry.label, base, buffered, basis, focusDescription].join(',');
     });
 
     const csvContent = [header, ...rows].join('\n');
@@ -968,12 +1306,43 @@ export function initializeCalculatorUI() {
     URL.revokeObjectURL(url);
 
     if (controls.statusMessage) {
-      controls.statusMessage.textContent = 'CSV download started. File lists base and buffered gross revenue targets.';
+      controls.statusMessage.textContent = `CSV download started. File lists base and buffered gross revenue (${focusDescription.toLowerCase()}).`;
       setTimeout(() => {
         if (controls.statusMessage) {
           controls.statusMessage.textContent = '';
         }
       }, 2500);
+    }
+  }
+
+  function handleIncomePresetClick(event) {
+    if (!(event.target instanceof HTMLElement)) {
+      return;
+    }
+    const button = event.target.closest('button[data-target-value]');
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    const value = Number(button.dataset.targetValue);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+
+    setTargetNetBasis('year');
+    setIncomeTargetValue('year', value);
+    setActiveIncomePreset(button);
+
+    const symbol = typeof calcState.config?.currencySymbol === 'string' && calcState.config.currencySymbol
+      ? calcState.config.currencySymbol
+      : '€';
+    announce(`Annual target set to ${formatCurrency(symbol, value)}.`);
+
+    if (persistenceEnabled) {
+      setTimeout(() => {
+        savePersistedInputs({ [PERSISTED_TARGET_NET_BASIS_KEY]: 'year' });
+      }, 0);
     }
   }
 
@@ -1213,6 +1582,18 @@ export function initializeCalculatorUI() {
           announce('Tax strategy updated');
         }
         break;
+      case 'target-mode-net':
+        if (control.checked) {
+          setIncomeTargetMode('net');
+          announce('Target amounts now use net take-home.');
+        }
+        break;
+      case 'target-mode-gross':
+        if (control.checked) {
+          setIncomeTargetMode('gross');
+          announce('Target amounts now use gross revenue.');
+        }
+        break;
       case 'variable-cost-class':
         setVariableCostPerClass(control.value);
         break;
@@ -1267,6 +1648,18 @@ export function initializeCalculatorUI() {
     const handsOnQuotaRaw = controls.handsOnQuota instanceof HTMLInputElement
       ? controls.handsOnQuota.value
       : calcState.modifiers?.handsOnQuotaPercent;
+
+    let selectedTargetMode = 'net';
+    if (controls.targetModeGross instanceof HTMLInputElement && controls.targetModeGross.checked) {
+      selectedTargetMode = 'gross';
+    } else if (controls.targetModeNet instanceof HTMLInputElement && controls.targetModeNet.checked) {
+      selectedTargetMode = 'net';
+    } else if (TARGET_INCOME_MODES.includes(calcState.incomeTargets?.mode)) {
+      selectedTargetMode = calcState.incomeTargets.mode;
+    }
+
+    setIncomeTargetMode(selectedTargetMode);
+    applyTargetModeCopy(selectedTargetMode);
 
     let selectedTaxMode = 'simple';
     if (controls.taxModeDutch instanceof HTMLInputElement && controls.taxModeDutch.checked) {
@@ -1483,6 +1876,10 @@ export function initializeCalculatorUI() {
 
     if (controls.downloadCsv instanceof HTMLButtonElement) {
       controls.downloadCsv.addEventListener('click', handleDownloadCsv);
+    }
+
+    if (controls.incomePresetContainer instanceof HTMLElement) {
+      controls.incomePresetContainer.addEventListener('click', handleIncomePresetClick);
     }
 
     window.addEventListener('resize', scheduleTablesLayoutUpdate);
