@@ -49,6 +49,8 @@ let derivedState = buildDerivedState(state);
 
 const subscribers = new Set();
 
+const serviceOverrides = Object.create(null);
+
 function deepClone(value) {
   if (Array.isArray(value)) {
     return value.map(deepClone);
@@ -251,6 +253,15 @@ export function setCurrencySymbol(rawValue) {
     config: { currencySymbol: symbol || '€' }
   });
 }
+
+export const calcState = {
+  get,
+  getDerived,
+  set,
+  patch,
+  subscribe,
+  services: serviceOverrides
+};
 
 export {
   initialState,
