@@ -603,7 +603,31 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script>
+  <script type="module">
+    import {
+      get,
+      patch,
+      subscribe,
+      parseNumber,
+      computeCapacityMetrics,
+      computeTargetNetDefaults,
+      setTargetNetBasis,
+      setIncomeTargetValue,
+      setMonthsOff,
+      setWeeksOffCycle,
+      setDaysOffWeek,
+      setTaxRatePercent,
+      setVariableCostPerClass,
+      setVatRatePercent,
+      setBufferPercent,
+      setCurrencySymbol,
+      TARGET_NET_BASIS_VALUES,
+      WEEKS_PER_YEAR,
+      MONTHS_PER_YEAR,
+      BASE_WORK_DAYS_PER_WEEK,
+      TARGET_NET_DEFAULT
+    } from './assets/js/state.js';
+
     const howToLink = document.getElementById('how-to-link');
     const readmeDialog = document.getElementById('readme-dialog');
     const readmeBody = document.getElementById('readme-body');
@@ -1129,7 +1153,6 @@
     let latestCurrencySymbol = '€';
     let latestRevenueSummary = null;
     const PERSISTED_TARGET_NET_BASIS_KEY = '__targetNetBasis';
-    const TARGET_NET_BASIS_VALUES = ['year', 'week', 'month', 'avgWeek', 'avgMonth'];
     const TARGET_NET_BASIS_BY_INPUT_ID = {
       'target-net': 'year',
       'target-net-week': 'week',
@@ -1162,107 +1185,11 @@
       resetSavedInputs: document.getElementById('reset-saved-inputs')
     };
 
-    const calcState = {
-      incomeTargets: {
-        basis: 'year',
-        year: 0,
-        week: 0,
-        month: 0,
-        averageWeek: 0,
-        averageMonth: 0
-      },
-      capacity: {
-        monthsOff: 0,
-        weeksOffCycle: 0,
-        daysOffWeek: 0
-      },
-      costs: {
-        taxRatePercent: 40,
-        fixedCosts: 0,
-        variableCostPerClass: 0,
-        vatRatePercent: 21,
-        bufferPercent: 15
-      },
-      config: {
-        currencySymbol: '€',
-        defaults: {
-          incomeTargets: {
-            year: 0,
-            week: 0,
-            month: 0,
-            averageWeek: 0,
-            averageMonth: 0
-          }
-        }
-      }
-    };
+    let calcState = get();
 
-    function setTargetNetBasis(basis) {
-      if (TARGET_NET_BASIS_VALUES.includes(basis)) {
-        calcState.incomeTargets.basis = basis;
-      }
-    }
-
-    function setIncomeTargetValue(key, rawValue) {
-      const defaults = calcState.config.defaults.incomeTargets || {};
-      const fallback = Number.isFinite(defaults[key]) ? defaults[key] : calcState.incomeTargets[key];
-      const normalized = Math.max(parseNumber(rawValue, fallback || 0), 0);
-      calcState.incomeTargets[key] = normalized;
-    }
-
-    function refreshIncomeTargetDefaultsFromState() {
-      const capacityMetrics = computeCapacityMetrics(calcState.capacity);
-      const defaults = computeTargetNetDefaults(capacityMetrics);
-      calcState.config.defaults.incomeTargets = defaults;
-      return capacityMetrics;
-    }
-
-    function setMonthsOff(rawValue) {
-      const normalized = parseNumber(rawValue, calcState.capacity.monthsOff || 0, { min: 0, max: 12 });
-      calcState.capacity.monthsOff = normalized;
-      refreshIncomeTargetDefaultsFromState();
-    }
-
-    function setWeeksOffCycle(rawValue) {
-      const normalized = parseNumber(rawValue, calcState.capacity.weeksOffCycle || 0, { min: 0, max: 4 });
-      calcState.capacity.weeksOffCycle = normalized;
-      refreshIncomeTargetDefaultsFromState();
-    }
-
-    function setDaysOffWeek(rawValue) {
-      const normalized = parseNumber(rawValue, calcState.capacity.daysOffWeek || 0, { min: 0, max: BASE_WORK_DAYS_PER_WEEK });
-      calcState.capacity.daysOffWeek = normalized;
-      refreshIncomeTargetDefaultsFromState();
-    }
-
-    function setTaxRatePercent(rawValue) {
-      const fallback = Number.isFinite(calcState.costs.taxRatePercent) ? calcState.costs.taxRatePercent : 40;
-      const normalized = Math.min(Math.max(parseNumber(rawValue, fallback, { min: 0, max: 99.9 }), 0), 99.9);
-      calcState.costs.taxRatePercent = normalized;
-    }
-
-    function setVariableCostPerClass(rawValue) {
-      const fallback = Number.isFinite(calcState.costs.variableCostPerClass) ? calcState.costs.variableCostPerClass : 0;
-      const normalized = Math.max(parseNumber(rawValue, fallback, { min: 0 }), 0);
-      calcState.costs.variableCostPerClass = normalized;
-    }
-
-    function setVatRatePercent(rawValue) {
-      const fallback = Number.isFinite(calcState.costs.vatRatePercent) ? calcState.costs.vatRatePercent : 21;
-      const normalized = Math.max(parseNumber(rawValue, fallback, { min: 0 }), 0);
-      calcState.costs.vatRatePercent = normalized;
-    }
-
-    function setBufferPercent(rawValue) {
-      const fallback = Number.isFinite(calcState.costs.bufferPercent) ? calcState.costs.bufferPercent : 15;
-      const normalized = Math.max(parseNumber(rawValue, fallback, { min: 0 }), 0);
-      calcState.costs.bufferPercent = normalized;
-    }
-
-    function setCurrencySymbol(rawValue) {
-      const symbol = typeof rawValue === 'string' ? rawValue.trim() : '';
-      calcState.config.currencySymbol = symbol || '€';
-    }
+    subscribe(nextState => {
+      calcState = nextState;
+    });
 
     function commitControlValueToState(control) {
       if (!(control instanceof HTMLInputElement) || !control.id) {
@@ -1812,31 +1739,11 @@
       }
     });
 
-    const WEEKS_PER_YEAR = 52;
-    const MONTHS_PER_YEAR = 12;
-    const BASE_WORK_DAYS_PER_WEEK = 7;
-    const TARGET_NET_DEFAULT = 50000;
-
     function formatFixed(value, fractionDigits = 1) {
       const fixed = value.toFixed(fractionDigits);
       return fixed
         .replace(/\.0+$/, '')
         .replace(/(\.[0-9]*[1-9])0+$/, '$1');
-    }
-
-    function parseNumber(value, fallback = 0, { min = -Infinity, max = Infinity } = {}) {
-      if (value === null || value === undefined) {
-        return fallback;
-      }
-      const normalized = typeof value === 'string' ? value.trim() : value;
-      if (normalized === '') {
-        return fallback;
-      }
-      const parsed = Number(normalized);
-      if (!Number.isFinite(parsed)) {
-        return fallback;
-      }
-      return Math.min(Math.max(parsed, min), max);
     }
 
     function parseList(value) {
@@ -1921,7 +1828,9 @@
     function updateFixedCostTotalDisplay() {
       const total = getFixedCostTotal();
       const normalized = Math.max(total, 0);
-      calcState.costs.fixedCosts = normalized;
+      patch({
+        costs: { fixedCosts: normalized }
+      });
       if (controls.fixedCosts instanceof HTMLInputElement) {
         controls.fixedCosts.value = formatFixed(normalized, 2);
       }
@@ -2105,7 +2014,6 @@
     function deriveCalcViews(capacityMetrics, defaults) {
       const capacity = capacityMetrics || computeCapacityMetrics(calcState.capacity);
       const incomeDefaults = defaults || computeTargetNetDefaults(capacity);
-      calcState.config.defaults.incomeTargets = incomeDefaults;
       const income = computeIncomeTargets(calcState, capacity);
       const costs = computeCostMetrics(calcState, capacity);
       return { capacity, defaults: incomeDefaults, income, costs };
@@ -2122,22 +2030,28 @@
         ? controls.daysOffWeek.value
         : calcState.capacity.daysOffWeek;
 
-      calcState.capacity.monthsOff = parseNumber(monthsOffRaw, calcState.capacity.monthsOff || 0, {
-        min: 0,
-        max: 12
-      });
-      calcState.capacity.weeksOffCycle = parseNumber(weeksOffRaw, calcState.capacity.weeksOffCycle || 0, {
-        min: 0,
-        max: 4
-      });
-      calcState.capacity.daysOffWeek = parseNumber(daysOffRaw, calcState.capacity.daysOffWeek || 0, {
-        min: 0,
-        max: BASE_WORK_DAYS_PER_WEEK
-      });
+      const capacityUpdates = {
+        monthsOff: parseNumber(monthsOffRaw, calcState.capacity.monthsOff || 0, {
+          min: 0,
+          max: 12
+        }),
+        weeksOffCycle: parseNumber(weeksOffRaw, calcState.capacity.weeksOffCycle || 0, {
+          min: 0,
+          max: 4
+        }),
+        daysOffWeek: parseNumber(daysOffRaw, calcState.capacity.daysOffWeek || 0, {
+          min: 0,
+          max: BASE_WORK_DAYS_PER_WEEK
+        })
+      };
 
-      const capacityMetrics = computeCapacityMetrics(calcState.capacity);
+      const nextCapacity = {
+        ...calcState.capacity,
+        ...capacityUpdates
+      };
+
+      const capacityMetrics = computeCapacityMetrics(nextCapacity);
       const defaults = computeTargetNetDefaults(capacityMetrics);
-      calcState.config.defaults.incomeTargets = defaults;
 
       const yearRaw = controls.targetNet instanceof HTMLInputElement
         ? controls.targetNet.value
@@ -2155,14 +2069,17 @@
         ? controls.targetNetAverageMonth.value
         : calcState.incomeTargets.averageMonth;
 
-      calcState.incomeTargets.year = Math.max(parseNumber(yearRaw, defaults.year), 0);
-      calcState.incomeTargets.week = Math.max(parseNumber(weekRaw, defaults.week), 0);
-      calcState.incomeTargets.month = Math.max(parseNumber(monthRaw, defaults.month), 0);
-      calcState.incomeTargets.averageWeek = Math.max(parseNumber(averageWeekRaw, defaults.averageWeek), 0);
-      calcState.incomeTargets.averageMonth = Math.max(parseNumber(averageMonthRaw, defaults.averageMonth), 0);
+      const incomeUpdates = {
+        year: Math.max(parseNumber(yearRaw, defaults.year), 0),
+        week: Math.max(parseNumber(weekRaw, defaults.week), 0),
+        month: Math.max(parseNumber(monthRaw, defaults.month), 0),
+        averageWeek: Math.max(parseNumber(averageWeekRaw, defaults.averageWeek), 0),
+        averageMonth: Math.max(parseNumber(averageMonthRaw, defaults.averageMonth), 0)
+      };
 
-      if (!TARGET_NET_BASIS_VALUES.includes(calcState.incomeTargets.basis)) {
-        calcState.incomeTargets.basis = 'year';
+      let basis = calcState.incomeTargets.basis;
+      if (!TARGET_NET_BASIS_VALUES.includes(basis)) {
+        basis = 'year';
       }
 
       const taxRateRaw = controls.taxRate instanceof HTMLInputElement
@@ -2181,28 +2098,48 @@
         ? controls.currencySymbol.value
         : calcState.config.currencySymbol;
 
-      calcState.costs.taxRatePercent = Math.min(
+      const taxRatePercent = Math.min(
         Math.max(parseNumber(taxRateRaw, calcState.costs.taxRatePercent ?? 40), 0),
         99.9
       );
-      calcState.costs.variableCostPerClass = Math.max(
+      const variableCostPerClass = Math.max(
         parseNumber(variableCostRaw, calcState.costs.variableCostPerClass ?? 0),
         0
       );
-      calcState.costs.vatRatePercent = Math.max(
+      const vatRatePercent = Math.max(
         parseNumber(vatRateRaw, calcState.costs.vatRatePercent ?? 21),
         0
       );
-      calcState.costs.bufferPercent = Math.max(
+      const bufferPercent = Math.max(
         parseNumber(bufferRaw, calcState.costs.bufferPercent ?? 15),
         0
       );
-      calcState.config.currencySymbol = typeof currencySymbolRaw === 'string' && currencySymbolRaw.trim()
+      const currencySymbol = typeof currencySymbolRaw === 'string' && currencySymbolRaw.trim()
         ? currencySymbolRaw.trim()
         : '€';
 
-      const fixedCosts = getFixedCostTotal();
-      calcState.costs.fixedCosts = Math.max(fixedCosts, 0);
+      const fixedCosts = Math.max(getFixedCostTotal(), 0);
+
+      patch({
+        capacity: capacityUpdates,
+        config: {
+          defaults: {
+            incomeTargets: defaults
+          },
+          currencySymbol
+        },
+        incomeTargets: {
+          ...incomeUpdates,
+          basis
+        },
+        costs: {
+          taxRatePercent,
+          variableCostPerClass,
+          vatRatePercent,
+          bufferPercent,
+          fixedCosts
+        }
+      });
 
       return deriveCalcViews(capacityMetrics, defaults);
     }
