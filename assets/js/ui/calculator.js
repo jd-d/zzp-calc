@@ -30,7 +30,7 @@ import {
 } from '../state.js';
 import { deriveCapacity } from '../capacity.js';
 import { deriveTargetNetDefaults, deriveIncomeTargets } from '../income.js';
-import { calculateTaxReserve, calculateTaxFromProfit, resolveTaxMode } from '../tax.js';
+import { calculateTaxReserve, calculateTaxFromProfit, resolveTaxMode } from '../tax2025.js';
 import { computeCosts } from '../costs.js';
 import { normalizeScenarioModifiers } from '../modifiers.js';
 import { announce } from './components.js';

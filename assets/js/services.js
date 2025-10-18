@@ -2,7 +2,7 @@ import { calcState } from './state.js';
 import { computeCosts } from './costs.js';
 import { deriveIncomeTargets } from './income.js';
 import { normalizeScenarioModifiers } from './modifiers.js';
-import { calculateTaxReserve } from './tax.js';
+import { calculateTaxReserve } from './tax2025.js';
 
 const SERVICE_COPY = {
   representation: {
