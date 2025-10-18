@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ZZP Calc Pipeline Regression Tests</title>
+  <!-- Manual execution: open this file in a modern desktop browser (Chrome, Firefox, Edge) to run the scripted assertions. -->
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 2rem;
+      line-height: 1.6;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+
+    .instructions {
+      max-width: 60ch;
+    }
+
+    ul {
+      padding-left: 1.5rem;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .pass {
+      color: #1b7c1b;
+    }
+
+    .fail {
+      color: #b00020;
+    }
+
+    #summary {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    details {
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>ZZP Calc Pipeline Regression Tests</h1>
+  <p class="instructions">
+    Open this file directly in a modern browser. The module-based harness runs automatically,
+    logs pass or fail outcomes below, and mirrors the same information to the developer tools console.
+  </p>
+  <p id="summary">Running tests…</p>
+  <ul id="results" aria-live="polite"></ul>
+  <details>
+    <summary>Debug log</summary>
+    <pre id="debug-log"></pre>
+  </details>
+  <script type="module">
+    import { deriveCapacity } from '../assets/js/capacity.js';
+    import { computeCosts } from '../assets/js/costs.js';
+
+    const EPSILON = 1e-9;
+    const tests = [];
+    const summaryEl = document.getElementById('summary');
+    const resultsList = document.getElementById('results');
+    const debugLog = document.getElementById('debug-log');
+    const logLines = [];
+
+    function addTest(name, fn) {
+      tests.push({ name, fn });
+    }
+
+    function appendLog(message) {
+      logLines.push(message);
+      debugLog.textContent = logLines.join('\n');
+    }
+
+    function expectMatches(actual, expected, path = '') {
+      if (actual == null) {
+        throw new Error(`Missing value at ${path || '(root)'}`);
+      }
+
+      for (const [key, value] of Object.entries(expected)) {
+        const nextPath = path ? `${path}.${key}` : key;
+        const actualValue = actual[key];
+
+        if (typeof value === 'number') {
+          if (!Number.isFinite(actualValue) || Math.abs(actualValue - value) > EPSILON) {
+            throw new Error(`Expected ${nextPath} to equal ${value} but received ${actualValue}`);
+          }
+        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+          expectMatches(actualValue, value, nextPath);
+        } else {
+          if (actualValue !== value) {
+            throw new Error(`Expected ${nextPath} to equal ${value} but received ${actualValue}`);
+          }
+        }
+      }
+    }
+
+    addTest('deriveCapacity uses full availability when inputs are empty', () => {
+      const result = deriveCapacity({});
+      expectMatches(result, {
+        monthsOff: 0,
+        activeMonths: 12,
+        workingWeeks: 52,
+        workingDaysPerYear: 364,
+        billableDaysPerYear: 364,
+        billableDaysAfterTravel: 364,
+        travelAllowanceDays: 0,
+        travelAllowanceShare: 0,
+        utilizationRate: 1
+      });
+    });
+
+    addTest('deriveCapacity respects utilization, travel, and partial schedules', () => {
+      const result = deriveCapacity({
+        monthsOff: 3,
+        weeksOffCycle: 1,
+        daysOffWeek: 2,
+        utilizationPercent: 75,
+        travelDaysPerMonth: 2,
+        travelDaysPerCycle: 3,
+        travelDaysPerYear: 90
+      });
+
+      expectMatches(result, {
+        monthsOff: 3,
+        activeMonths: 9,
+        workingWeeks: 29.25,
+        workingDaysPerWeek: 5,
+        workingDaysPerYear: 146.25,
+        utilizationRate: 0.75,
+        billableWeeks: 21.9375,
+        billableDaysPerYear: 109.6875,
+        billableDaysAfterTravel: 19.6875,
+        travelDaysPerYear: 90,
+        travelAllowanceDays: 90,
+        travelAllowanceShare: 0.6153846153846154,
+        travelAllowanceBillableShare: 0.8205128205128205
+      });
+    });
+
+    addTest('deriveCapacity clamps extreme availability and travel inputs', () => {
+      const result = deriveCapacity({
+        monthsOff: 15,
+        weeksOffCycle: 10,
+        daysOffWeek: 10,
+        utilizationPercent: -10,
+        travelDaysPerMonth: 50,
+        travelDaysPerCycle: 12,
+        travelDaysPerYear: 400
+      });
+
+      expectMatches(result, {
+        monthsOff: 12,
+        weeksOffPerCycle: 4,
+        daysOffPerWeek: 7,
+        activeMonths: 0,
+        workingWeeks: 0,
+        workingDaysPerWeek: 0,
+        utilizationPercent: 0,
+        billableDaysPerYear: 0,
+        billableDaysAfterTravel: 0,
+        travelDaysPerMonth: 28,
+        travelDaysPerCycle: 7,
+        travelDaysPerYear: 400,
+        travelAllowanceDays: 0
+      });
+    });
+
+    addTest('computeCosts aggregates direct fixed and variable costs', () => {
+      const capacity = deriveCapacity({});
+      const state = {
+        costs: {
+          fixedCosts: 12000,
+          variableCostPerWorkingDay: 10,
+          variableCostPerBillableDay: 5,
+          travelCostPerDay: 20,
+          variableCostsAnnual: 1000,
+          taxRatePercent: 30,
+          vatRatePercent: 17,
+          bufferPercent: 10
+        },
+        config: { currencySymbol: '$' }
+      };
+
+      const result = computeCosts(state, capacity);
+
+      expectMatches(result, {
+        taxRate: 0.3,
+        vatRate: 0.17,
+        buffer: 0.1,
+        fixedCosts: 12000,
+        annualVariableCosts: 6460,
+        variableCostPerClass: 10,
+        currencySymbol: '$',
+        variableCosts: {
+          perWorkingDay: 10,
+          perBillableDay: 5,
+          perTravelDay: 20,
+          workingDays: 364,
+          billableDays: 364,
+          travelDays: 0,
+          annualWorkingDayCost: 3640,
+          annualBillableDayCost: 1820,
+          annualTravelCost: 0,
+          otherAnnualCost: 1000,
+          annualTotal: 6460
+        }
+      });
+    });
+
+    addTest('computeCosts sums fixed breakdowns and handles travel-heavy capacity', () => {
+      const capacity = deriveCapacity({
+        monthsOff: 6,
+        weeksOffCycle: 2,
+        daysOffWeek: 1,
+        utilizationPercent: 50,
+        travelDaysPerYear: 40
+      });
+
+      const state = {
+        costs: {
+          fixedCostBreakdown: {
+            rent: '5000',
+            insurance: 1200,
+            conference: '800.5',
+            refund: -100
+          },
+          variableCostPerWorkingDay: '7.5',
+          variableCostPerBillableDay: '',
+          travelAllowancePerDay: '45',
+          additionalVariableAnnual: 600,
+          taxRatePercent: 28.6,
+          vatRatePercent: '',
+          bufferPercent: 12.5
+        },
+        config: {}
+      };
+
+      const result = computeCosts(state, capacity);
+
+      expectMatches(result, {
+        taxRate: 0.28600000000000003,
+        vatRate: 0.21,
+        buffer: 0.125,
+        fixedCosts: 7000.5,
+        annualVariableCosts: 2985,
+        variableCostPerClass: 7.5,
+        currencySymbol: '€',
+        variableCosts: {
+          perWorkingDay: 7.5,
+          perBillableDay: 0,
+          perTravelDay: 45,
+          workingDays: 78,
+          billableDays: 0,
+          travelDays: 40,
+          annualWorkingDayCost: 585,
+          annualBillableDayCost: 0,
+          annualTravelCost: 1800,
+          otherAnnualCost: 600,
+          annualTotal: 2985
+        }
+      });
+    });
+
+    function recordResult(name, passed, error) {
+      const item = document.createElement('li');
+      item.textContent = `${passed ? '✅ PASS' : '❌ FAIL'} · ${name}`;
+      item.className = passed ? 'pass' : 'fail';
+      resultsList.appendChild(item);
+
+      const logMessage = `${passed ? 'PASS' : 'FAIL'}: ${name}`;
+      if (passed) {
+        console.log(logMessage);
+        appendLog(logMessage);
+      } else {
+        const detail = `${logMessage}\n${error?.stack || error}`;
+        console.error(detail);
+        appendLog(detail);
+      }
+    }
+
+    async function run() {
+      let passed = 0;
+
+      for (const { name, fn } of tests) {
+        try {
+          await fn();
+          passed += 1;
+          recordResult(name, true);
+        } catch (error) {
+          recordResult(name, false, error);
+        }
+      }
+
+      const summaryText = passed === tests.length
+        ? `All ${passed} tests passed.`
+        : `${passed} of ${tests.length} tests passed.`;
+
+      summaryEl.textContent = summaryText;
+      summaryEl.className = passed === tests.length ? 'pass' : 'fail';
+    }
+
+    run();
+  </script>
+</body>
+</html>
