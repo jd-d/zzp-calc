@@ -958,35 +958,50 @@
         </div>
       </section>
 
-      <section
-        class="card surface-card portfolio motion-slide-up"
-        id="portfolio"
-        aria-labelledby="portfolio-heading"
-      >
-        <div class="surface-content stack">
-          <div class="portfolio__header">
-            <h2 id="portfolio-heading">Portfolio outlook</h2>
-            <p class="portfolio__status" id="portfolio-status">Waiting for scenario…</p>
+      <section class="card wrapper" id="portfolio" aria-labelledby="portfolio-heading">
+        <div class="grid two">
+          <div>
+            <h2 id="portfolio-heading">Portfolio totals</h2>
+            <p class="portfolio-status" id="portfolio-status">Waiting for scenario…</p>
+            <dl class="kv two-col">
+              <div>
+                <dt>Revenue</dt>
+                <dd>
+                  <span id="p-rev">—</span>
+                  <span class="metric-violation" id="p-rev-violation" aria-live="polite"></span>
+                </dd>
+              </div>
+              <div>
+                <dt>Costs</dt>
+                <dd>
+                  <span id="p-cost">—</span>
+                  <span class="metric-violation" id="p-cost-violation" aria-live="polite"></span>
+                </dd>
+              </div>
+              <div>
+                <dt>Tax reserve</dt>
+                <dd>
+                  <span id="p-tax">—</span>
+                  <span class="metric-violation" id="p-tax-violation" aria-live="polite"></span>
+                </dd>
+              </div>
+              <div>
+                <dt>Net</dt>
+                <dd>
+                  <span id="p-net">—</span>
+                  <span class="metric-violation" id="p-net-violation" aria-live="polite"></span>
+                </dd>
+              </div>
+            </dl>
           </div>
-          <div class="portfolio__grid">
-            <div class="portfolio__totals">
-              <h3>Portfolio totals</h3>
-              <dl class="portfolio-totals">
-                <div class="portfolio-totals__row"><dt>Revenue</dt><dd id="p-rev">—</dd></div>
-                <div class="portfolio-totals__row"><dt>Costs</dt><dd id="p-cost">—</dd></div>
-                <div class="portfolio-totals__row"><dt>Tax reserve</dt><dd id="p-tax">—</dd></div>
-                <div class="portfolio-totals__row"><dt>Net</dt><dd id="p-net">—</dd></div>
-              </dl>
-            </div>
-            <div class="portfolio__week" aria-live="polite">
-              <h3>Weekly plan</h3>
-              <ol class="portfolio-week" id="p-week"></ol>
-            </div>
+          <div>
+            <h2>Weekly plan</h2>
+            <ol class="week" id="p-week" aria-live="polite"></ol>
           </div>
-          <div class="portfolio__violations" id="portfolio-violations" role="alert" hidden>
-            <h3 class="portfolio__violations-title">Constraints to review</h3>
-            <ul class="portfolio__violations-list" id="portfolio-violations-list"></ul>
-          </div>
+        </div>
+        <div class="portfolio-violations" id="portfolio-violations" role="alert" hidden>
+          <h3>Constraints to review</h3>
+          <ul id="portfolio-violations-list"></ul>
         </div>
       </section>
 
