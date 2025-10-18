@@ -1,7 +1,8 @@
 /* =====================================================================
    Design Tokens
    ===================================================================== */
-:root {
+:root,
+:root.theme-dark {
   color-scheme: dark;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-heading: "Fraunces", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -93,9 +94,7 @@
   --breakdown-color-fixed: #38bdf8;
   --breakdown-color-tax: #ef4444;
   --breakdown-color-net: #22c55e;
-}
-
-body[data-theme="light"] {
+:root.theme-light {
   color-scheme: light;
   --font-heading: "Fraunces", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --bg-gradient: radial-gradient(circle at top left, #eff4ff, #dde7ff 55%, #d4e0ff 100%);
@@ -507,6 +506,9 @@ samp {
 .toggle-label {
   font-size: var(--font-size-sm);
   font-weight: 600;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 10ch;
 }
 
 /* =====================================================================
@@ -699,6 +701,12 @@ header.hero {
   }
 }
 
+.theme-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -709,6 +717,42 @@ header.hero {
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  background: var(--surface-chip-hover);
+  border-color: var(--border-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.theme-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.theme-lock input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+  border-radius: var(--radius-xs);
+}
+
+.theme-lock input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.theme-lock__label {
+  white-space: nowrap;
 }
 
 .layout {
