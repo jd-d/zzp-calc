@@ -1083,12 +1083,30 @@ export function computeServiceRevenue(config, hoursMetrics, costs = {}) {
   const tax = revenue * taxRate;
   const net = revenue - directCost - tax;
 
+  const costShares = revenue > 0
+    ? {
+        direct: perUnitCost / revenue,
+        fixed: allocatedFixed / revenue,
+        variable: allocatedVariable / revenue
+      }
+    : {
+        direct: 0,
+        fixed: 0,
+        variable: 0
+      };
+
   return {
     pricePerUnit,
     revenue,
     directCost,
+    directCostPerUnit,
+    allocatedFixed,
+    allocatedVariable,
     tax,
-    net
+    taxRate,
+    net,
+    buffer,
+    costShares
   };
 }
 
@@ -1348,6 +1366,68 @@ function createServiceDescriptor(id) {
         taxStrategy
       });
 
+      const defaultUnits = Number.isFinite(hoursMetrics.unitsPerMonth) ? hoursMetrics.unitsPerMonth : 0;
+      const rateUnits = Number.isFinite(rateTarget.unitsPerMonth) ? rateTarget.unitsPerMonth : defaultUnits;
+      const ratePrice = Number.isFinite(rateTarget.pricePerUnit) ? rateTarget.pricePerUnit : revenueMetrics.pricePerUnit;
+      const volumeUnits = Number.isFinite(volumeTarget.unitsPerMonth)
+        ? volumeTarget.unitsPerMonth
+        : defaultUnits;
+      const volumePrice = Number.isFinite(volumeTarget.pricePerUnit)
+        ? volumeTarget.pricePerUnit
+        : revenueMetrics.pricePerUnit;
+
+      const taxRate = Number.isFinite(revenueMetrics.taxRate)
+        ? revenueMetrics.taxRate
+        : revenueMetrics.revenue > 0
+          ? revenueMetrics.tax / revenueMetrics.revenue
+          : 0;
+      const bufferValue = Number.isFinite(revenueMetrics.buffer) ? revenueMetrics.buffer : 0;
+      const directCostPerUnit = Number.isFinite(revenueMetrics.directCostPerUnit)
+        ? revenueMetrics.directCostPerUnit
+        : 0;
+      const allocatedFixed = Number.isFinite(revenueMetrics.allocatedFixed) ? revenueMetrics.allocatedFixed : 0;
+      const allocatedVariable = Number.isFinite(revenueMetrics.allocatedVariable)
+        ? revenueMetrics.allocatedVariable
+        : 0;
+
+      const computeView = (unitsValue, priceValue, locked) => {
+        const unitsPerMonth = Number.isFinite(unitsValue) ? unitsValue : 0;
+        const pricePerUnit = Number.isFinite(priceValue) ? priceValue : 0;
+        const revenueValue = unitsPerMonth * pricePerUnit;
+        const directUnitsCost = unitsPerMonth * directCostPerUnit;
+        const totalDirectCost = directUnitsCost + allocatedFixed + allocatedVariable;
+        const taxValue = revenueValue * taxRate;
+        const netValue = revenueValue - totalDirectCost - taxValue;
+
+        const shares = revenueValue > 0
+          ? {
+              direct: directUnitsCost / revenueValue,
+              fixed: allocatedFixed / revenueValue,
+              variable: allocatedVariable / revenueValue
+            }
+          : {
+              direct: 0,
+              fixed: 0,
+              variable: 0
+            };
+
+        return {
+          units: unitsPerMonth,
+          price: pricePerUnit,
+          revenue: revenueValue,
+          tax: taxValue,
+          net: netValue,
+          costShares: shares,
+          buffer: bufferValue,
+          locked
+        };
+      };
+
+      const views = {
+        rate: computeView(rateUnits, ratePrice, Boolean(rateTarget.locked)),
+        volume: computeView(volumeUnits, volumePrice, Boolean(volumeTarget.locked))
+      };
+
       return {
         units: Number.isFinite(hoursMetrics.unitsPerMonth)
           ? hoursMetrics.unitsPerMonth
@@ -1357,6 +1437,8 @@ function createServiceDescriptor(id) {
         directCost: revenueMetrics.directCost,
         tax: revenueMetrics.tax,
         net: revenueMetrics.net,
+        buffer: bufferValue,
+        costShares: revenueMetrics.costShares,
         travelDaysPerUnit: hoursMetrics.travelDaysPerUnit,
         annualTravelDays: hoursMetrics.annualTravelDays,
         hoursPerUnit: hoursMetrics.totalHoursPerUnit,
@@ -1365,7 +1447,8 @@ function createServiceDescriptor(id) {
           unitsPerMonth: volumeTarget.unitsPerMonth,
           lockedRate: rateTarget.locked,
           lockedVolume: volumeTarget.locked
-        }
+        },
+        views
       };
     }
   };

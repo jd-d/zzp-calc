@@ -559,6 +559,28 @@ export const fmt = {
 
     const safeValue = typeof value === 'number' ? value : Number(value) || 0;
     return formatter.format(safeValue);
+  },
+  percent(value, locale = 'nl-NL', options = {}) {
+    const settings = typeof options === 'object' && options !== null ? options : {};
+    const maximumFractionDigits = Number.isInteger(settings.maximumFractionDigits)
+      ? settings.maximumFractionDigits
+      : 0;
+    const minimumFractionDigits = Number.isInteger(settings.minimumFractionDigits)
+      ? settings.minimumFractionDigits
+      : 0;
+
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'percent',
+      maximumFractionDigits,
+      minimumFractionDigits
+    });
+
+    const numeric = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(numeric)) {
+      return formatter.format(0);
+    }
+
+    return formatter.format(numeric);
   }
 };
 

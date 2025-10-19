@@ -954,6 +954,30 @@ header.hero {
   padding: clamp(var(--space-5), 3vw, var(--space-6));
 }
 
+.service-card__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.service-card__panel[hidden] {
+  display: none;
+}
+
+.service-card__metrics {
+  margin: 0;
+}
+
+.service-card__metrics div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.service-card__metrics dd {
+  font-size: clamp(1rem, 2.4vw, 1.1rem);
+}
+
 .service-card__spark {
   min-height: 72px;
   border-radius: var(--radius-md);

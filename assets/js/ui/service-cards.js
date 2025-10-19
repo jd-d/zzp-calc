@@ -256,9 +256,13 @@ function updateMetric(root, id, key, value, formatter) {
     return;
   }
 
-  const safeValue = Number.isFinite(value) ? value : 0;
-  const format = typeof formatter === 'function' ? formatter : val => val;
-  setText(target, format(safeValue));
+  const hasValue = Number.isFinite(value);
+  if (hasValue) {
+    const format = typeof formatter === 'function' ? formatter : val => val;
+    setText(target, format(value));
+  } else {
+    setText(target, '--');
+  }
 }
 
 function getSparkData(service, result, state, capacity, costs) {
@@ -272,6 +276,68 @@ function getSparkData(service, result, state, capacity, costs) {
     }
   }
   return [];
+}
+
+function formatCostShares(shares) {
+  if (!shares || typeof shares !== 'object') {
+    return '--';
+  }
+
+  const parts = [];
+  if (Number.isFinite(shares.direct)) {
+    parts.push(`Direct ${fmt.percent(shares.direct, 'nl-NL', { maximumFractionDigits: 0 })}`);
+  }
+  if (Number.isFinite(shares.fixed)) {
+    parts.push(`Fixed ${fmt.percent(shares.fixed, 'nl-NL', { maximumFractionDigits: 0 })}`);
+  }
+  if (Number.isFinite(shares.variable)) {
+    parts.push(`Variable ${fmt.percent(shares.variable, 'nl-NL', { maximumFractionDigits: 0 })}`);
+  }
+
+  return parts.length ? parts.join(' · ') : '--';
+}
+
+function formatBufferStatus(viewKey, metrics) {
+  if (!metrics || typeof metrics !== 'object') {
+    return '--';
+  }
+
+  const parts = [];
+  if (metrics.locked) {
+    const label = viewKey === 'rate' ? 'Rate locked' : 'Volume locked';
+    parts.push(label);
+  }
+
+  const bufferValue = Number.isFinite(metrics.buffer) ? metrics.buffer : null;
+  if (bufferValue !== null && bufferValue > 0) {
+    parts.push(`Buffer +${fmt.percent(bufferValue, 'nl-NL', { maximumFractionDigits: 0 })}`);
+  } else if (!metrics.locked) {
+    parts.push('No buffer applied');
+  }
+
+  return parts.length ? parts.join(' · ') : '--';
+}
+
+function updateViewMetrics(card, id, viewKey, metrics) {
+  if (!metrics || typeof metrics !== 'object') {
+    return;
+  }
+
+  updateMetric(card, `${id}-${viewKey}`, 'units', metrics.units, fmt.number);
+  updateMetric(card, `${id}-${viewKey}`, 'price', metrics.price, fmt.currency);
+  updateMetric(card, `${id}-${viewKey}`, 'revenue', metrics.revenue, fmt.currency);
+  updateMetric(card, `${id}-${viewKey}`, 'tax', metrics.tax, fmt.currency);
+  updateMetric(card, `${id}-${viewKey}`, 'net', metrics.net, fmt.currency);
+
+  const costTarget = qs(`#${id}-${viewKey}-cost-share`, card) || qs(`#${id}-${viewKey}-cost-share`);
+  if (costTarget) {
+    setText(costTarget, formatCostShares(metrics.costShares));
+  }
+
+  const bufferTarget = qs(`#${id}-${viewKey}-buffer`, card) || qs(`#${id}-${viewKey}-buffer`);
+  if (bufferTarget) {
+    setText(bufferTarget, formatBufferStatus(viewKey, metrics));
+  }
 }
 
 export function mountServiceCards(calcState, services, root = document) {
@@ -343,12 +409,13 @@ export function mountServiceCards(calcState, services, root = document) {
         return;
       }
 
-      updateMetric(card, id, 'units', result.units, fmt.number);
-      updateMetric(card, id, 'price', result.price, fmt.currency);
-      updateMetric(card, id, 'rev', result.revenue, fmt.currency);
-      updateMetric(card, id, 'cost', result.directCost, fmt.currency);
-      updateMetric(card, id, 'tax', result.tax, fmt.currency);
-      updateMetric(card, id, 'net', result.net, fmt.currency);
+      const views = result.views || {};
+      if (views.rate) {
+        updateViewMetrics(card, id, 'rate', views.rate);
+      }
+      if (views.volume) {
+        updateViewMetrics(card, id, 'volume', views.volume);
+      }
 
       const sparkTarget = qs(`#${id}-spark`, card) || qs(`#${id}-spark`, context);
       if (sparkTarget instanceof HTMLElement) {
