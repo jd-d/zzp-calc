@@ -2,6 +2,7 @@ import { qs, qsa, on, setText, fmt, renderSparkline } from './components.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DEFAULT_ICON_KEY = 'briefcase';
+const SHORTFALL_THRESHOLD = 0.005;
 
 const TABLER_ICON_LIBRARY = {
   briefcase: [
@@ -107,6 +108,50 @@ function ensureIconContainer(card) {
     container.setAttribute('aria-hidden', 'true');
   }
   return container;
+}
+
+function ensureStatusBadge(card) {
+  if (!(card instanceof HTMLElement)) {
+    return { badge: null, label: null };
+  }
+
+  const header = qs('.service-card__header', card) || card;
+  let badge = qs('[data-service-flag]', header);
+  let label = badge instanceof HTMLElement ? badge.querySelector('.service-card__flag-label') : null;
+
+  if (!(badge instanceof HTMLElement)) {
+    badge = document.createElement('span');
+    badge.className = 'service-card__flag';
+    badge.setAttribute('data-service-flag', '');
+    badge.hidden = true;
+
+    const dot = document.createElement('span');
+    dot.className = 'service-card__flag-dot';
+    dot.setAttribute('aria-hidden', 'true');
+
+    label = document.createElement('span');
+    label.className = 'service-card__flag-label';
+    label.textContent = 'Needs attention';
+
+    badge.append(dot, label);
+    header.appendChild(badge);
+  } else {
+    if (!(label instanceof HTMLElement)) {
+      label = document.createElement('span');
+      label.className = 'service-card__flag-label';
+      label.textContent = 'Needs attention';
+      badge.appendChild(label);
+    }
+
+    if (!badge.querySelector('.service-card__flag-dot')) {
+      const dot = document.createElement('span');
+      dot.className = 'service-card__flag-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      badge.prepend(dot);
+    }
+  }
+
+  return { badge, label };
 }
 
 function activateTab(tabs, panelMap, tab, { focus = false } = {}) {
@@ -309,7 +354,14 @@ function formatBufferStatus(viewKey, metrics) {
   }
 
   const bufferValue = Number.isFinite(metrics.buffer) ? metrics.buffer : null;
-  if (bufferValue !== null && bufferValue > 0) {
+  const comfortShortfall = Number.isFinite(metrics.comfortShortfall) ? metrics.comfortShortfall : null;
+  const comfortFloor = Number.isFinite(metrics.comfortFloor) ? metrics.comfortFloor : null;
+
+  if (comfortShortfall !== null && comfortShortfall > SHORTFALL_THRESHOLD && comfortFloor !== null) {
+    const shortfallLabel = fmt.percent(comfortShortfall, 'nl-NL', { maximumFractionDigits: 0 });
+    const targetLabel = fmt.percent(comfortFloor, 'nl-NL', { maximumFractionDigits: 0 });
+    parts.push(`Short ${shortfallLabel} vs ${targetLabel}`);
+  } else if (bufferValue !== null && bufferValue > 0) {
     parts.push(`Buffer +${fmt.percent(bufferValue, 'nl-NL', { maximumFractionDigits: 0 })}`);
   } else if (!metrics.locked) {
     parts.push('No buffer applied');
@@ -337,6 +389,18 @@ function updateViewMetrics(card, id, viewKey, metrics) {
   const bufferTarget = qs(`#${id}-${viewKey}-buffer`, card) || qs(`#${id}-${viewKey}-buffer`);
   if (bufferTarget) {
     setText(bufferTarget, formatBufferStatus(viewKey, metrics));
+    if (bufferTarget instanceof HTMLElement) {
+      const shortfall = Number.isFinite(metrics.comfortShortfall) ? metrics.comfortShortfall : 0;
+      if (shortfall > SHORTFALL_THRESHOLD) {
+        bufferTarget.classList.add('is-alert');
+        const shortfallLabel = fmt.percent(shortfall, 'nl-NL', { maximumFractionDigits: 0 });
+        const targetLabel = fmt.percent(metrics.comfortFloor ?? 0, 'nl-NL', { maximumFractionDigits: 0 });
+        bufferTarget.setAttribute('data-tooltip', `Needs +${shortfallLabel} to hit ${targetLabel} comfort.`);
+      } else {
+        bufferTarget.classList.remove('is-alert');
+        bufferTarget.removeAttribute('data-tooltip');
+      }
+    }
   }
 }
 
@@ -376,7 +440,8 @@ export function mountServiceCards(calcState, services, root = document) {
     }
 
     setupTabs(card, service, cleanup);
-    registered.set(id, { card });
+    const status = ensureStatusBadge(card);
+    registered.set(id, { card, status });
   });
 
   const render = (state, derived = {}) => {
@@ -415,6 +480,50 @@ export function mountServiceCards(calcState, services, root = document) {
       }
       if (views.volume) {
         updateViewMetrics(card, id, 'volume', views.volume);
+      }
+
+      let worstShortfall = null;
+      for (const key of ['rate', 'volume']) {
+        const metrics = views[key];
+        if (!metrics) {
+          continue;
+        }
+        const shortfall = Number.isFinite(metrics.comfortShortfall) ? metrics.comfortShortfall : 0;
+        if (shortfall > SHORTFALL_THRESHOLD) {
+          if (!worstShortfall || shortfall > worstShortfall.shortfall) {
+            worstShortfall = {
+              shortfall,
+              floor: Number.isFinite(metrics.comfortFloor) ? metrics.comfortFloor : null
+            };
+          }
+        }
+      }
+
+      const status = registration ? registration.status : ensureStatusBadge(card);
+      const badge = status?.badge instanceof HTMLElement ? status.badge : null;
+      const labelEl = status?.label instanceof HTMLElement ? status.label : null;
+      const hasShortfall = Boolean(worstShortfall);
+
+      card.classList.toggle('is-underperforming', hasShortfall);
+
+      if (badge) {
+        if (hasShortfall) {
+          const shortfallLabel = fmt.percent(worstShortfall.shortfall, 'nl-NL', { maximumFractionDigits: 0 });
+          const targetLabel = fmt.percent(worstShortfall.floor ?? 0, 'nl-NL', { maximumFractionDigits: 0 });
+          badge.hidden = false;
+          badge.dataset.tooltip = `Gross margin is ${shortfallLabel} below the ${targetLabel} comfort target.`;
+          badge.setAttribute('aria-label', `Gross margin shortfall of ${shortfallLabel} versus a ${targetLabel} comfort floor.`);
+          if (labelEl) {
+            setText(labelEl, `Needs +${shortfallLabel}`);
+          }
+        } else {
+          badge.hidden = true;
+          delete badge.dataset.tooltip;
+          badge.removeAttribute('aria-label');
+          if (labelEl) {
+            setText(labelEl, 'On track');
+          }
+        }
       }
 
       const sparkTarget = qs(`#${id}-spark`, card) || qs(`#${id}-spark`, context);
