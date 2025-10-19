@@ -336,6 +336,22 @@
           annualTravelCost: 0,
           otherAnnualCost: 1000,
           annualTotal: 6460
+        },
+        totals: {
+          fixed: { annual: 12000, monthly: 1000 },
+          hourly: {
+            annual: 5460,
+            monthly: 455,
+            perBillableHour: 0,
+            perWorkingDay: 10,
+            perBillableDay: 5,
+            workingDays: 364,
+            billableDays: 364
+          },
+          travel: { annual: 0, monthly: 0, perDay: 20, days: 0 },
+          other: { annual: 1000, monthly: 83.33333333333333 },
+          variable: { annual: 6460, monthly: 538.3333333333334 },
+          total: { annual: 18460, monthly: 1538.3333333333333 }
         }
       });
     });
@@ -390,7 +406,155 @@
           annualTravelCost: 1800,
           otherAnnualCost: 600,
           annualTotal: 2985
+        },
+        totals: {
+          fixed: { annual: 7000.5, monthly: 583.375 },
+          hourly: {
+            annual: 585,
+            monthly: 48.75,
+            perBillableHour: 0,
+            perWorkingDay: 7.5,
+            perBillableDay: 0,
+            workingDays: 78,
+            billableDays: 0
+          },
+          travel: { annual: 1800, monthly: 150, perDay: 45, days: 40 },
+          other: { annual: 600, monthly: 50 },
+          variable: { annual: 2985, monthly: 248.75 },
+          total: { annual: 9985.5, monthly: 832.125 }
         }
+      });
+    });
+
+    addTest('computeCosts handles zero travel without inflating totals', () => {
+      const capacity = deriveCapacity({
+        monthsOff: 0,
+        weeksOffCycle: 0,
+        daysOffWeek: 2,
+        utilizationPercent: 80,
+        travelDaysPerYear: 0
+      });
+
+      const state = {
+        costs: {
+          fixedCosts: 6000,
+          variableCostPerWorkingDay: 15,
+          travelCostPerDay: 100,
+          variableCostsAnnual: 500,
+          taxRatePercent: 25,
+          vatRatePercent: 21,
+          bufferPercent: 15
+        },
+        config: {}
+      };
+
+      const result = computeCosts(state, capacity);
+
+      expectMatches(result.totals, {
+        fixed: { annual: 6000, monthly: 500 },
+        hourly: {
+          annual: 3900,
+          monthly: 325,
+          perBillableHour: 0,
+          perWorkingDay: 15,
+          workingDays: 260,
+          billableDays: 208
+        },
+        travel: { annual: 0, monthly: 0, perDay: 100, days: 0 },
+        other: { annual: 500, monthly: 41.666666666666664 },
+        variable: { annual: 4400, monthly: 366.6666666666667 },
+        total: { annual: 10400, monthly: 866.6666666666666 }
+      });
+    });
+
+    addTest('computeCosts zeroes hourly totals when no capacity is available', () => {
+      const capacity = deriveCapacity({
+        monthsOff: 12,
+        weeksOffCycle: 4,
+        daysOffWeek: 7,
+        utilizationPercent: 0,
+        travelDaysPerYear: 0
+      });
+
+      const state = {
+        costs: {
+          fixedCosts: 0,
+          variableCostPerWorkingDay: 25,
+          travelCostPerDay: 80,
+          taxRatePercent: 0,
+          vatRatePercent: 0,
+          bufferPercent: 0
+        },
+        config: {}
+      };
+
+      const result = computeCosts(state, capacity);
+
+      expectMatches(result.variableCosts, {
+        workingDays: 0,
+        billableDays: 0,
+        travelDays: 0,
+        annualTotal: 0
+      });
+
+      expectMatches(result.totals, {
+        fixed: { annual: 0, monthly: 0 },
+        hourly: { annual: 0, monthly: 0, perBillableHour: 0, workingDays: 0, billableDays: 0 },
+        travel: { annual: 0, monthly: 0, days: 0 },
+        variable: { annual: 0, monthly: 0 },
+        total: { annual: 0, monthly: 0 }
+      });
+    });
+
+    addTest('computeCosts aggregates high fixed costs with billable hour rates', () => {
+      const capacity = deriveCapacity(
+        {
+          monthsOff: 1,
+          weeksOffCycle: 1,
+          daysOffWeek: 2,
+          utilizationPercent: 90,
+          travelDaysPerYear: 30
+        },
+        {},
+        { sessionLength: 1.5 }
+      );
+
+      const state = {
+        costs: {
+          fixedCostBreakdown: {
+            rent: '8000',
+            insurance: 3600,
+            pension: '12000',
+            marketing: 2400
+          },
+          variableCostPerWorkingDay: 12,
+          variableCostPerBillableDay: 8,
+          travelCostPerDay: 60,
+          variableCostsAnnual: 1800,
+          taxRatePercent: 32,
+          vatRatePercent: 21,
+          bufferPercent: 18
+        },
+        config: {}
+      };
+
+      const result = computeCosts(state, capacity);
+
+      expectMatches(result.totals, {
+        fixed: { annual: 26000, monthly: 2166.6666666666665 },
+        hourly: {
+          annual: 3192,
+          monthly: 266,
+          perBillableHour: 16.25978987583572,
+          perWorkingDay: 12,
+          perBillableDay: 8,
+          workingDays: 178.75,
+          billableDays: 130.875
+        },
+        travel: { annual: 1800, monthly: 150, perDay: 60, days: 30 },
+        other: { annual: 1800, monthly: 150 },
+        variable: { annual: 6792, monthly: 566 },
+        total: { annual: 32792, monthly: 2732.6666666666665 }
       });
     });
 
