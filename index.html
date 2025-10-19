@@ -101,9 +101,10 @@
 <body>
   <div class="page shell page-sheen">
     <div id="sr-status" class="visually-hidden" aria-live="polite"></div>
-    <header class="hero surface-card motion-fade-in" aria-labelledby="hero-title">
-      <div class="surface-content stack">
-        <div class="hero__top cluster cluster--end">
+    <div class="wrapper">
+      <header class="hero surface-card motion-fade-in" aria-labelledby="hero-title">
+        <div class="surface-content stack">
+          <div class="hero__top cluster cluster--end">
           <a href="#" id="how-to-link" class="chip chip--outline">How To Use This Tool</a>
           <a class="chip chip--outline" href="#privacy-info">Your Info Is Safe</a>
           <div class="theme-controls" role="group" aria-label="Color theme controls">
@@ -119,19 +120,21 @@
             </label>
           </div>
         </div>
-        <div class="hero__body stack stack--tight">
-          <span class="hero__eyebrow">Fruit trade CFO sandbox</span>
-          <h1 id="hero-title">ZZP Pricing Lab</h1>
-          <p class="hero__lede">
-            Translate your net target into a resilient service mix with comfort buffer guardrails built in.
-          </p>
+          <div class="hero__body stack stack--tight">
+            <span class="hero__eyebrow">Fruit trade CFO sandbox</span>
+            <h1 id="hero-title">ZZP Pricing Lab</h1>
+            <p class="hero__lede">
+              Translate your net target into a resilient service mix with comfort buffer guardrails built in.
+            </p>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </div>
 
-    <section class="hero-controls surface-card motion-slide-up" aria-labelledby="quick-controls-heading">
-      <div class="surface-content stack">
-        <div class="stack stack--tight">
+    <div class="wrapper">
+      <section class="hero-controls surface-card motion-slide-up" aria-labelledby="quick-controls-heading">
+        <div class="surface-content stack">
+          <div class="stack stack--tight">
           <h2 id="quick-controls-heading">Net target sandbox controls</h2>
           <p class="field-note">Start with a net target preset, then explore service mix levers and comfort buffers.</p>
         </div>
@@ -242,82 +245,86 @@
           <a class="btn btn--secondary" href="#sandbox">Sandbox levers</a>
           <a class="btn btn--secondary" href="#portfolio">Portfolio snapshot</a>
         </div>
-      </div>
-    </section>
+        </div>
+      </section>
+    </div>
 
     <section id="target-to-plan" class="motion-slide-up" aria-labelledby="target-plan-heading">
-      <div class="stack">
-        <article class="surface-card">
-          <div class="surface-content stack stack--tight">
-            <h2 id="target-plan-heading">Target to plan</h2>
-            <p class="field-note">Preview how target presets shape the initial plan scaffolding.</p>
+      <div class="wrapper">
+        <div class="stack">
+          <article class="surface-card">
+            <div class="surface-content stack stack--tight">
+              <h2 id="target-plan-heading">Target to plan</h2>
+              <p class="field-note">Preview how target presets shape the initial plan scaffolding.</p>
+            </div>
+          </article>
+          <div class="grid two">
+            <article class="surface-card">
+              <div class="surface-content stack stack--tight">
+                <h3>Net target summary</h3>
+                <dl class="kv two-col">
+                  <div><dt>Annual net target</dt><dd>—</dd></div>
+                  <div><dt>Buffer uplift</dt><dd>—</dd></div>
+                  <div><dt>Gross aim</dt><dd>—</dd></div>
+                  <div><dt>Plan readiness</dt><dd>—</dd></div>
+                </dl>
+              </div>
+            </article>
+            <article class="surface-card">
+              <div class="surface-content stack stack--tight">
+                <h3>Schedule guardrails</h3>
+                <dl class="kv two-col">
+                  <div><dt>Planned months off</dt><dd>—</dd></div>
+                  <div><dt>Hands-on quota</dt><dd>—</dd></div>
+                  <div><dt>Comfort margin</dt><dd>—</dd></div>
+                  <div><dt>Travel cushion</dt><dd>—</dd></div>
+                </dl>
+              </div>
+            </article>
           </div>
-        </article>
-        <div class="grid two">
-          <article class="surface-card">
-            <div class="surface-content stack stack--tight">
-              <h3>Net target summary</h3>
-              <dl class="kv two-col">
-                <div><dt>Annual net target</dt><dd>—</dd></div>
-                <div><dt>Buffer uplift</dt><dd>—</dd></div>
-                <div><dt>Gross aim</dt><dd>—</dd></div>
-                <div><dt>Plan readiness</dt><dd>—</dd></div>
-              </dl>
-            </div>
-          </article>
-          <article class="surface-card">
-            <div class="surface-content stack stack--tight">
-              <h3>Schedule guardrails</h3>
-              <dl class="kv two-col">
-                <div><dt>Planned months off</dt><dd>—</dd></div>
-                <div><dt>Hands-on quota</dt><dd>—</dd></div>
-                <div><dt>Comfort margin</dt><dd>—</dd></div>
-                <div><dt>Travel cushion</dt><dd>—</dd></div>
-              </dl>
-            </div>
-          </article>
         </div>
       </div>
     </section>
 
-    <section id="sandbox" aria-labelledby="sandbox-heading" class="stack">
-      <article class="surface-card motion-slide-up">
-        <div class="surface-content stack stack--tight">
-          <h2 id="sandbox-heading">Sandbox</h2>
-          <p class="field-note">Use the sandbox to fine-tune mixes, buffers, and service rhythms.</p>
+    <section id="sandbox" aria-labelledby="sandbox-heading">
+      <div class="wrapper stack">
+        <article class="surface-card motion-slide-up">
+          <div class="surface-content stack stack--tight">
+            <h2 id="sandbox-heading">Sandbox</h2>
+            <p class="field-note">Use the sandbox to fine-tune mixes, buffers, and service rhythms.</p>
+          </div>
+        </article>
+        <div class="grid two motion-slide-up">
+          <article class="surface-card">
+            <div class="surface-content stack stack--tight">
+              <h3>Scenario levers</h3>
+              <dl class="kv two-col">
+                <div><dt>Preset applied</dt><dd>—</dd></div>
+                <div><dt>Tax mode</dt><dd>—</dd></div>
+                <div><dt>Service mix</dt><dd>—</dd></div>
+                <div><dt>Time-off plan</dt><dd>—</dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="surface-card">
+            <div class="surface-content stack stack--tight">
+              <h3>Stress checks</h3>
+              <dl class="kv two-col">
+                <div><dt>Buffer coverage</dt><dd>—</dd></div>
+                <div><dt>Capacity swing</dt><dd>—</dd></div>
+                <div><dt>Seasonality drag</dt><dd>—</dd></div>
+                <div><dt>Alerts queued</dt><dd>—</dd></div>
+              </dl>
+            </div>
+          </article>
         </div>
-      </article>
-      <div class="grid two motion-slide-up">
-        <article class="surface-card">
-          <div class="surface-content stack stack--tight">
-            <h3>Scenario levers</h3>
-            <dl class="kv two-col">
-              <div><dt>Preset applied</dt><dd>—</dd></div>
-              <div><dt>Tax mode</dt><dd>—</dd></div>
-              <div><dt>Service mix</dt><dd>—</dd></div>
-              <div><dt>Time-off plan</dt><dd>—</dd></div>
-            </dl>
-          </div>
-        </article>
-        <article class="surface-card">
-          <div class="surface-content stack stack--tight">
-            <h3>Stress checks</h3>
-            <dl class="kv two-col">
-              <div><dt>Buffer coverage</dt><dd>—</dd></div>
-              <div><dt>Capacity swing</dt><dd>—</dd></div>
-              <div><dt>Seasonality drag</dt><dd>—</dd></div>
-              <div><dt>Alerts queued</dt><dd>—</dd></div>
-            </dl>
-          </div>
-        </article>
-      </div>
 
-      <div class="layout motion-stagger">
-      <section class="card surface-card controls motion-slide-up" aria-labelledby="inputs-heading">
-        <div class="surface-content stack">
-          <h2 id="inputs-heading">Inputs</h2>
-          <fieldset class="control-sections">
-            <legend class="visually-hidden">Calculator inputs</legend>
+        <div class="layout motion-stagger">
+          <section class="card surface-card controls motion-slide-up" aria-labelledby="inputs-heading">
+            <div class="surface-content stack">
+              <h2 id="inputs-heading">Inputs</h2>
+              <fieldset class="control-sections">
+                <legend class="visually-hidden">Calculator inputs</legend>
 
           <fieldset class="control-section" data-collapsible>
             <legend class="section-legend visually-hidden" id="section-settings-legend">Settings</legend>
@@ -953,26 +960,26 @@
             </div>
           </fieldset>
 
-        </fieldset>
-          <div class="button-row actions" role="group" aria-label="Actions">
-            <button type="button" id="recalculate" class="btn btn--primary">Recompute net plan</button>
-            <button type="button" id="download-csv" class="btn btn--secondary">Export service mix CSV</button>
-          </div>
-          <p class="status-message" id="status-message" aria-live="polite"></p>
-        </div>
-      </section>
+              </fieldset>
+              <div class="button-row actions" role="group" aria-label="Actions">
+                <button type="button" id="recalculate" class="btn btn--primary">Recompute net plan</button>
+                <button type="button" id="download-csv" class="btn btn--secondary">Export service mix CSV</button>
+              </div>
+              <p class="status-message" id="status-message" aria-live="polite"></p>
+            </div>
+          </section>
 
-      <section class="service-cards motion-slide-up" id="services" aria-labelledby="services-heading">
-        <div class="surface-card service-cards__intro">
-          <div class="surface-content stack stack--tight">
-            <h2 id="services-heading" class="service-cards__heading">Service mix snapshot</h2>
-            <p class="field-note">
-              Track the rate and volume targets for each offer. Switch tabs to see the same metrics expressed as required
-              volume per month.
-            </p>
-          </div>
-        </div>
-        <div class="service-cards__grid">
+          <section class="service-cards motion-slide-up" id="services" aria-labelledby="services-heading">
+            <div class="surface-card service-cards__intro">
+              <div class="surface-content stack stack--tight">
+                <h2 id="services-heading" class="service-cards__heading">Service mix snapshot</h2>
+                <p class="field-note">
+                  Track the rate and volume targets for each offer. Switch tabs to see the same metrics expressed as required
+                  volume per month.
+                </p>
+              </div>
+            </div>
+            <div class="service-cards__grid">
           <article class="surface-card service-card" data-service="representation">
             <header class="service-card__header">
               <div class="service-card__title">
@@ -1285,22 +1292,22 @@
               <div class="service-card__spark" id="intel-spark" aria-hidden="true"></div>
             </div>
           </article>
-        </div>
-      </section>
+            </div>
+          </section>
 
-      <section class="tables surface-card motion-slide-up" aria-live="polite">
-        <div class="surface-content stack">
-          <div class="table-grid" id="tables-container">
-            <!-- Tables injected here -->
-          </div>
-          <div class="tables-footer stack stack--tight">
-            <h2 class="assumptions-title">Assumptions</h2>
-            <ul class="assumptions" id="assumptions-list"></ul>
-          </div>
+          <section class="tables surface-card motion-slide-up" aria-live="polite">
+            <div class="surface-content stack">
+              <div class="table-grid" id="tables-container">
+                <!-- Tables injected here -->
+              </div>
+              <div class="tables-footer stack stack--tight">
+                <h2 class="assumptions-title">Assumptions</h2>
+                <ul class="assumptions" id="assumptions-list"></ul>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
-    </div>
-
+      </div>
     </section>
 
     <section class="card wrapper" id="portfolio" aria-labelledby="portfolio-heading">
@@ -1384,28 +1391,29 @@
       </div>
     </section>
 
-    <section class="card surface-card privacy-info motion-fade-in" id="privacy-info" aria-labelledby="privacy-heading">
-      <div class="surface-content stack">
-        <div class="stack stack--tight">
-          <h2 id="privacy-heading">Your Info Is Safe</h2>
-          <p>
+    <div class="wrapper">
+      <section class="card surface-card privacy-info motion-fade-in" id="privacy-info" aria-labelledby="privacy-heading">
+        <div class="surface-content stack">
+          <div class="stack stack--tight">
+            <h2 id="privacy-heading">Your Info Is Safe</h2>
+            <p>
             This calculator runs entirely in your browser. There are no sign-ins, accounts, or background network calls. Everything
             you type stays on this page. By default the only thing saved between visits is your light/dark mode preference
             (<code>zzp-calc-theme</code>). If you turn on “Remember my inputs,” the calculator also stores your latest form values
             (<code>zzp-calc-saved-inputs</code>) plus a small flag (<code>zzp-calc-save-enabled</code>) in local storage. Switch it
             off or press “Reset to defaults” to remove them instantly.
-          </p>
-          <p>
+            </p>
+            <p>
             When you export results, the CSV file is generated on your device: the app assembles the rows, wraps them in a
             <code>Blob</code>, spawns a temporary download link, clicks it for you, and immediately cleans it up again, so nothing
             leaves your device. Want to dig deeper? The full source code is available on
             <a href="https://github.com/jd-d/zzp-calc" target="_blank" rel="noreferrer noopener">GitHub</a>, review it yourself or with a
             developer you trust to confirm exactly how the site works.
-          </p>
-        </div>
-        <div class="stack stack--tight">
-          <h3>Easy ways to verify this yourself</h3>
-          <ol>
+            </p>
+          </div>
+          <div class="stack stack--tight">
+            <h3>Easy ways to verify this yourself</h3>
+            <ol>
             <li>
               <strong>Check that no cookies are created.</strong> Open DevTools → Application/Storage → Cookies, reload the page,
               and interact with the calculator. The cookies list will stay empty.
@@ -1430,10 +1438,11 @@
               <strong>Browse the GitHub repository.</strong> Inspect the project files directly on <a href="https://github.com/jd-d/zzp-calc" target="_blank" rel="noreferrer noopener">GitHub</a> to confirm exactly what
               the site ships and how it behaves.
             </li>
-          </ol>
+            </ol>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </div>
 
   <div class="readme-dialog" id="readme-dialog" role="dialog" aria-modal="true" aria-labelledby="readme-title" hidden>

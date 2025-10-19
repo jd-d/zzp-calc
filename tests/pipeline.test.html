@@ -53,8 +53,10 @@
 <body>
   <h1>ZZP Calc Pipeline Regression Tests</h1>
   <p class="instructions">
-    Open this file directly in a modern browser. The module-based harness runs automatically,
-    logs pass or fail outcomes below, and mirrors the same information to the developer tools console.
+    Serve the repository root with a simple static server (for example, run <code>npx http-server</code> in
+    the project directory) and open this file from <code>http://localhost</code> in a modern browser. The
+    module-based harness runs automatically, logs pass or fail outcomes below, and mirrors the same
+    information to the developer tools console.
   </p>
   <p id="summary">Running tests…</p>
   <ul id="results" aria-live="polite"></ul>
@@ -79,6 +81,8 @@
     const resultsList = document.getElementById('results');
     const debugLog = document.getElementById('debug-log');
     const logLines = [];
+
+    let cachedIndexDocPromise = null;
 
     function addTest(name, fn) {
       tests.push({ name, fn });
@@ -111,6 +115,83 @@
         }
       }
     }
+
+    async function loadIndexDocument() {
+      if (!cachedIndexDocPromise) {
+        const indexUrl = new URL('../index.html', import.meta.url);
+        cachedIndexDocPromise = fetch(indexUrl)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Failed to load index.html (status ${response.status})`);
+            }
+            return response.text();
+          })
+          .then((htmlText) => {
+            const parser = new DOMParser();
+            return parser.parseFromString(htmlText, 'text/html');
+          })
+          .catch((error) => {
+            if (error instanceof TypeError) {
+              throw new Error(
+                'Unable to load index.html. Serve the repository over HTTP (for example with `npx http-server`) before running these tests.'
+              );
+            }
+            throw error;
+          });
+      }
+
+      return cachedIndexDocPromise;
+    }
+
+    addTest('index.html exposes expected anchor targets in the hero controls', async () => {
+      const doc = await loadIndexDocument();
+      const navLinks = Array.from(doc.querySelectorAll('.hero-controls__nav a[href^="#"]'));
+
+      if (navLinks.length === 0) {
+        throw new Error('Hero controls navigation should expose anchor links to calculator sections');
+      }
+
+      const destinations = new Set(navLinks.map((link) => link.getAttribute('href')));
+      for (const target of ['#target-to-plan', '#sandbox', '#portfolio']) {
+        if (!destinations.has(target)) {
+          throw new Error(`Expected hero navigation to include a link to ${target}`);
+        }
+      }
+    });
+
+    addTest('calculator control sections remain mapped to their input fields', async () => {
+      const doc = await loadIndexDocument();
+      const requiredSelectors = [
+        '#section-settings input#currency-symbol',
+        '#section-net-income input#target-net',
+        '#section-taxes-costs input#tax-rate',
+        '#section-taxes-costs input#vat-rate',
+        '#section-time-off input#months-off',
+        '#section-modifiers input#comfort-margin'
+      ];
+
+      const missingSelectors = requiredSelectors.filter((selector) => !doc.querySelector(selector));
+      if (missingSelectors.length > 0) {
+        throw new Error(`Missing mapped inputs for selectors: ${missingSelectors.join(', ')}`);
+      }
+    });
+
+    addTest('sandbox layout keeps controls, services, and tables grouped', async () => {
+      const doc = await loadIndexDocument();
+      const layout = doc.querySelector('#sandbox .layout');
+
+      if (!layout) {
+        throw new Error('Sandbox section should contain a layout wrapper');
+      }
+
+      const controls = layout.querySelector('.controls');
+      const services = layout.querySelector('#services');
+      const tables = layout.querySelector('.tables');
+
+      if (!controls || !services || !tables) {
+        throw new Error('Sandbox layout should include controls, service cards, and tables');
+      }
+    });
 
     function resetTaxOverrides() {
       if (!calcState || !calcState.tax) {
