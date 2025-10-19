@@ -6,10 +6,35 @@ import {
   BASE_WORK_DAYS_PER_WEEK,
   TARGET_NET_DEFAULT
 } from './constants.js';
-import { deriveCapacity } from './capacity.js';
+import {
+  deriveCapacity,
+  calculateBillableHours,
+  calculateWeeklyCapacity,
+  normalizeTimeOff,
+  WEEKS_PER_CYCLE
+} from './capacity.js';
 import { computeCosts } from './costs.js';
-import { DEFAULT_MODIFIERS, applyModifierDefaults } from './modifiers.js';
+import { DEFAULT_MODIFIERS, applyModifierDefaults, normalizeScenarioModifiers } from './modifiers.js';
 import { deriveTargetNetDefaults } from './income.js';
+import { SERVICE_COPY, SERVICE_DEFAULTS } from './config/services.js';
+
+const CANONICAL_CALENDAR = Object.freeze({
+  monthsPerYear: MONTHS_PER_YEAR,
+  weeksPerYear: WEEKS_PER_YEAR,
+  weeksPerCycle: WEEKS_PER_CYCLE,
+  baseWorkDaysPerWeek: BASE_WORK_DAYS_PER_WEEK
+});
+
+const CANONICAL_TARGETS = Object.freeze({
+  modes: TARGET_INCOME_MODES.slice(),
+  basisValues: TARGET_NET_BASIS_VALUES.slice(),
+  defaultNet: TARGET_NET_DEFAULT
+});
+
+const CANONICAL_SERVICES = Object.freeze({
+  defaults: deepClone(SERVICE_DEFAULTS),
+  copy: deepClone(SERVICE_COPY)
+});
 
 const TAX_MODE_VALUES = ['simple', 'dutch2025'];
 
@@ -32,6 +57,7 @@ const initialState = {
     weeksOffCycle: 0,
     daysOffWeek: 0
   },
+  services: {},
   costs: {
     taxRatePercent: 40,
     fixedCosts: 0,
@@ -47,6 +73,16 @@ const initialState = {
     includeZvw: true
   },
   config: {
+    calendar: { ...CANONICAL_CALENDAR },
+    targets: {
+      modes: CANONICAL_TARGETS.modes.slice(),
+      basisValues: CANONICAL_TARGETS.basisValues.slice(),
+      defaultNet: CANONICAL_TARGETS.defaultNet
+    },
+    services: {
+      defaults: deepClone(CANONICAL_SERVICES.defaults),
+      copy: deepClone(CANONICAL_SERVICES.copy)
+    },
     currencySymbol: '€',
     defaults: {
       incomeTargets: {
@@ -65,9 +101,6 @@ let derivedState = buildDerivedState(state);
 
 const subscribers = new Set();
 
-const serviceOverrides = Object.create(null);
-const taxOverrides = Object.create(null);
-taxOverrides.mode = initialState.tax.mode;
 
 function deepClone(value) {
   if (Array.isArray(value)) {
@@ -108,12 +141,114 @@ function mergeDeep(target, source) {
   return base;
 }
 
+function resolveSessionLength(snapshot = state) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : state;
+  const value = source && Number.isFinite(source.sessionLength)
+    ? source.sessionLength
+    : initialState.sessionLength;
+  return value;
+}
+
+function computeCapacityMetrics(snapshot = state) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : state;
+  const sessionLength = resolveSessionLength(source);
+
+  if (source === state) {
+    return derivedState.capacity
+      || deriveCapacity(state.capacity || {}, state.modifiers || {}, { sessionLength });
+  }
+
+  return deriveCapacity(source.capacity || {}, source.modifiers || {}, { sessionLength });
+}
+
+export function translateTimeOffToWeekly(snapshot = state) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : state;
+  const timeOff = normalizeTimeOff(source.capacity || {});
+  const modifiers = normalizeScenarioModifiers(source.modifiers || {});
+  const weekly = calculateWeeklyCapacity(timeOff, modifiers);
+  return { ...timeOff, ...weekly };
+}
+
+export function getCapacityMetrics(snapshot = state) {
+  return deepClone(computeCapacityMetrics(snapshot));
+}
+
+export function getBillableHours(snapshot = state) {
+  const metrics = computeCapacityMetrics(snapshot);
+  if (Number.isFinite(metrics.billableHoursPerYear)) {
+    return metrics.billableHoursPerYear;
+  }
+  const { billableHoursPerYear } = calculateBillableHours(metrics, resolveSessionLength(snapshot));
+  return Number.isFinite(billableHoursPerYear) ? billableHoursPerYear : null;
+}
+
+export function getNonBillableShare(snapshot = state) {
+  const metrics = computeCapacityMetrics(snapshot);
+  if (Number.isFinite(metrics.nonBillableShare)) {
+    return metrics.nonBillableShare;
+  }
+  const workingDays = Number.isFinite(metrics.workingDaysPerYear) ? metrics.workingDaysPerYear : null;
+  const billableDays = Number.isFinite(metrics.billableDaysAfterTravel)
+    ? metrics.billableDaysAfterTravel
+    : Number.isFinite(metrics.billableDaysPerYear)
+      ? metrics.billableDaysPerYear
+      : null;
+  if (workingDays && workingDays > 0 && Number.isFinite(billableDays)) {
+    return Math.max(workingDays - billableDays, 0) / workingDays;
+  }
+  return null;
+}
+
+export function getTravelDaysPerYear(snapshot = state) {
+  const metrics = computeCapacityMetrics(snapshot);
+  if (Number.isFinite(metrics.travelAllowanceDays)) {
+    return metrics.travelAllowanceDays;
+  }
+  if (Number.isFinite(metrics.travelDaysPerYear)) {
+    return metrics.travelDaysPerYear;
+  }
+  return 0;
+}
+
+function cloneConfigSection(section, fallback = {}) {
+  if (section && typeof section === 'object') {
+    return deepClone(section);
+  }
+  return deepClone(fallback);
+}
+
+export function getCalendarConfig() {
+  const current = state?.config?.calendar;
+  return cloneConfigSection(current, initialState.config.calendar);
+}
+
+export function getTargetConfig() {
+  const current = state?.config?.targets;
+  return cloneConfigSection(current, initialState.config.targets);
+}
+
+export function getServiceCatalog() {
+  const current = state?.config?.services || {};
+  const fallback = initialState.config.services;
+  return {
+    defaults: cloneConfigSection(current.defaults, fallback.defaults),
+    copy: cloneConfigSection(current.copy, fallback.copy)
+  };
+}
+
 function buildDerivedState(currentState) {
   const safeState = currentState && typeof currentState === 'object'
     ? currentState
     : initialState;
 
-  const capacity = deriveCapacity(safeState.capacity || {}, safeState.modifiers || {});
+  const sessionLength = Number.isFinite(safeState.sessionLength)
+    ? safeState.sessionLength
+    : initialState.sessionLength;
+  const capacity = deriveCapacity(
+    safeState.capacity || {},
+    safeState.modifiers || {},
+    { sessionLength }
+  );
   const costs = computeCosts(safeState, capacity);
 
   return {
@@ -175,8 +310,11 @@ export function parseNumber(value, fallback = 0, { min = -Infinity, max = Infini
 }
 
 function refreshIncomeTargetDefaultsFromState() {
+  const sessionLength = Number.isFinite(state.sessionLength)
+    ? state.sessionLength
+    : initialState.sessionLength;
   const capacityMetrics = derivedState.capacity
-    || deriveCapacity(state.capacity, state.modifiers);
+    || deriveCapacity(state.capacity, state.modifiers, { sessionLength });
   const defaults = deriveTargetNetDefaults(capacityMetrics);
   patch({
     config: {
@@ -253,7 +391,6 @@ export function setTaxMode(nextMode) {
   const mode = typeof nextMode === 'string' && TAX_MODE_VALUES.includes(nextMode)
     ? nextMode
     : initialState.tax.mode;
-  taxOverrides.mode = mode;
   patch({
     tax: { mode }
   });
@@ -334,10 +471,101 @@ export const calcState = {
   getDerived,
   set,
   patch,
-  subscribe,
-  services: serviceOverrides,
-  tax: taxOverrides
+  subscribe
 };
+
+Object.defineProperties(calcState, {
+  services: {
+    get() {
+      if (!state.services || typeof state.services !== 'object') {
+        state.services = {};
+      }
+      return state.services;
+    },
+    enumerable: true
+  },
+  tax: {
+    get() {
+      if (!state.tax || typeof state.tax !== 'object') {
+        state.tax = deepClone(initialState.tax);
+      }
+      return state.tax;
+    },
+    enumerable: true
+  },
+  capacity: {
+    get() {
+      if (!state.capacity || typeof state.capacity !== 'object') {
+        state.capacity = deepClone(initialState.capacity);
+      }
+      return state.capacity;
+    },
+    enumerable: true
+  },
+  modifiers: {
+    get() {
+      if (!state.modifiers || typeof state.modifiers !== 'object') {
+        state.modifiers = { ...DEFAULT_MODIFIERS };
+      }
+      return state.modifiers;
+    },
+    enumerable: true
+  },
+  incomeTargets: {
+    get() {
+      if (!state.incomeTargets || typeof state.incomeTargets !== 'object') {
+        state.incomeTargets = deepClone(initialState.incomeTargets);
+      }
+      return state.incomeTargets;
+    },
+    enumerable: true
+  },
+  costs: {
+    get() {
+      if (!state.costs || typeof state.costs !== 'object') {
+        state.costs = deepClone(initialState.costs);
+      }
+      return state.costs;
+    },
+    enumerable: true
+  },
+  config: {
+    get() {
+      if (!state.config || typeof state.config !== 'object') {
+        state.config = deepClone(initialState.config);
+      }
+      return state.config;
+    },
+    enumerable: true
+  },
+  sessionLength: {
+    get() {
+      return resolveSessionLength();
+    },
+    enumerable: true
+  },
+  billableHours: {
+    get() {
+      const value = getBillableHours();
+      return Number.isFinite(value) ? value : null;
+    },
+    enumerable: true
+  },
+  nonBillableShare: {
+    get() {
+      const value = getNonBillableShare();
+      return Number.isFinite(value) ? value : null;
+    },
+    enumerable: true
+  },
+  travelDaysPerYear: {
+    get() {
+      const value = getTravelDaysPerYear();
+      return Number.isFinite(value) ? value : 0;
+    },
+    enumerable: true
+  }
+});
 
 export {
   initialState,
