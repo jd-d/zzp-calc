@@ -4,7 +4,6 @@
 This roadmap keeps the calculator deployable at the end of every sprint while layering in the ZZP Fruit Pro lab capabilities.
 
 ### Sprint 1 Foundation and Rebrand
-- [ ] [Reposition UI and copy around the fruit trade CFO sandbox narrative.](ROADMAP.md#task-11-reposition-ui-and-copy-around-the-fruit-trade-cfo-sandbox-narrative)
 - [ ] [Set up synchronized Target-to-Plan, Sandbox, and Portfolio layout shells with responsive cards.](ROADMAP.md#task-12-set-up-synchronized-target-to-plan-sandbox-and-portfolio-layout-shells-with-responsive-cards)
 - [ ] [Stabilize existing calculator inputs and results under the new layout to keep the site shippable.](ROADMAP.md#task-13-stabilize-existing-calculator-inputs-and-results-under-the-new-layout-to-keep-the-site-shippable)
 
@@ -37,6 +36,7 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 - [ ] Auto-select light or dark mode by time of day while allowing manual overrides with a lock control.
 
 ## DONE
+- [x] Reposition UI and copy around the fruit trade CFO sandbox narrative. (2025-10-19)
 - [x] Sprint 0 Produce feasibility assessment and roadmap documentation. (2025-10-18)
 - [x] Ensure on mobile that the preset buttons appear above the form and reduce the large space that appears on mobile between the blog title and the form (see pic). (2025-09-30)
 - [x] Swap the prominence of prices with and without VAT so the price including VAT is shown as the primary figure, with the VAT-exclusive amount secondary. (2025-09-30)

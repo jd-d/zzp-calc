@@ -78,7 +78,25 @@
   />
   <link rel="stylesheet" href="assets/css/design.css" />
   <link rel="stylesheet" href="assets/css/theme.css" />
-  <title>Course Pricing Calculator</title>
+  <meta
+    name="description"
+    content="Plan fruit trade net targets, explore service mix scenarios, and tune comfort buffers inside the ZZP Pricing Lab sandbox."
+  />
+  <meta property="og:title" content="ZZP Pricing Lab · Fruit Trade CFO Sandbox" />
+  <meta
+    property="og:description"
+    content="Plan fruit trade net targets, explore service mix scenarios, and tune comfort buffers inside the ZZP Pricing Lab sandbox."
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="assets/favicon.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ZZP Pricing Lab · Fruit Trade CFO Sandbox" />
+  <meta
+    name="twitter:description"
+    content="Plan fruit trade net targets, explore service mix scenarios, and tune comfort buffers inside the ZZP Pricing Lab sandbox."
+  />
+  <meta name="twitter:image" content="assets/favicon.png" />
+  <title>ZZP Pricing Lab · Fruit Trade CFO Sandbox</title>
 </head>
 <body>
   <div class="page shell page-sheen">
@@ -102,10 +120,10 @@
           </div>
         </div>
         <div class="hero__body stack stack--tight">
-          <span class="hero__eyebrow">Income planning lab</span>
-          <h1 id="hero-title">Course Pricing Calculator</h1>
+          <span class="hero__eyebrow">Fruit trade CFO sandbox</span>
+          <h1 id="hero-title">ZZP Pricing Lab</h1>
           <p class="hero__lede">
-            Estimate per-student pricing to reach your target income. All calculations stay on this page.
+            Translate your net target into a resilient service mix with comfort buffer guardrails built in.
           </p>
         </div>
       </div>
@@ -114,17 +132,22 @@
     <section class="hero-controls surface-card motion-slide-up" aria-labelledby="quick-controls-heading">
       <div class="surface-content stack">
         <div class="stack stack--tight">
-          <h2 id="quick-controls-heading">Quick scenario controls</h2>
-          <p class="field-note">Pick a preset or adjust the sliders before diving into the full inputs.</p>
+          <h2 id="quick-controls-heading">Net target sandbox controls</h2>
+          <p class="field-note">Start with a net target preset, then explore service mix levers and comfort buffers.</p>
         </div>
-        <div class="hero-controls__presets cluster" id="scenario-presets" role="group" aria-label="Income goal presets">
+        <div
+          class="hero-controls__presets cluster"
+          id="scenario-presets"
+          role="group"
+          aria-label="Net target sandbox presets"
+        >
           <button
             type="button"
             class="chip"
             data-preset="net:40000 tax:35 buffer:10 timeoff:1.5"
             aria-pressed="false"
           >
-            Starter ramp
+            €40k net ramp · lean mix
           </button>
           <button
             type="button"
@@ -132,7 +155,7 @@
             data-preset="net:50000 tax:40 buffer:15 timeoff:2"
             aria-pressed="true"
           >
-            Steady state
+            €50k net steady · +15% buffer
           </button>
           <button
             type="button"
@@ -140,13 +163,13 @@
             data-preset="net:70000 tax:42 buffer:20 timeoff:1"
             aria-pressed="false"
           >
-            Growth push
+            €70k net growth · +20% buffer
           </button>
         </div>
         <div class="hero-controls__sliders control-group">
           <div class="control control--range">
             <label for="quick-target-net">
-              <span class="label-text">Target net income per year</span>
+              <span class="label-text">Annual net target</span>
             </label>
             <input
               type="range"
@@ -169,7 +192,7 @@
           </div>
           <div class="control control--range">
             <label for="quick-buffer">
-              <span class="label-text">Safety margin cushion (%)</span>
+              <span class="label-text">Comfort buffer uplift (%)</span>
             </label>
             <input
               type="range"
@@ -192,7 +215,7 @@
           </div>
           <div class="control control--range">
             <label for="quick-months-off">
-              <span class="label-text">Months off per year</span>
+              <span class="label-text">Planned months off</span>
             </label>
             <input
               type="range"
@@ -860,8 +883,8 @@
 
         </fieldset>
           <div class="button-row actions" role="group" aria-label="Actions">
-            <button type="button" id="recalculate" class="btn btn--primary">Recalculate</button>
-            <button type="button" id="download-csv" class="btn btn--secondary">Download CSV</button>
+            <button type="button" id="recalculate" class="btn btn--primary">Recompute net plan</button>
+            <button type="button" id="download-csv" class="btn btn--secondary">Export service mix CSV</button>
           </div>
           <p class="status-message" id="status-message" aria-live="polite"></p>
         </div>
