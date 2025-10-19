@@ -9,6 +9,46 @@ function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isTruthyFlag(value) {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === 'yes' || normalized === '1' || normalized === 'locked';
+  }
+  return Boolean(value);
+}
+
+function isRateLocked(config = {}) {
+  if (!isPlainObject(config)) {
+    return false;
+  }
+  if (isTruthyFlag(config.lockedRate) || isTruthyFlag(config.rateLocked)) {
+    return true;
+  }
+  if (typeof config.lock === 'string') {
+    return config.lock.toLowerCase() === 'rate' || config.lock.toLowerCase() === 'price';
+  }
+  if (typeof config.lockMode === 'string') {
+    return config.lockMode.toLowerCase() === 'rate' || config.lockMode.toLowerCase() === 'price';
+  }
+  return false;
+}
+
+function isVolumeLocked(config = {}) {
+  if (!isPlainObject(config)) {
+    return false;
+  }
+  if (isTruthyFlag(config.lockedVolume) || isTruthyFlag(config.volumeLocked)) {
+    return true;
+  }
+  if (typeof config.lock === 'string') {
+    return config.lock.toLowerCase() === 'volume' || config.lock.toLowerCase() === 'units';
+  }
+  if (typeof config.lockMode === 'string') {
+    return config.lockMode.toLowerCase() === 'volume' || config.lockMode.toLowerCase() === 'units';
+  }
+  return false;
+}
+
 function toNumber(value, fallback = 0) {
   if (value === null || value === undefined || value === '') {
     return fallback;
@@ -322,8 +362,8 @@ function roundUnits(value) {
   return Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
 }
 
-function buildUnitRange(entry, capacityMetrics) {
-  const baselineHours = computeServiceHours(entry.config, capacityMetrics);
+function buildUnitRange(entry, capacityMetrics, modifiers = {}) {
+  const baselineHours = computeServiceHours(entry.config, capacityMetrics, modifiers);
   const baseUnits = Math.max(baselineHours.unitsPerMonth || 0, 0);
   const activeMonths = Math.max(toNumber(capacityMetrics.activeMonths, 12), 1);
   const billableDays = Math.max(
@@ -331,7 +371,7 @@ function buildUnitRange(entry, capacityMetrics) {
     0
   );
   const daysPerUnit = Math.max(
-    toNumber(entry.config.daysPerUnit, baselineHours.daysPerUnit || 1),
+    toNumber(entry.config.daysPerUnit, baselineHours.serviceDaysPerUnit || 1),
     0.01
   );
   const monthlyDayCapacity = activeMonths > 0 ? billableDays / activeMonths : 0;
@@ -340,6 +380,12 @@ function buildUnitRange(entry, capacityMetrics) {
   const step = upperBound <= 6 ? 0.5 : Math.max(roundUnits(upperBound / 6) || 1, 0.5);
 
   const values = new Set([0]);
+  if (baselineHours.lockedVolume) {
+    values.add(roundUnits(baseUnits));
+    return Array.from(values)
+      .filter((value) => value >= 0)
+      .sort((a, b) => a - b);
+  }
   if (baseUnits > 0) {
     values.add(roundUnits(baseUnits));
     values.add(roundUnits(baseUnits * 0.5));
@@ -362,22 +408,19 @@ function buildUnitRange(entry, capacityMetrics) {
 
 function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, modifiers, taxStrategy) {
   const config = mergeConfig(entry.config, { unitsPerMonth });
-  const hours = computeServiceHours(config, capacityMetrics);
+  const hours = computeServiceHours(config, capacityMetrics, modifiers);
   const revenueMetrics = computeServiceRevenue(config, hours, costs);
   const annualUnits = hours.annualUnits;
   const serviceDays = hours.annualDaysForService;
-  const travelPerUnit = Math.max(
-    toNumber(config.travelDaysPerUnit ?? config.travelPerUnit ?? 0, 0),
-    0
-  );
-  const travelMultiplier = 1 + Math.max(modifiers?.travelFriction || 0, 0);
-  const travelDays = travelPerUnit * annualUnits * travelMultiplier;
+  const travelDays = hours.annualTravelDays;
 
   const capacityDays = Math.max(
     toNumber(capacityMetrics.billableDaysAfterTravel ?? capacityMetrics.billableDaysPerYear, 0),
     0.01
   );
-  const usageShare = capacityDays > 0 ? Math.min(serviceDays / capacityDays, 1) : 0;
+  const usageShare = Number.isFinite(hours.usageShare) ? hours.usageShare : capacityDays > 0
+    ? Math.min(serviceDays / capacityDays, 1)
+    : 0;
 
   const fixedShare = clamp(toNumber(config.fixedCostShare, usageShare || hours.share), 0, 1);
   const variableShare = clamp(toNumber(config.variableCostShare, usageShare || hours.share), 0, 1);
@@ -596,7 +639,7 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
   const constraints = normalizeSolverConstraints(snapshot, capacity, costs, serviceEntries, modifiers);
 
   const serviceOptions = serviceEntries.map((entry) => {
-    const candidates = buildUnitRange(entry, capacity);
+    const candidates = buildUnitRange(entry, capacity, modifiers);
     const normalizedCandidates = candidates.length > 0 ? candidates : [0];
     return normalizedCandidates.map((units) =>
       evaluateServiceOption(entry, units, capacity, costs, modifiers, taxStrategy)
@@ -843,14 +886,36 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
   return result;
 }
 
-export function computeServiceHours(config, capacity = {}) {
-  const share = clamp(toNumber(config.shareOfCapacity, 0), 0, 1);
-  const daysPerUnit = Math.max(toNumber(config.daysPerUnit, 1), 0.01);
+export function computeServiceHours(config, capacity = {}, modifiers = {}) {
+  const share = clamp(toNumber(config.shareOfCapacity ?? config.capacityShare, 0), 0, 1);
+  const serviceDaysPerUnit = Math.max(toNumber(config.daysPerUnit, 1), 0.01);
   const activeMonths = Math.max(toNumber(capacity.activeMonths, 12), 1);
   const billableDays = Math.max(
     toNumber(capacity.billableDaysAfterTravel, toNumber(capacity.billableDaysPerYear, 0)),
     0
   );
+
+  const travelMultiplier = Number.isFinite(capacity.travelFrictionMultiplier)
+    ? Math.max(capacity.travelFrictionMultiplier, 0)
+    : 1 + Math.max(modifiers.travelFriction || 0, 0);
+  const travelDaysPerUnitBase = Math.max(
+    toNumber(config.travelDaysPerUnit ?? config.travelPerUnit ?? 0, 0),
+    0
+  );
+  const travelHoursPerUnitBase = Math.max(toNumber(config.travelHoursPerUnit, 0), 0);
+  const travelDaysPerUnit = travelDaysPerUnitBase * travelMultiplier;
+  const travelHoursPerUnit = travelHoursPerUnitBase * travelMultiplier;
+
+  const hoursPerBillableDay = Number.isFinite(capacity.billableHoursPerYear) && capacity.billableDaysAfterTravel > 0
+    ? capacity.billableHoursPerYear / capacity.billableDaysAfterTravel
+    : 8;
+
+  const baseHoursPerUnit = toPositive(config.hoursPerUnit, NaN);
+  const serviceHoursPerUnit = Number.isFinite(baseHoursPerUnit) && baseHoursPerUnit > 0
+    ? baseHoursPerUnit
+    : serviceDaysPerUnit * hoursPerBillableDay;
+
+  const totalHoursPerUnit = serviceHoursPerUnit + travelHoursPerUnit + travelDaysPerUnit * hoursPerBillableDay;
 
   const explicitUnitsPerMonth = toNumber(config.unitsPerMonth, NaN);
   const explicitUnitsPerYear = toNumber(config.unitsPerYear, NaN);
@@ -862,7 +927,7 @@ export function computeServiceHours(config, capacity = {}) {
     unitsPerMonth = explicitUnitsPerYear / activeMonths;
   } else {
     const annualDaysForService = billableDays * share;
-    const annualUnits = annualDaysForService / daysPerUnit;
+    const annualUnits = annualDaysForService / serviceDaysPerUnit;
     unitsPerMonth = annualUnits / activeMonths;
   }
 
@@ -870,27 +935,120 @@ export function computeServiceHours(config, capacity = {}) {
     unitsPerMonth = 0;
   }
 
+  const lockedVolume = isVolumeLocked(config);
+  if (lockedVolume && Number.isFinite(explicitUnitsPerMonth) && explicitUnitsPerMonth >= 0) {
+    unitsPerMonth = explicitUnitsPerMonth;
+  }
+
   const annualUnits = unitsPerMonth * activeMonths;
-  const annualDaysForService = annualUnits * daysPerUnit;
+  const annualDaysForService = annualUnits * serviceDaysPerUnit;
+  const annualTravelDays = annualUnits * travelDaysPerUnit;
+  const annualHours = annualUnits * totalHoursPerUnit;
+  const usageShare = billableDays > 0 ? Math.min(annualDaysForService / billableDays, 1) : 0;
 
   return {
     share,
-    daysPerUnit,
+    serviceDaysPerUnit,
+    travelDaysPerUnit,
+    travelHoursPerUnit,
+    serviceHoursPerUnit,
+    totalHoursPerUnit,
     activeMonths,
     billableDays,
     unitsPerMonth,
     annualUnits,
-    annualDaysForService
+    annualDaysForService,
+    annualTravelDays,
+    annualHours,
+    usageShare,
+    lockedVolume
   };
+}
+
+function resolveTaxRate(config = {}, costs = {}, taxStrategy = null) {
+  const fallbackTaxRate = Number.isFinite(costs?.taxRate)
+    ? costs.taxRate
+    : Number.isFinite(costs?.taxRatePercent)
+      ? costs.taxRatePercent / 100
+      : 0;
+  const manualTaxRate = clamp(toNumber(config.taxRate, fallbackTaxRate), 0, 1);
+  if (taxStrategy && taxStrategy.mode === 'dutch2025' && Number.isFinite(taxStrategy.effectiveTaxRate)) {
+    return clamp(taxStrategy.effectiveTaxRate, 0, 1);
+  }
+  return manualTaxRate;
+}
+
+function computeAllocatedCosts(config = {}, costs = {}, fallbackShare = 0) {
+  const fixedAnnualTotal = Math.max(
+    toNumber(costs?.totals?.fixed?.annual ?? costs?.fixedCosts, 0),
+    0
+  );
+  const variableAnnualTotal = Math.max(
+    toNumber(costs?.totals?.variable?.annual ?? costs?.annualVariableCosts, 0),
+    0
+  );
+  const resolvedShare = clamp(toNumber(fallbackShare, toNumber(config.shareOfCapacity, 0)), 0, 1);
+  const fixedShare = clamp(toNumber(config.fixedCostShare, resolvedShare), 0, 1);
+  const variableShare = clamp(toNumber(config.variableCostShare, resolvedShare), 0, 1);
+  return {
+    fixedAnnual: fixedAnnualTotal * fixedShare,
+    variableAnnual: variableAnnualTotal * variableShare,
+    fixedShare,
+    variableShare
+  };
+}
+
+function resolveServiceTargetNet(config = {}, options = {}) {
+  if (Number.isFinite(options.targetNet)) {
+    return options.targetNet;
+  }
+
+  const totalTargetNet = toNumber(options.totalTargetNet, NaN);
+  const shareOverride = clamp(toNumber(options.targetNetShare, NaN), 0, 1);
+  const configShare = clamp(toNumber(config.targetNetShare ?? config.shareOfCapacity, NaN), 0, 1);
+  const share = Number.isFinite(shareOverride)
+    ? shareOverride
+    : Number.isFinite(configShare)
+      ? configShare
+      : 0;
+
+  if (Number.isFinite(totalTargetNet)) {
+    return totalTargetNet * share;
+  }
+
+  const explicitTarget = toNumber(
+    config.targetNet ?? config.targetNetAnnual ?? config.targetNetContribution,
+    NaN
+  );
+  if (Number.isFinite(explicitTarget)) {
+    return explicitTarget;
+  }
+
+  return 0;
 }
 
 export function computeServiceRevenue(config, hoursMetrics, costs = {}) {
   const buffer = clamp(toNumber(config.bufferOverride, costs.buffer ?? 0), 0, 5);
   const basePrice = toPositive(config.basePrice ?? config.pricePerUnit ?? 0, 0);
-  const priceOverride = toPositive(config.pricePerUnitOverride ?? config.pricePerUnit, NaN);
-  const pricePerUnit = Number.isFinite(priceOverride) && priceOverride > 0
-    ? priceOverride
-    : basePrice * (1 + buffer);
+  const lockedOverride = toPositive(
+    config.lockedPricePerUnit ?? config.fixedPricePerUnit ?? config.rateLockedValue,
+    NaN
+  );
+  const priceOverride = Number.isFinite(lockedOverride) && lockedOverride > 0
+    ? lockedOverride
+    : toPositive(config.pricePerUnitOverride ?? config.pricePerUnit, NaN);
+  let pricePerUnit;
+  if (isRateLocked(config)) {
+    if (Number.isFinite(priceOverride) && priceOverride > 0) {
+      pricePerUnit = priceOverride;
+    } else {
+      pricePerUnit = basePrice;
+    }
+  } else if (Number.isFinite(priceOverride) && priceOverride > 0) {
+    pricePerUnit = priceOverride;
+  } else {
+    pricePerUnit = basePrice * (1 + buffer);
+  }
 
   const directCostPerUnit = toPositive(config.directCostPerUnit ?? config.costPerUnit, 0);
   const fallbackFixedMonthly = Number.isFinite(costs?.fixedCosts) ? costs.fixedCosts / 12 : 0;
@@ -921,11 +1079,7 @@ export function computeServiceRevenue(config, hoursMetrics, costs = {}) {
   const perUnitCost = units * directCostPerUnit;
   const directCost = perUnitCost + allocatedFixed + allocatedVariable;
 
-  const taxRate = clamp(
-    toNumber(config.taxRate, costs.taxRate ?? 0),
-    0,
-    1
-  );
+  const taxRate = resolveTaxRate(config, costs);
   const tax = revenue * taxRate;
   const net = revenue - directCost - tax;
 
@@ -938,28 +1092,280 @@ export function computeServiceRevenue(config, hoursMetrics, costs = {}) {
   };
 }
 
+export function solveServiceRateTarget(config = {}, capacity = {}, costs = {}, options = {}) {
+  const modifiers = options.modifiers || {};
+  const hours = computeServiceHours(config, capacity, modifiers);
+  const targetNet = resolveServiceTargetNet(config, options);
+  const annualUnits = hours.annualUnits;
+  const allocation = computeAllocatedCosts(config, costs, hours.usageShare ?? hours.share ?? 0);
+  const taxRate = resolveTaxRate(config, costs, options.taxStrategy || null);
+  const directCostPerUnit = toPositive(config.directCostPerUnit ?? config.costPerUnit, 0);
+
+  if (!Number.isFinite(annualUnits) || annualUnits <= 0) {
+    return {
+      pricePerUnit: null,
+      unitsPerMonth: hours.unitsPerMonth ?? 0,
+      annualUnits: 0,
+      locked: isRateLocked(config),
+      targetNet,
+      annualTravelDays: hours.annualTravelDays,
+      serviceDays: hours.annualDaysForService,
+      hoursPerUnit: hours.totalHoursPerUnit
+    };
+  }
+
+  if (isRateLocked(config)) {
+    const revenueMetrics = computeServiceRevenue(config, hours, costs);
+    return {
+      pricePerUnit: revenueMetrics.pricePerUnit,
+      unitsPerMonth: hours.unitsPerMonth,
+      annualUnits,
+      locked: true,
+      targetNet,
+      projectedNet: revenueMetrics.net,
+      annualTravelDays: hours.annualTravelDays,
+      serviceDays: hours.annualDaysForService,
+      hoursPerUnit: hours.totalHoursPerUnit
+    };
+  }
+
+  const annualDirectCosts = directCostPerUnit * annualUnits;
+  const baselineCost = annualDirectCosts + allocation.fixedAnnual + allocation.variableAnnual;
+  const denominator = annualUnits * (1 - taxRate);
+
+  const pricePerUnit = denominator > 0
+    ? (targetNet + baselineCost) / denominator
+    : null;
+
+  return {
+    pricePerUnit,
+    unitsPerMonth: hours.unitsPerMonth,
+    annualUnits,
+    locked: false,
+    targetNet,
+    annualTravelDays: hours.annualTravelDays,
+    serviceDays: hours.annualDaysForService,
+    hoursPerUnit: hours.totalHoursPerUnit
+  };
+}
+
+export function solveServiceVolumeTarget(config = {}, capacity = {}, costs = {}, options = {}) {
+  const modifiers = options.modifiers || {};
+  const hours = computeServiceHours(config, capacity, modifiers);
+  const allocation = computeAllocatedCosts(config, costs, hours.usageShare ?? hours.share ?? 0);
+  const taxRate = resolveTaxRate(config, costs, options.taxStrategy || null);
+  const targetNet = resolveServiceTargetNet(config, options);
+  const revenueMetrics = computeServiceRevenue(config, hours, costs);
+  const pricePerUnit = revenueMetrics.pricePerUnit;
+  const directCostPerUnit = toPositive(config.directCostPerUnit ?? config.costPerUnit, 0);
+
+  if (isVolumeLocked(config)) {
+    return {
+      unitsPerMonth: hours.unitsPerMonth,
+      annualUnits: hours.annualUnits,
+      locked: true,
+      targetNet,
+      projectedNet: revenueMetrics.net,
+      pricePerUnit,
+      annualTravelDays: hours.annualTravelDays,
+      serviceDays: hours.annualDaysForService,
+      hoursPerUnit: hours.totalHoursPerUnit
+    };
+  }
+
+  const marginPerUnit = pricePerUnit * (1 - taxRate) - directCostPerUnit;
+  if (!Number.isFinite(marginPerUnit) || marginPerUnit <= 0) {
+    return {
+      unitsPerMonth: null,
+      annualUnits: null,
+      locked: false,
+      targetNet,
+      pricePerUnit,
+      annualTravelDays: hours.annualTravelDays,
+      serviceDays: hours.annualDaysForService,
+      hoursPerUnit: hours.totalHoursPerUnit
+    };
+  }
+
+  const requiredAnnualUnits = (targetNet + allocation.fixedAnnual + allocation.variableAnnual) / marginPerUnit;
+  const annualUnits = Math.max(requiredAnnualUnits, 0);
+  const unitsPerMonth = hours.activeMonths > 0 ? annualUnits / hours.activeMonths : null;
+  const annualTravelDays = annualUnits * hours.travelDaysPerUnit;
+  const serviceDays = annualUnits * hours.serviceDaysPerUnit;
+
+  return {
+    unitsPerMonth,
+    annualUnits,
+    locked: false,
+    targetNet,
+    pricePerUnit,
+    annualTravelDays,
+    serviceDays,
+    hoursPerUnit: hours.totalHoursPerUnit,
+    usageShare: hours.billableDays > 0 ? Math.min(serviceDays / hours.billableDays, 1) : null
+  };
+}
+
+const SERVICE_BLUEPRINTS = [
+  {
+    id: 'representation',
+    archetype: 'representation retainers',
+    copy: {
+      ...SERVICE_COPY.representation,
+      subtitle: 'Representation retainers',
+      description: 'Account coverage, brokerage representation, and seasonal contracting support.'
+    },
+    defaults: {
+      ...SERVICE_DEFAULTS.representation,
+      targetNetShare: 0.34,
+      travelDaysPerUnit: 0.25,
+      travelHoursPerUnit: 4,
+      hoursPerUnit: 10,
+      lockedRate: false,
+      lockedVolume: false
+    }
+  },
+  {
+    id: 'ops',
+    archetype: 'ops advisory',
+    copy: {
+      ...SERVICE_COPY.ops,
+      subtitle: 'Operations advisory',
+      description: 'On-site operations audits, performance dashboards, and process improvement cadences.'
+    },
+    defaults: {
+      ...SERVICE_DEFAULTS.ops,
+      targetNetShare: 0.22,
+      travelDaysPerUnit: 0.3,
+      travelHoursPerUnit: 3,
+      hoursPerUnit: 8,
+      lockedRate: false,
+      lockedVolume: false
+    }
+  },
+  {
+    id: 'qc',
+    archetype: 'qc inspections',
+    copy: {
+      ...SERVICE_COPY.qc,
+      subtitle: 'QC inspections',
+      description: 'Arrival inspections, ripeness checks, and traceability sampling for inbound loads.'
+    },
+    defaults: {
+      ...SERVICE_DEFAULTS.qc,
+      targetNetShare: 0.18,
+      travelDaysPerUnit: 0.2,
+      travelHoursPerUnit: 2,
+      hoursPerUnit: 6,
+      lockedRate: false,
+      lockedVolume: false
+    }
+  },
+  {
+    id: 'training',
+    archetype: 'training',
+    copy: {
+      ...SERVICE_COPY.training,
+      subtitle: 'Training intensives',
+      description: 'Curriculum design, workshops, and follow-up coaching for produce teams.'
+    },
+    defaults: {
+      ...SERVICE_DEFAULTS.training,
+      targetNetShare: 0.16,
+      travelDaysPerUnit: 0.28,
+      travelHoursPerUnit: 3,
+      hoursPerUnit: 7.5,
+      lockedRate: false,
+      lockedVolume: false
+    }
+  },
+  {
+    id: 'intel',
+    archetype: 'market intel',
+    copy: {
+      ...SERVICE_COPY.intel,
+      subtitle: 'Market intelligence',
+      description: 'Subscription reporting, buyer telemetry, and trade lane sentiment tracking.'
+    },
+    defaults: {
+      ...SERVICE_DEFAULTS.intel,
+      targetNetShare: 0.1,
+      travelDaysPerUnit: 0.12,
+      travelHoursPerUnit: 1.5,
+      hoursPerUnit: 5,
+      lockedRate: false,
+      lockedVolume: false
+    }
+  }
+];
+
+const SERVICE_BLUEPRINT_LOOKUP = SERVICE_BLUEPRINTS.reduce((acc, entry) => {
+  acc[entry.id] = entry;
+  return acc;
+}, {});
+
 function createServiceDescriptor(id) {
-  const defaults = SERVICE_DEFAULTS[id] || {};
-  const copy = SERVICE_COPY[id] || { title: id };
+  const blueprint = SERVICE_BLUEPRINT_LOOKUP[id] || { defaults: SERVICE_DEFAULTS[id] || {}, copy: SERVICE_COPY[id] || { title: id } };
+  const defaults = blueprint.defaults || {};
+  const copy = blueprint.copy || { title: id };
 
   return {
     id,
+    archetype: blueprint.archetype || null,
     copy,
     defaults,
     compute(state, capacity, costs) {
-      const overrides = readServiceOverrides(id);
-      const config = mergeConfig(defaults, overrides);
-      const hoursMetrics = computeServiceHours(config, capacity);
-      const revenueMetrics = computeServiceRevenue(config, hoursMetrics, costs);
+      const snapshot = resolveStateSnapshot(state) || {};
+      const capacityMetrics = capacity || {};
+      const storeOverrides = readServiceOverrides(id);
+      const snapshotOverrides = readServiceOverridesFromStateSnapshot(snapshot, id);
+      const mergedOverrides = mergeConfig(storeOverrides, snapshotOverrides);
+      const config = mergeConfig(defaults, mergedOverrides);
+      const modifiers = normalizeScenarioModifiers(snapshot.modifiers || {});
+
+      const hoursMetrics = computeServiceHours(config, capacityMetrics, modifiers);
+      const costMetrics = costs || computeCosts(snapshot, capacityMetrics);
+      const revenueMetrics = computeServiceRevenue(config, hoursMetrics, costMetrics);
+
+      const incomeTargets = deriveIncomeTargets(
+        {
+          incomeTargets: snapshot.incomeTargets || {},
+          config: snapshot.config || { defaults: { incomeTargets: {} } }
+        },
+        capacityMetrics
+      );
+      const taxStrategy = calculateTaxReserve(snapshot, capacityMetrics, costMetrics, incomeTargets);
+      const totalTargetNet = incomeTargets?.targetNet ?? 0;
+
+      const rateTarget = solveServiceRateTarget(config, capacityMetrics, costMetrics, {
+        totalTargetNet,
+        modifiers,
+        taxStrategy
+      });
+      const volumeTarget = solveServiceVolumeTarget(config, capacityMetrics, costMetrics, {
+        totalTargetNet,
+        modifiers,
+        taxStrategy
+      });
+
       return {
-        units: revenueMetrics && Number.isFinite(hoursMetrics.unitsPerMonth)
+        units: Number.isFinite(hoursMetrics.unitsPerMonth)
           ? hoursMetrics.unitsPerMonth
           : 0,
         price: revenueMetrics.pricePerUnit,
         revenue: revenueMetrics.revenue,
         directCost: revenueMetrics.directCost,
         tax: revenueMetrics.tax,
-        net: revenueMetrics.net
+        net: revenueMetrics.net,
+        travelDaysPerUnit: hoursMetrics.travelDaysPerUnit,
+        annualTravelDays: hoursMetrics.annualTravelDays,
+        hoursPerUnit: hoursMetrics.totalHoursPerUnit,
+        targets: {
+          pricePerUnit: rateTarget.pricePerUnit,
+          unitsPerMonth: volumeTarget.unitsPerMonth,
+          lockedRate: rateTarget.locked,
+          lockedVolume: volumeTarget.locked
+        }
       };
     }
   };
