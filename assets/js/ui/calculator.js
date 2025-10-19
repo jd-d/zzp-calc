@@ -12,6 +12,7 @@ import {
   setMonthsOff,
   setWeeksOffCycle,
   setDaysOffWeek,
+  setUtilizationPercent,
   setSessionLength,
   setTaxRatePercent,
   setVariableCostPerClass,
@@ -56,6 +57,7 @@ export function initializeCalculatorUI() {
     variableCostPerClass: document.getElementById('variable-cost-class'),
     vatRate: document.getElementById('vat-rate'),
     monthsOff: document.getElementById('months-off'),
+    utilization: document.getElementById('utilization'),
     weeksOffCycle: document.getElementById('weeks-off-cycle'),
     daysOffWeek: document.getElementById('days-off-week'),
     sessionLength: document.getElementById('session-length'),
@@ -536,6 +538,10 @@ export function initializeCalculatorUI() {
       commit: ({ raw }) => setMonthsOff(raw)
     });
 
+    registerControlBinding(controls.utilization, {
+      commit: ({ raw }) => setUtilizationPercent(raw)
+    });
+
     registerControlBinding(controls.weeksOffCycle, {
       commit: ({ raw }) => setWeeksOffCycle(raw)
     });
@@ -843,6 +849,13 @@ export function initializeCalculatorUI() {
 
     if (controls.monthsOff instanceof HTMLInputElement) {
       controls.monthsOff.value = formatFixed(state.capacity.monthsOff ?? 0, 2);
+    }
+
+    if (controls.utilization instanceof HTMLInputElement) {
+      const value = Number.isFinite(state.capacity.utilizationPercent)
+        ? state.capacity.utilizationPercent
+        : 0;
+      controls.utilization.value = formatFixed(value, 1);
     }
 
     if (controls.weeksOffCycle instanceof HTMLInputElement) {
