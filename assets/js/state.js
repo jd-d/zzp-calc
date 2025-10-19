@@ -38,29 +38,49 @@ const CANONICAL_SERVICES = Object.freeze({
 
 const TAX_MODE_VALUES = ['simple', 'dutch2025'];
 
+const DEFAULT_CAPACITY_STATE = {
+  monthsOff: 2,
+  weeksOffCycle: 1,
+  daysOffWeek: 2
+};
+
+const DEFAULT_SESSION_LENGTH = 1.5;
+
+const DEFAULT_CAPACITY_METRICS = deriveCapacity(
+  DEFAULT_CAPACITY_STATE,
+  DEFAULT_MODIFIERS,
+  { sessionLength: DEFAULT_SESSION_LENGTH }
+);
+
+const DEFAULT_INCOME_TARGETS = {
+  mode: 'net',
+  basis: 'year',
+  year: TARGET_NET_DEFAULT,
+  week: 2000,
+  month: 5000,
+  averageWeek: Number((TARGET_NET_DEFAULT / WEEKS_PER_YEAR).toFixed(2)),
+  averageMonth: Number((TARGET_NET_DEFAULT / MONTHS_PER_YEAR).toFixed(2))
+};
+
+const DEFAULT_INCOME_DEFAULTS = deriveTargetNetDefaults(DEFAULT_CAPACITY_METRICS);
+
+const DEFAULT_FIXED_COST_TOTAL = 25140;
+
 const initialState = {
   incomeTargets: {
-    mode: 'net',
-    basis: 'year',
-    year: 0,
-    week: 0,
-    month: 0,
-    averageWeek: 0,
-    averageMonth: 0
+    ...DEFAULT_INCOME_TARGETS
   },
   modifiers: {
     ...DEFAULT_MODIFIERS
   },
-  sessionLength: 1.5,
+  sessionLength: DEFAULT_SESSION_LENGTH,
   capacity: {
-    monthsOff: 0,
-    weeksOffCycle: 0,
-    daysOffWeek: 0
+    ...DEFAULT_CAPACITY_STATE
   },
   services: {},
   costs: {
     taxRatePercent: 40,
-    fixedCosts: 0,
+    fixedCosts: DEFAULT_FIXED_COST_TOTAL,
     variableCostPerClass: 0,
     vatRatePercent: 21,
     bufferPercent: 15
@@ -86,11 +106,7 @@ const initialState = {
     currencySymbol: '€',
     defaults: {
       incomeTargets: {
-        year: 0,
-        week: 0,
-        month: 0,
-        averageWeek: 0,
-        averageMonth: 0
+        ...DEFAULT_INCOME_DEFAULTS
       }
     }
   }
