@@ -714,6 +714,35 @@ header.hero {
   gap: var(--space-2);
 }
 
+.hero-controls__preset-rows {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.hero-controls__preset-row {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.preset-row__label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.preset-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (min-width: 720px) {
+  .hero-controls__preset-row {
+    grid-template-columns: minmax(0, 200px) 1fr;
+    align-items: center;
+  }
+}
+
 .hero-controls__sliders {
   display: grid;
   gap: var(--space-4);
