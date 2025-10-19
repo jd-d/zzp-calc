@@ -389,6 +389,157 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
   };
 }
 
+export function bindStateInput(target, options = {}) {
+  const input = resolveElement(target, options.root);
+
+  if (!(input instanceof HTMLInputElement)) {
+    return () => {};
+  }
+
+  const path = deriveStatePath(options.stateKey);
+  const events = Array.isArray(options.events) && options.events.length
+    ? options.events
+    : ['input', 'change'];
+  const parseOption = typeof options.parse === 'function'
+    ? options.parse
+    : (rawValue, meta) => ({ value: rawValue, raw: rawValue, valid: true, meta });
+  const formatOption = typeof options.format === 'function'
+    ? options.format
+    : value => (value == null ? '' : String(value));
+  const getValueOption = typeof options.getValue === 'function'
+    ? options.getValue
+    : state => (path.length ? readStateValue(state, path) : undefined);
+  const compareOption = typeof options.compare === 'function'
+    ? options.compare
+    : (a, b) => a === b;
+
+  const commitOption = typeof options.commit === 'function'
+    ? options.commit
+    : (payload) => {
+        if (!path.length) {
+          return;
+        }
+        if (!payload || typeof payload !== 'object' || !Object.prototype.hasOwnProperty.call(payload, 'value')) {
+          return;
+        }
+        const patchPayload = buildPatchPayload(path, payload.value);
+        if (typeof calcState.patch === 'function') {
+          calcState.patch(patchPayload);
+        }
+      };
+
+  const afterCommit = typeof options.onAfterCommit === 'function'
+    ? options.onAfterCommit
+    : null;
+
+  const announceMessage = typeof options.announce === 'string' ? options.announce : '';
+  const announceCommit = announceMessage
+    ? () => {
+        announce(announceMessage);
+      }
+    : null;
+
+  const toPayload = (result, rawValue) => {
+    if (result && typeof result === 'object') {
+      const payload = { raw: rawValue, ...result };
+      if (!Object.prototype.hasOwnProperty.call(payload, 'raw')) {
+        payload.raw = rawValue;
+      }
+      if (!Object.prototype.hasOwnProperty.call(payload, 'value')) {
+        payload.value = rawValue;
+      }
+      return payload;
+    }
+    return { value: result, raw: rawValue };
+  };
+
+  let lastValue;
+
+  const applyFromState = (state, { silent = false } = {}) => {
+    const nextValue = getValueOption(state);
+    if (nextValue === undefined) {
+      return;
+    }
+
+    if (!silent && lastValue !== undefined && compareOption(nextValue, lastValue)) {
+      return;
+    }
+
+    lastValue = nextValue;
+
+    if (input.type === 'checkbox' || input.type === 'radio') {
+      input.checked = Boolean(nextValue);
+      return;
+    }
+
+    const formatted = formatOption(nextValue, { input, state });
+    const normalizedDisplay = formatted == null ? '' : String(formatted);
+    if (input.value !== normalizedDisplay) {
+      input.value = normalizedDisplay;
+    }
+  };
+
+  const initialState = typeof calcState.get === 'function' ? calcState.get() : null;
+  if (initialState) {
+    applyFromState(initialState, { silent: true });
+  }
+
+  const handleEvent = event => {
+    const currentState = typeof calcState.get === 'function' ? calcState.get() : null;
+    const rawValue = input.type === 'checkbox' || input.type === 'radio'
+      ? input.checked
+      : input.value;
+    const parseResult = parseOption(rawValue, { event, input, state: currentState });
+
+    if (parseResult && typeof parseResult === 'object' && parseResult.valid === false) {
+      if (parseResult.display !== undefined && input.type !== 'checkbox' && input.type !== 'radio') {
+        input.value = parseResult.display == null ? '' : String(parseResult.display);
+      }
+      return;
+    }
+
+    const payload = toPayload(parseResult, rawValue);
+
+    if (!payload || (payload.value === undefined && payload.raw === undefined)) {
+      return;
+    }
+
+    if (payload.display !== undefined && input.type !== 'checkbox' && input.type !== 'radio') {
+      input.value = payload.display == null ? '' : String(payload.display);
+    }
+
+    commitOption(payload, { event, input, state: currentState });
+
+    if (afterCommit) {
+      afterCommit(payload, { event, input, state: currentState });
+    }
+
+    if (announceCommit) {
+      announceCommit();
+    }
+  };
+
+  events.forEach(type => {
+    input.addEventListener(type, handleEvent);
+  });
+
+  let unsubscribe = null;
+  if (typeof calcState.subscribe === 'function') {
+    unsubscribe = calcState.subscribe(nextState => {
+      applyFromState(nextState);
+    });
+  }
+
+  return () => {
+    events.forEach(type => {
+      input.removeEventListener(type, handleEvent);
+    });
+    if (typeof unsubscribe === 'function') {
+      unsubscribe();
+    }
+  };
+}
+
 export const fmt = {
   currency(value, locale = 'nl-NL', currency = 'EUR') {
     const formatter = new Intl.NumberFormat(locale, {

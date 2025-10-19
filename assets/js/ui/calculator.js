@@ -36,7 +36,7 @@ import { deriveTargetNetDefaults, deriveIncomeTargets } from '../income.js';
 import { calculateTaxReserve, calculateTaxFromProfit, resolveTaxMode } from '../tax2025.js';
 import { computeCosts } from '../costs.js';
 import { normalizeScenarioModifiers } from '../modifiers.js';
-import { announce } from './components.js';
+import { announce, bindStateInput } from './components.js';
 
 export function initializeCalculatorUI() {
   const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
@@ -181,6 +181,22 @@ export function initializeCalculatorUI() {
     }
   };
 
+  const fixedCostFieldIndex = new Map();
+  Object.entries(fixedCostFields).forEach(([key, fieldSet]) => {
+    if (fieldSet.monthly instanceof HTMLInputElement && fieldSet.monthly.id) {
+      fixedCostFieldIndex.set(fieldSet.monthly.id, { key, type: 'monthly' });
+    }
+    if (fieldSet.annual instanceof HTMLInputElement && fieldSet.annual.id) {
+      fixedCostFieldIndex.set(fieldSet.annual.id, { key, type: 'annual' });
+    }
+  });
+
+  const bindingCleanups = [];
+  const controlWriters = new Map();
+  const fixedCostValues = initializeFixedCostValues();
+  const scheduleWarningAnchors = createScheduleWarningAnchors();
+  const activeScheduleWarnings = new Map();
+
   const rememberInputsToggle = controls.rememberInputs instanceof HTMLInputElement ? controls.rememberInputs : null;
   const resetSavedInputsButton = controls.resetSavedInputs instanceof HTMLButtonElement ? controls.resetSavedInputs : null;
 
@@ -210,11 +226,20 @@ export function initializeCalculatorUI() {
   renderDerivedViews(calcState, initialViews);
   defaultInputValues = captureInputValues();
 
+  setupStateBindings();
   setupPersistence();
   setupControlListeners();
-  initializeCalcStateFromControls();
 
-  return unsubscribe;
+  return () => {
+    if (typeof unsubscribe === 'function') {
+      unsubscribe();
+    }
+    bindingCleanups.forEach(cleanup => {
+      if (typeof cleanup === 'function') {
+        cleanup();
+      }
+    });
+  };
 
   function deriveCalcViews(state, derived) {
     const modifiers = normalizeScenarioModifiers(state.modifiers);
@@ -329,19 +354,22 @@ export function initializeCalculatorUI() {
     setActiveIncomePreset(matched || null);
   }
 
+  function ensureFixedCostStore(key) {
+    if (!fixedCostValues[key]) {
+      fixedCostValues[key] = { monthly: 0, annual: 0 };
+    }
+    return fixedCostValues[key];
+  }
+
   function getFixedCostTotal() {
-    return Object.values(fixedCostFields).reduce((sum, fieldSet) => {
-      if (!(fieldSet.annual instanceof HTMLInputElement)) {
-        return sum;
-      }
-      const annualValue = Math.max(parseNumber(fieldSet.annual.value, 0), 0);
-      return sum + annualValue;
+    return Object.values(fixedCostValues).reduce((sum, pair) => {
+      const annual = Number.isFinite(pair?.annual) ? pair.annual : 0;
+      return sum + Math.max(annual, 0);
     }, 0);
   }
 
   function updateFixedCostTotalDisplay() {
-    const total = getFixedCostTotal();
-    const normalized = Math.max(total, 0);
+    const normalized = Math.max(getFixedCostTotal(), 0);
     patch({
       costs: { fixedCosts: normalized }
     });
@@ -356,23 +384,47 @@ export function initializeCalculatorUI() {
     if (!fieldSet) {
       return;
     }
+
     const source = sourceType === 'monthly' ? fieldSet.monthly : fieldSet.annual;
     const target = sourceType === 'monthly' ? fieldSet.annual : fieldSet.monthly;
-    if (!(source instanceof HTMLInputElement) || !(target instanceof HTMLInputElement)) {
+
+    if (!(source instanceof HTMLInputElement)) {
       return;
     }
 
+    const store = ensureFixedCostStore(key);
+
     if (source.value === '') {
-      target.value = '';
+      store[sourceType] = 0;
+      if (sourceType === 'monthly') {
+        store.annual = 0;
+      } else {
+        store.monthly = 0;
+      }
+      if (target instanceof HTMLInputElement) {
+        target.value = '';
+      }
+      if (persistenceEnabled) {
+        savePersistedInputs();
+      }
       updateFixedCostTotalDisplay();
       return;
     }
 
     const parsed = Math.max(parseNumber(source.value, 0), 0);
-    const derived = sourceType === 'monthly' ? parsed * 12 : parsed / 12;
+    store[sourceType] = parsed;
 
-    if (Number.isFinite(derived)) {
-      target.value = formatFixed(derived, 2);
+    const derived = sourceType === 'monthly' ? parsed * 12 : parsed / 12;
+    const normalizedDerived = Number.isFinite(derived) ? derived : 0;
+
+    if (target instanceof HTMLInputElement) {
+      target.value = formatFixed(normalizedDerived, 2);
+    }
+
+    if (sourceType === 'monthly') {
+      store.annual = normalizedDerived;
+    } else {
+      store.monthly = normalizedDerived;
     }
 
     if (persistenceEnabled) {
@@ -380,6 +432,293 @@ export function initializeCalculatorUI() {
     }
 
     updateFixedCostTotalDisplay();
+  }
+
+  function initializeFixedCostValues() {
+    const initial = {};
+    Object.entries(fixedCostFields).forEach(([key, fieldSet]) => {
+      const monthly = fieldSet.monthly instanceof HTMLInputElement
+        ? Math.max(parseNumber(fieldSet.monthly.value, 0), 0)
+        : 0;
+      const annual = fieldSet.annual instanceof HTMLInputElement
+        ? Math.max(parseNumber(fieldSet.annual.value, monthly * 12), 0)
+        : Math.max(monthly * 12, 0);
+      initial[key] = {
+        monthly,
+        annual
+      };
+    });
+    return initial;
+  }
+
+  function registerControlBinding(control, options = {}) {
+    if (!(control instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const { commit, onAfterCommit, ...rest } = options;
+    const cleanup = bindStateInput(control, {
+      ...rest,
+      commit,
+      onAfterCommit
+    });
+
+    if (typeof cleanup === 'function') {
+      bindingCleanups.push(cleanup);
+    }
+
+    if (typeof commit === 'function' && control.id) {
+      controlWriters.set(control.id, value => {
+        let payload;
+        if (control.type === 'checkbox' || control.type === 'radio') {
+          let normalized;
+          if (typeof value === 'string') {
+            normalized = value === 'true' || value === '1';
+          } else {
+            normalized = Boolean(value);
+          }
+          payload = { value: normalized, raw: normalized };
+        } else {
+          const raw = value == null ? '' : String(value);
+          payload = { value: raw, raw };
+        }
+        commit(payload, { source: 'persistence', input: control });
+        if (typeof onAfterCommit === 'function') {
+          onAfterCommit(payload, { source: 'persistence', input: control });
+        }
+      });
+    }
+  }
+
+  function setupStateBindings() {
+    registerControlBinding(controls.targetNet, {
+      commit: ({ raw }) => setIncomeTargetValue('year', raw),
+      onAfterCommit: () => setTargetNetBasis('year')
+    });
+
+    registerControlBinding(controls.targetNetWeek, {
+      commit: ({ raw }) => setIncomeTargetValue('week', raw),
+      onAfterCommit: () => setTargetNetBasis('week')
+    });
+
+    registerControlBinding(controls.targetNetMonth, {
+      commit: ({ raw }) => setIncomeTargetValue('month', raw),
+      onAfterCommit: () => setTargetNetBasis('month')
+    });
+
+    registerControlBinding(controls.targetNetAverageWeek, {
+      commit: ({ raw }) => setIncomeTargetValue('averageWeek', raw),
+      onAfterCommit: () => setTargetNetBasis('avgWeek')
+    });
+
+    registerControlBinding(controls.targetNetAverageMonth, {
+      commit: ({ raw }) => setIncomeTargetValue('averageMonth', raw),
+      onAfterCommit: () => setTargetNetBasis('avgMonth')
+    });
+
+    registerControlBinding(controls.taxRate, {
+      commit: ({ raw }) => setTaxRatePercent(raw)
+    });
+
+    registerControlBinding(controls.variableCostPerClass, {
+      commit: ({ raw }) => setVariableCostPerClass(raw)
+    });
+
+    registerControlBinding(controls.vatRate, {
+      commit: ({ raw }) => setVatRatePercent(raw)
+    });
+
+    registerControlBinding(controls.buffer, {
+      commit: ({ raw }) => setBufferPercent(raw)
+    });
+
+    registerControlBinding(controls.monthsOff, {
+      commit: ({ raw }) => setMonthsOff(raw)
+    });
+
+    registerControlBinding(controls.weeksOffCycle, {
+      commit: ({ raw }) => setWeeksOffCycle(raw)
+    });
+
+    registerControlBinding(controls.daysOffWeek, {
+      commit: ({ raw }) => setDaysOffWeek(raw)
+    });
+
+    registerControlBinding(controls.sessionLength, {
+      commit: ({ raw }) => setSessionLength(raw)
+    });
+
+    registerControlBinding(controls.comfortMargin, {
+      commit: ({ raw }) => setComfortMarginPercent(raw)
+    });
+
+    registerControlBinding(controls.seasonality, {
+      commit: ({ raw }) => setSeasonalityPercent(raw)
+    });
+
+    registerControlBinding(controls.travelFriction, {
+      commit: ({ raw }) => setTravelFrictionPercent(raw)
+    });
+
+    registerControlBinding(controls.handsOnQuota, {
+      commit: ({ raw }) => setHandsOnQuotaPercent(raw)
+    });
+
+    registerControlBinding(controls.currencySymbol, {
+      commit: ({ raw }) => setCurrencySymbol(raw)
+    });
+
+    registerControlBinding(controls.taxModeSimple, {
+      parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
+      commit: ({ value }, meta = {}) => {
+        if (value) {
+          setTaxMode('simple');
+          if (meta?.source !== 'persistence') {
+            announce('Tax strategy updated');
+          }
+        }
+      }
+    });
+
+    registerControlBinding(controls.taxModeDutch, {
+      parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
+      commit: ({ value }, meta = {}) => {
+        if (value) {
+          setTaxMode('dutch2025');
+          if (meta?.source !== 'persistence') {
+            announce('Tax strategy updated');
+          }
+        }
+      }
+    });
+
+    registerControlBinding(controls.targetModeNet, {
+      parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
+      commit: ({ value }, meta = {}) => {
+        if (value) {
+          setIncomeTargetMode('net');
+          if (meta?.source !== 'persistence') {
+            announce('Target amounts now use net take-home.');
+          }
+        }
+      }
+    });
+
+    registerControlBinding(controls.targetModeGross, {
+      parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
+      commit: ({ value }, meta = {}) => {
+        if (value) {
+          setIncomeTargetMode('gross');
+          if (meta?.source !== 'persistence') {
+            announce('Target amounts now use gross revenue.');
+          }
+        }
+      }
+    });
+  }
+
+  function createScheduleWarningAnchors() {
+    return {
+      monthsOff: ensureWarningElement(controls.monthsOff),
+      weeksOffCycle: ensureWarningElement(controls.weeksOffCycle),
+      daysOffWeek: ensureWarningElement(controls.daysOffWeek),
+      sessionLength: ensureWarningElement(controls.sessionLength),
+      travelFriction: ensureWarningElement(controls.travelFriction)
+    };
+  }
+
+  function ensureWarningElement(control) {
+    if (!(control instanceof HTMLElement)) {
+      return null;
+    }
+
+    const container = control.closest('.control');
+    if (!(container instanceof HTMLElement)) {
+      return null;
+    }
+
+    let slot = container.querySelector('.field-warning');
+    if (!(slot instanceof HTMLElement)) {
+      slot = document.createElement('p');
+      slot.className = 'field-warning';
+      slot.hidden = true;
+      slot.setAttribute('aria-live', 'polite');
+      container.appendChild(slot);
+    }
+
+    return slot;
+  }
+
+  function updateScheduleWarnings(stateSnapshot, views = {}) {
+    const capacity = views && typeof views === 'object' ? views.capacity || {} : {};
+
+    const workingWeeks = Number.isFinite(capacity.workingWeeks) ? capacity.workingWeeks : 0;
+    const workingDaysPerWeek = Number.isFinite(capacity.workingDaysPerWeek) ? capacity.workingDaysPerWeek : 0;
+    const workingDaysPerYear = Number.isFinite(capacity.workingDaysPerYear) ? capacity.workingDaysPerYear : 0;
+    const workingHoursPerWeek = Number.isFinite(capacity.workingHoursPerWeek) ? capacity.workingHoursPerWeek : null;
+    const travelAllowanceDays = Number.isFinite(capacity.travelAllowanceDays) ? capacity.travelAllowanceDays : 0;
+    const travelDaysPerYear = Number.isFinite(capacity.travelDaysPerYear) ? capacity.travelDaysPerYear : 0;
+
+    const warnings = {
+      monthsOff: '',
+      weeksOffCycle: '',
+      daysOffWeek: '',
+      sessionLength: '',
+      travelFriction: ''
+    };
+
+    if (workingWeeks <= 0 || workingDaysPerWeek <= 0 || workingDaysPerYear <= 0) {
+      warnings.monthsOff = 'Time off removes every working week. Reduce months off to restore availability.';
+      warnings.weeksOffCycle = 'Weeks off per cycle eliminate all active weeks. Ease this input to keep the schedule feasible.';
+      warnings.daysOffWeek = 'Days off per week leave no working days. Lower the value to retain billable time.';
+    } else if (workingDaysPerWeek <= 0.25) {
+      warnings.daysOffWeek = 'Schedule leaves less than a quarter day per week. Ease the time off inputs to reclaim time.';
+    }
+
+    if (Number.isFinite(workingHoursPerWeek) && workingHoursPerWeek > 60) {
+      warnings.sessionLength = 'Weekly workload exceeds 60 hours. Shorten sessions or introduce more time off.';
+    }
+
+    if (workingDaysPerYear > 0) {
+      const travelShare = travelAllowanceDays / workingDaysPerYear;
+      if (travelAllowanceDays >= workingDaysPerYear - 0.5) {
+        warnings.travelFriction = 'Travel days consume the full schedule. Lower travel friction or reserve more working days.';
+      } else if ((travelDaysPerYear - travelAllowanceDays) > 0.5 || travelShare > 0.6) {
+        warnings.travelFriction = 'Travel overhead is crowding out delivery days. Lighten travel assumptions or friction.';
+      }
+    }
+
+    applyScheduleWarnings(warnings);
+  }
+
+  function applyScheduleWarnings(warnings) {
+    const previous = new Map(activeScheduleWarnings);
+    let hasWarnings = false;
+
+    Object.entries(scheduleWarningAnchors).forEach(([key, element]) => {
+      const message = warnings[key] || '';
+      if (element instanceof HTMLElement) {
+        if (message) {
+          element.textContent = message;
+          element.hidden = false;
+        } else {
+          element.textContent = '';
+          element.hidden = true;
+        }
+      }
+      activeScheduleWarnings.set(key, message);
+      if (message) {
+        hasWarnings = true;
+      }
+    });
+
+    const previouslyActive = Array.from(previous.values()).some(Boolean);
+
+    if (!previouslyActive && hasWarnings) {
+      announce('Schedule inputs need attention.');
+    } else if (previouslyActive && !hasWarnings) {
+      announce('Schedule warnings cleared.');
+    }
   }
 
   function updateTablesLayout() {
@@ -1229,6 +1568,8 @@ export function initializeCalculatorUI() {
     const inputs = extractInputsFromViews(views, state);
     const summary = computeRevenueSummary(inputs);
 
+    updateScheduleWarnings(state, views);
+
     latestSummary = summary && Number.isFinite(summary.baseRevenue) ? summary : null;
 
     if (summary && Number.isFinite(summary.baseRevenue)) {
@@ -1446,8 +1787,7 @@ export function initializeCalculatorUI() {
     }
   }
 
-  function applyInputValues(values, options = {}) {
-    const { skipStateUpdate = false } = options;
+  function applyInputValues(values) {
     if (!values || typeof values !== 'object') {
       return;
     }
@@ -1457,27 +1797,54 @@ export function initializeCalculatorUI() {
       setTargetNetBasis(storedBasis);
     }
 
-    const inputs = getPersistableInputs();
-    inputs.forEach(input => {
-      if (!(input instanceof HTMLInputElement) || !input.id) {
+    Object.entries(values).forEach(([id, storedValue]) => {
+      if (id === PERSISTED_TARGET_NET_BASIS_KEY) {
         return;
       }
-      if (!Object.prototype.hasOwnProperty.call(values, input.id)) {
+
+      const writer = controlWriters.get(id);
+      if (typeof writer === 'function') {
+        writer(storedValue);
         return;
       }
-      const storedValue = values[input.id];
+
+      const fixedCostMeta = fixedCostFieldIndex.get(id);
+      if (fixedCostMeta) {
+        const fieldSet = fixedCostFields[fixedCostMeta.key];
+        const input = fixedCostMeta.type === 'monthly' ? fieldSet.monthly : fieldSet.annual;
+        const raw = storedValue == null ? '' : String(storedValue);
+        if (input instanceof HTMLInputElement) {
+          input.value = raw;
+        }
+        const numeric = raw === '' ? 0 : Math.max(parseNumber(raw, 0), 0);
+        const store = ensureFixedCostStore(fixedCostMeta.key);
+        store[fixedCostMeta.type] = numeric;
+        return;
+      }
+
+      const input = document.getElementById(id);
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+
       if (input.type === 'checkbox' || input.type === 'radio') {
         input.checked = Boolean(storedValue);
-      } else {
-        input.value = storedValue === null || typeof storedValue === 'undefined'
-          ? ''
-          : String(storedValue);
+        if (input.id === 'tax-mode-simple' && input.checked) {
+          setTaxMode('simple');
+        } else if (input.id === 'tax-mode-dutch' && input.checked) {
+          setTaxMode('dutch2025');
+        } else if (input.id === 'target-mode-net' && input.checked) {
+          setIncomeTargetMode('net');
+        } else if (input.id === 'target-mode-gross' && input.checked) {
+          setIncomeTargetMode('gross');
+        }
+        return;
       }
+
+      input.value = storedValue == null ? '' : String(storedValue);
     });
 
-    if (!skipStateUpdate) {
-      initializeCalcStateFromControls();
-    }
+    updateFixedCostTotalDisplay();
   }
 
   function handlePersistableInputMutation(event) {
@@ -1500,8 +1867,6 @@ export function initializeCalculatorUI() {
     if (basis) {
       setTargetNetBasis(basis);
     }
-
-    commitControlValueToState(control);
   }
 
   function handlePersistToggleChange(event) {
@@ -1547,294 +1912,9 @@ export function initializeCalculatorUI() {
           ? { ...defaultInputValues }
           : captureInputValues();
 
-        applyInputValues(defaults, { skipStateUpdate: true });
-        initializeCalcStateFromControls();
+        applyInputValues(defaults);
       });
     }
-  }
-
-  function commitControlValueToState(control) {
-    if (!(control instanceof HTMLInputElement) || !control.id) {
-      return;
-    }
-
-    if (TARGET_NET_BASIS_BY_INPUT_ID[control.id]) {
-      const keyMap = {
-        'target-net': 'year',
-        'target-net-week': 'week',
-        'target-net-month': 'month',
-        'target-net-average-week': 'averageWeek',
-        'target-net-average-month': 'averageMonth'
-      };
-      const key = keyMap[control.id];
-      if (key) {
-        setIncomeTargetValue(key, control.value);
-      }
-      return;
-    }
-
-    switch (control.id) {
-      case 'months-off':
-        setMonthsOff(control.value);
-        break;
-      case 'weeks-off-cycle':
-        setWeeksOffCycle(control.value);
-        break;
-      case 'days-off-week':
-        setDaysOffWeek(control.value);
-        break;
-      case 'session-length':
-        setSessionLength(control.value);
-        break;
-      case 'tax-rate':
-        setTaxRatePercent(control.value);
-        break;
-      case 'tax-mode-simple':
-        if (control.checked) {
-          setTaxMode('simple');
-          announce('Tax strategy updated');
-        }
-        break;
-      case 'tax-mode-dutch':
-        if (control.checked) {
-          setTaxMode('dutch2025');
-          announce('Tax strategy updated');
-        }
-        break;
-      case 'target-mode-net':
-        if (control.checked) {
-          setIncomeTargetMode('net');
-          announce('Target amounts now use net take-home.');
-        }
-        break;
-      case 'target-mode-gross':
-        if (control.checked) {
-          setIncomeTargetMode('gross');
-          announce('Target amounts now use gross revenue.');
-        }
-        break;
-      case 'variable-cost-class':
-        setVariableCostPerClass(control.value);
-        break;
-      case 'vat-rate':
-        setVatRatePercent(control.value);
-        break;
-      case 'buffer':
-        setBufferPercent(control.value);
-        break;
-      case 'comfort-margin':
-        setComfortMarginPercent(control.value);
-        break;
-      case 'seasonality':
-        setSeasonalityPercent(control.value);
-        break;
-      case 'travel-friction':
-        setTravelFrictionPercent(control.value);
-        break;
-      case 'hands-on-quota':
-        setHandsOnQuotaPercent(control.value);
-        break;
-      case 'currency-symbol':
-        setCurrencySymbol(control.value);
-        break;
-      default:
-        break;
-    }
-  }
-
-  function initializeCalcStateFromControls() {
-    const monthsOffRaw = controls.monthsOff instanceof HTMLInputElement
-      ? controls.monthsOff.value
-      : calcState.capacity.monthsOff;
-    const weeksOffRaw = controls.weeksOffCycle instanceof HTMLInputElement
-      ? controls.weeksOffCycle.value
-      : calcState.capacity.weeksOffCycle;
-    const daysOffRaw = controls.daysOffWeek instanceof HTMLInputElement
-      ? controls.daysOffWeek.value
-      : calcState.capacity.daysOffWeek;
-    const sessionLengthRaw = controls.sessionLength instanceof HTMLInputElement
-      ? controls.sessionLength.value
-      : calcState.sessionLength;
-    const comfortMarginRaw = controls.comfortMargin instanceof HTMLInputElement
-      ? controls.comfortMargin.value
-      : calcState.modifiers?.comfortMarginPercent;
-    const seasonalityRaw = controls.seasonality instanceof HTMLInputElement
-      ? controls.seasonality.value
-      : calcState.modifiers?.seasonalityPercent;
-    const travelFrictionRaw = controls.travelFriction instanceof HTMLInputElement
-      ? controls.travelFriction.value
-      : calcState.modifiers?.travelFrictionPercent;
-    const handsOnQuotaRaw = controls.handsOnQuota instanceof HTMLInputElement
-      ? controls.handsOnQuota.value
-      : calcState.modifiers?.handsOnQuotaPercent;
-
-    let selectedTargetMode = 'net';
-    if (controls.targetModeGross instanceof HTMLInputElement && controls.targetModeGross.checked) {
-      selectedTargetMode = 'gross';
-    } else if (controls.targetModeNet instanceof HTMLInputElement && controls.targetModeNet.checked) {
-      selectedTargetMode = 'net';
-    } else if (TARGET_INCOME_MODES.includes(calcState.incomeTargets?.mode)) {
-      selectedTargetMode = calcState.incomeTargets.mode;
-    }
-
-    setIncomeTargetMode(selectedTargetMode);
-    applyTargetModeCopy(selectedTargetMode);
-
-    let selectedTaxMode = 'simple';
-    if (controls.taxModeDutch instanceof HTMLInputElement && controls.taxModeDutch.checked) {
-      selectedTaxMode = 'dutch2025';
-    } else if (controls.taxModeSimple instanceof HTMLInputElement && controls.taxModeSimple.checked) {
-      selectedTaxMode = 'simple';
-    } else if (calcState.tax && typeof calcState.tax.mode === 'string' && TAX_MODE_VALUES.includes(calcState.tax.mode)) {
-      selectedTaxMode = calcState.tax.mode;
-    }
-
-    setTaxMode(selectedTaxMode);
-
-    const capacityUpdates = {
-      monthsOff: parseNumber(monthsOffRaw, calcState.capacity.monthsOff || 0, {
-        min: 0,
-        max: 12
-      }),
-      weeksOffCycle: parseNumber(weeksOffRaw, calcState.capacity.weeksOffCycle || 0, {
-        min: 0,
-        max: 4
-      }),
-      daysOffWeek: parseNumber(daysOffRaw, calcState.capacity.daysOffWeek || 0, {
-        min: 0,
-        max: BASE_WORK_DAYS_PER_WEEK
-      })
-    };
-
-    const nextCapacity = {
-      ...calcState.capacity,
-      ...capacityUpdates
-    };
-
-    const sessionLength = Math.max(
-      parseNumber(sessionLengthRaw, calcState.sessionLength ?? 1.5, {
-        min: 0.25,
-        max: 12
-      }),
-      0.25
-    );
-
-    const capacityMetrics = deriveCapacity(nextCapacity, calcState.modifiers, { sessionLength });
-    const defaults = deriveTargetNetDefaults(capacityMetrics);
-
-    const modifierFallbacks = normalizeScenarioModifiers(calcState.modifiers);
-    const modifiersUpdates = {
-      comfortMarginPercent: Math.max(parseNumber(
-        comfortMarginRaw,
-        modifierFallbacks.comfortMarginPercent,
-        { min: 0, max: 60 }
-      ), 0),
-      seasonalityPercent: Math.max(parseNumber(
-        seasonalityRaw,
-        modifierFallbacks.seasonalityPercent,
-        { min: 0, max: 75 }
-      ), 0),
-      travelFrictionPercent: Math.max(parseNumber(
-        travelFrictionRaw,
-        modifierFallbacks.travelFrictionPercent,
-        { min: 0, max: 150 }
-      ), 0),
-      handsOnQuotaPercent: Math.max(parseNumber(
-        handsOnQuotaRaw,
-        modifierFallbacks.handsOnQuotaPercent,
-        { min: 0, max: 100 }
-      ), 0)
-    };
-
-    const yearRaw = controls.targetNet instanceof HTMLInputElement
-      ? controls.targetNet.value
-      : calcState.incomeTargets.year;
-    const weekRaw = controls.targetNetWeek instanceof HTMLInputElement
-      ? controls.targetNetWeek.value
-      : calcState.incomeTargets.week;
-    const monthRaw = controls.targetNetMonth instanceof HTMLInputElement
-      ? controls.targetNetMonth.value
-      : calcState.incomeTargets.month;
-    const averageWeekRaw = controls.targetNetAverageWeek instanceof HTMLInputElement
-      ? controls.targetNetAverageWeek.value
-      : calcState.incomeTargets.averageWeek;
-    const averageMonthRaw = controls.targetNetAverageMonth instanceof HTMLInputElement
-      ? controls.targetNetAverageMonth.value
-      : calcState.incomeTargets.averageMonth;
-
-    const incomeUpdates = {
-      year: Math.max(parseNumber(yearRaw, defaults.year), 0),
-      week: Math.max(parseNumber(weekRaw, defaults.week), 0),
-      month: Math.max(parseNumber(monthRaw, defaults.month), 0),
-      averageWeek: Math.max(parseNumber(averageWeekRaw, defaults.averageWeek), 0),
-      averageMonth: Math.max(parseNumber(averageMonthRaw, defaults.averageMonth), 0)
-    };
-
-    let basis = calcState.incomeTargets.basis;
-    if (!TARGET_NET_BASIS_VALUES.includes(basis)) {
-      basis = 'year';
-    }
-
-    const taxRateRaw = controls.taxRate instanceof HTMLInputElement
-      ? controls.taxRate.value
-      : calcState.costs.taxRatePercent;
-    const variableCostRaw = controls.variableCostPerClass instanceof HTMLInputElement
-      ? controls.variableCostPerClass.value
-      : calcState.costs.variableCostPerClass;
-    const vatRateRaw = controls.vatRate instanceof HTMLInputElement
-      ? controls.vatRate.value
-      : calcState.costs.vatRatePercent;
-    const bufferRaw = controls.buffer instanceof HTMLInputElement
-      ? controls.buffer.value
-      : calcState.costs.bufferPercent;
-    const currencySymbolRaw = controls.currencySymbol instanceof HTMLInputElement
-      ? controls.currencySymbol.value
-      : calcState.config.currencySymbol;
-
-    const taxRatePercent = Math.min(
-      Math.max(parseNumber(taxRateRaw, calcState.costs.taxRatePercent ?? 40), 0),
-      99.9
-    );
-    const variableCostPerClass = Math.max(
-      parseNumber(variableCostRaw, calcState.costs.variableCostPerClass ?? 0),
-      0
-    );
-    const vatRatePercent = Math.max(
-      parseNumber(vatRateRaw, calcState.costs.vatRatePercent ?? 21),
-      0
-    );
-    const bufferPercent = Math.max(
-      parseNumber(bufferRaw, calcState.costs.bufferPercent ?? 15),
-      0
-    );
-    const currencySymbol = typeof currencySymbolRaw === 'string' && currencySymbolRaw.trim()
-      ? currencySymbolRaw.trim()
-      : '€';
-
-    const fixedCosts = Math.max(getFixedCostTotal(), 0);
-
-    patch({
-      capacity: capacityUpdates,
-      sessionLength,
-      config: {
-        defaults: {
-          incomeTargets: defaults
-        },
-        currencySymbol
-      },
-      incomeTargets: {
-        ...incomeUpdates,
-        basis
-      },
-      costs: {
-        taxRatePercent,
-        variableCostPerClass,
-        vatRatePercent,
-        bufferPercent,
-        fixedCosts
-      },
-      modifiers: modifiersUpdates
-    });
   }
 
   function setupPersistence() {
