@@ -1011,7 +1011,7 @@
                   role="tab"
                   id="service-representation-tab-rate"
                   aria-selected="true"
-                  aria-controls="service-representation-panel"
+                  aria-controls="service-representation-panel-rate"
                   class="is-active"
                   data-tab="rate"
                 >
@@ -1022,27 +1022,49 @@
                   role="tab"
                   id="service-representation-tab-volume"
                   aria-selected="false"
-                  aria-controls="service-representation-panel"
+                  aria-controls="service-representation-panel-volume"
                   data-tab="volume"
                 >
                   Volume needed
                 </button>
               </nav>
             </header>
-            <div
-              class="service-card__body"
-              id="service-representation-panel"
-              role="tabpanel"
-              aria-labelledby="service-representation-tab-rate"
-            >
-              <dl class="key-value-grid key-value-grid--two">
-                <div><dt>Units per month</dt><dd id="representation-units">—</dd></div>
-                <div><dt>Price per unit</dt><dd id="representation-price">—</dd></div>
-                <div><dt>Revenue</dt><dd id="representation-rev">—</dd></div>
-                <div><dt>Direct cost</dt><dd id="representation-cost">—</dd></div>
-                <div><dt>Tax reserve</dt><dd id="representation-tax">—</dd></div>
-                <div><dt>Net contribution</dt><dd id="representation-net">—</dd></div>
-              </dl>
+            <div class="service-card__body">
+              <div
+                class="service-card__panel"
+                id="service-representation-panel-rate"
+                role="tabpanel"
+                aria-labelledby="service-representation-tab-rate"
+                data-tab-panel="rate"
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="representation-rate-units">--</dd></div>
+                  <div><dt>Rate per unit</dt><dd id="representation-rate-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="representation-rate-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="representation-rate-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="representation-rate-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="representation-rate-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="representation-rate-buffer">--</dd></div>
+                </dl>
+              </div>
+              <div
+                class="service-card__panel"
+                id="service-representation-panel-volume"
+                role="tabpanel"
+                aria-labelledby="service-representation-tab-volume"
+                data-tab-panel="volume"
+                hidden
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="representation-volume-units">--</dd></div>
+                  <div><dt>Price per unit</dt><dd id="representation-volume-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="representation-volume-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="representation-volume-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="representation-volume-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="representation-volume-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="representation-volume-buffer">--</dd></div>
+                </dl>
+              </div>
               <div class="service-card__spark" id="representation-spark" aria-hidden="true"></div>
             </div>
           </article>
@@ -1082,7 +1104,7 @@
                   role="tab"
                   id="service-operations-tab-rate"
                   aria-selected="true"
-                  aria-controls="service-operations-panel"
+                  aria-controls="service-operations-panel-rate"
                   class="is-active"
                   data-tab="rate"
                 >
@@ -1093,22 +1115,49 @@
                   role="tab"
                   id="service-operations-tab-volume"
                   aria-selected="false"
-                  aria-controls="service-operations-panel"
+                  aria-controls="service-operations-panel-volume"
                   data-tab="volume"
                 >
                   Volume needed
                 </button>
               </nav>
             </header>
-            <div class="service-card__body" id="service-operations-panel" role="tabpanel" aria-labelledby="service-operations-tab-rate">
-              <dl class="key-value-grid key-value-grid--two">
-                <div><dt>Units per month</dt><dd id="operations-units">—</dd></div>
-                <div><dt>Price per unit</dt><dd id="operations-price">—</dd></div>
-                <div><dt>Revenue</dt><dd id="operations-rev">—</dd></div>
-                <div><dt>Direct cost</dt><dd id="operations-cost">—</dd></div>
-                <div><dt>Tax reserve</dt><dd id="operations-tax">—</dd></div>
-                <div><dt>Net contribution</dt><dd id="operations-net">—</dd></div>
-              </dl>
+            <div class="service-card__body">
+              <div
+                class="service-card__panel"
+                id="service-operations-panel-rate"
+                role="tabpanel"
+                aria-labelledby="service-operations-tab-rate"
+                data-tab-panel="rate"
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="operations-rate-units">--</dd></div>
+                  <div><dt>Rate per unit</dt><dd id="operations-rate-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="operations-rate-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="operations-rate-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="operations-rate-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="operations-rate-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="operations-rate-buffer">--</dd></div>
+                </dl>
+              </div>
+              <div
+                class="service-card__panel"
+                id="service-operations-panel-volume"
+                role="tabpanel"
+                aria-labelledby="service-operations-tab-volume"
+                data-tab-panel="volume"
+                hidden
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="operations-volume-units">--</dd></div>
+                  <div><dt>Price per unit</dt><dd id="operations-volume-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="operations-volume-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="operations-volume-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="operations-volume-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="operations-volume-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="operations-volume-buffer">--</dd></div>
+                </dl>
+              </div>
               <div class="service-card__spark" id="operations-spark" aria-hidden="true"></div>
             </div>
           </article>
@@ -1141,7 +1190,7 @@
                   role="tab"
                   id="service-qc-tab-rate"
                   aria-selected="true"
-                  aria-controls="service-qc-panel"
+                  aria-controls="service-qc-panel-rate"
                   class="is-active"
                   data-tab="rate"
                 >
@@ -1152,22 +1201,49 @@
                   role="tab"
                   id="service-qc-tab-volume"
                   aria-selected="false"
-                  aria-controls="service-qc-panel"
+                  aria-controls="service-qc-panel-volume"
                   data-tab="volume"
                 >
                   Volume needed
                 </button>
               </nav>
             </header>
-            <div class="service-card__body" id="service-qc-panel" role="tabpanel" aria-labelledby="service-qc-tab-rate">
-              <dl class="key-value-grid key-value-grid--two">
-                <div><dt>Units per month</dt><dd id="qc-units">—</dd></div>
-                <div><dt>Price per unit</dt><dd id="qc-price">—</dd></div>
-                <div><dt>Revenue</dt><dd id="qc-rev">—</dd></div>
-                <div><dt>Direct cost</dt><dd id="qc-cost">—</dd></div>
-                <div><dt>Tax reserve</dt><dd id="qc-tax">—</dd></div>
-                <div><dt>Net contribution</dt><dd id="qc-net">—</dd></div>
-              </dl>
+            <div class="service-card__body">
+              <div
+                class="service-card__panel"
+                id="service-qc-panel-rate"
+                role="tabpanel"
+                aria-labelledby="service-qc-tab-rate"
+                data-tab-panel="rate"
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="qc-rate-units">--</dd></div>
+                  <div><dt>Rate per unit</dt><dd id="qc-rate-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="qc-rate-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="qc-rate-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="qc-rate-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="qc-rate-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="qc-rate-buffer">--</dd></div>
+                </dl>
+              </div>
+              <div
+                class="service-card__panel"
+                id="service-qc-panel-volume"
+                role="tabpanel"
+                aria-labelledby="service-qc-tab-volume"
+                data-tab-panel="volume"
+                hidden
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="qc-volume-units">--</dd></div>
+                  <div><dt>Price per unit</dt><dd id="qc-volume-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="qc-volume-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="qc-volume-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="qc-volume-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="qc-volume-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="qc-volume-buffer">--</dd></div>
+                </dl>
+              </div>
               <div class="service-card__spark" id="qc-spark" aria-hidden="true"></div>
             </div>
           </article>
@@ -1201,7 +1277,7 @@
                   role="tab"
                   id="service-training-tab-rate"
                   aria-selected="true"
-                  aria-controls="service-training-panel"
+                  aria-controls="service-training-panel-rate"
                   class="is-active"
                   data-tab="rate"
                 >
@@ -1212,22 +1288,49 @@
                   role="tab"
                   id="service-training-tab-volume"
                   aria-selected="false"
-                  aria-controls="service-training-panel"
+                  aria-controls="service-training-panel-volume"
                   data-tab="volume"
                 >
                   Volume needed
                 </button>
               </nav>
             </header>
-            <div class="service-card__body" id="service-training-panel" role="tabpanel" aria-labelledby="service-training-tab-rate">
-              <dl class="key-value-grid key-value-grid--two">
-                <div><dt>Units per month</dt><dd id="training-units">—</dd></div>
-                <div><dt>Price per unit</dt><dd id="training-price">—</dd></div>
-                <div><dt>Revenue</dt><dd id="training-rev">—</dd></div>
-                <div><dt>Direct cost</dt><dd id="training-cost">—</dd></div>
-                <div><dt>Tax reserve</dt><dd id="training-tax">—</dd></div>
-                <div><dt>Net contribution</dt><dd id="training-net">—</dd></div>
-              </dl>
+            <div class="service-card__body">
+              <div
+                class="service-card__panel"
+                id="service-training-panel-rate"
+                role="tabpanel"
+                aria-labelledby="service-training-tab-rate"
+                data-tab-panel="rate"
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="training-rate-units">--</dd></div>
+                  <div><dt>Rate per unit</dt><dd id="training-rate-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="training-rate-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="training-rate-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="training-rate-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="training-rate-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="training-rate-buffer">--</dd></div>
+                </dl>
+              </div>
+              <div
+                class="service-card__panel"
+                id="service-training-panel-volume"
+                role="tabpanel"
+                aria-labelledby="service-training-tab-volume"
+                data-tab-panel="volume"
+                hidden
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="training-volume-units">--</dd></div>
+                  <div><dt>Price per unit</dt><dd id="training-volume-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="training-volume-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="training-volume-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="training-volume-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="training-volume-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="training-volume-buffer">--</dd></div>
+                </dl>
+              </div>
               <div class="service-card__spark" id="training-spark" aria-hidden="true"></div>
             </div>
           </article>
@@ -1262,7 +1365,7 @@
                   role="tab"
                   id="service-intel-tab-rate"
                   aria-selected="true"
-                  aria-controls="service-intel-panel"
+                  aria-controls="service-intel-panel-rate"
                   class="is-active"
                   data-tab="rate"
                 >
@@ -1273,22 +1376,49 @@
                   role="tab"
                   id="service-intel-tab-volume"
                   aria-selected="false"
-                  aria-controls="service-intel-panel"
+                  aria-controls="service-intel-panel-volume"
                   data-tab="volume"
                 >
                   Volume needed
                 </button>
               </nav>
             </header>
-            <div class="service-card__body" id="service-intel-panel" role="tabpanel" aria-labelledby="service-intel-tab-rate">
-              <dl class="key-value-grid key-value-grid--two">
-                <div><dt>Units per month</dt><dd id="intel-units">—</dd></div>
-                <div><dt>Price per unit</dt><dd id="intel-price">—</dd></div>
-                <div><dt>Revenue</dt><dd id="intel-rev">—</dd></div>
-                <div><dt>Direct cost</dt><dd id="intel-cost">—</dd></div>
-                <div><dt>Tax reserve</dt><dd id="intel-tax">—</dd></div>
-                <div><dt>Net contribution</dt><dd id="intel-net">—</dd></div>
-              </dl>
+            <div class="service-card__body">
+              <div
+                class="service-card__panel"
+                id="service-intel-panel-rate"
+                role="tabpanel"
+                aria-labelledby="service-intel-tab-rate"
+                data-tab-panel="rate"
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="intel-rate-units">--</dd></div>
+                  <div><dt>Rate per unit</dt><dd id="intel-rate-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="intel-rate-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="intel-rate-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="intel-rate-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="intel-rate-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="intel-rate-buffer">--</dd></div>
+                </dl>
+              </div>
+              <div
+                class="service-card__panel"
+                id="service-intel-panel-volume"
+                role="tabpanel"
+                aria-labelledby="service-intel-tab-volume"
+                data-tab-panel="volume"
+                hidden
+              >
+                <dl class="key-value-grid key-value-grid--two service-card__metrics">
+                  <div><dt>Units per month</dt><dd id="intel-volume-units">--</dd></div>
+                  <div><dt>Price per unit</dt><dd id="intel-volume-price">--</dd></div>
+                  <div><dt>Monthly revenue</dt><dd id="intel-volume-revenue">--</dd></div>
+                  <div><dt>Cost shares</dt><dd id="intel-volume-cost-share">--</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="intel-volume-tax">--</dd></div>
+                  <div><dt>Net contribution</dt><dd id="intel-volume-net">--</dd></div>
+                  <div><dt>Buffer status</dt><dd id="intel-volume-buffer">--</dd></div>
+                </dl>
+              </div>
               <div class="service-card__spark" id="intel-spark" aria-hidden="true"></div>
             </div>
           </article>
