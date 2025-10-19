@@ -57,6 +57,8 @@ const TRAVEL_INTENSITY_VALUES = Object.freeze({
   high: 45
 });
 
+const NUMERIC_TOLERANCE = 0.01;
+
 export function mountScenarioToolbar(calcState, root = document) {
   const store = calcState && typeof calcState === 'object' ? calcState : {};
   const patch = typeof store.patch === 'function' ? store.patch : null;
@@ -73,9 +75,19 @@ export function mountScenarioToolbar(calcState, root = document) {
     : [];
   const cleanups = [];
 
-  if (patch) {
-    const presetGroupCleanups = setupPresetGroups(context, patch, () => latestState, () => latestDerived);
-    cleanups.push(...presetGroupCleanups);
+  const presetGroups = patch
+    ? setupPresetGroups(context, patch, () => latestState, () => latestDerived)
+    : [];
+
+  if (presetGroups.length) {
+    presetGroups.forEach(group => {
+      if (group && typeof group.sync === 'function') {
+        group.sync(latestState, latestDerived);
+      }
+      if (group && typeof group.cleanup === 'function') {
+        cleanups.push(group.cleanup);
+      }
+    });
   }
 
   if (sliderBindings.length) {
@@ -88,6 +100,13 @@ export function mountScenarioToolbar(calcState, root = document) {
       latestDerived = nextDerived;
       if (sliderBindings.length) {
         syncSliderBindings(sliderBindings, latestState);
+      }
+      if (presetGroups.length) {
+        presetGroups.forEach(group => {
+          if (group && typeof group.sync === 'function') {
+            group.sync(latestState, latestDerived);
+          }
+        });
       }
     });
     if (typeof unsubscribe === 'function') {
@@ -117,11 +136,11 @@ function setupPresetGroups(context, patch, readState, readDerived) {
 
   const containers = Array.from(context.querySelectorAll('[data-preset-group]'));
   return containers
-    .map(container => setupPresetGroup(container, patch, readState, readDerived))
-    .filter(fn => typeof fn === 'function');
+    .map(container => createPresetGroupController(container, patch, readState, readDerived))
+    .filter(controller => controller);
 }
 
-function setupPresetGroup(container, patch, readState, readDerived) {
+function createPresetGroupController(container, patch, readState, readDerived) {
   if (!(container instanceof HTMLElement) || typeof patch !== 'function') {
     return null;
   }
@@ -154,17 +173,26 @@ function setupPresetGroup(container, patch, readState, readDerived) {
 
   const detach = on(container, 'click', handlePresetClick, { delegate: '[data-preset]' });
 
-  const initialActive = container.querySelector('[data-preset][aria-pressed="true"]');
-  if (initialActive instanceof HTMLElement) {
-    markActivePreset(container, initialActive);
-  } else {
-    markActivePreset(container, null);
-  }
-
-  return () => {
-    if (typeof detach === 'function') {
-      detach();
+  const syncFromState = (stateSnapshot, derivedSnapshot) => {
+    const state = stateSnapshot || (typeof readState === 'function' ? readState() : null);
+    const derived = derivedSnapshot || (typeof readDerived === 'function' ? readDerived() : null);
+    const matchingPreset = findMatchingPreset(container, state, derived);
+    if (matchingPreset) {
+      markActivePreset(container, matchingPreset);
+    } else {
+      markActivePreset(container, null);
     }
+  };
+
+  syncFromState();
+
+  return {
+    cleanup() {
+      if (typeof detach === 'function') {
+        detach();
+      }
+    },
+    sync: syncFromState
   };
 }
 
@@ -517,6 +545,99 @@ function getCurrencySymbol(state) {
     return symbol.trim();
   }
   return '€';
+}
+
+function findMatchingPreset(container, state, derived) {
+  if (!(container instanceof HTMLElement) || !isPlainObject(state)) {
+    return null;
+  }
+
+  const buttons = Array.from(container.querySelectorAll('[data-preset]'));
+  if (!buttons.length) {
+    return null;
+  }
+
+  for (const button of buttons) {
+    const targets = resolvePresetTargets(button, state, derived);
+    if (!targets.length) {
+      continue;
+    }
+
+    const matches = targets.every(({ path, value }) => stateValueMatches(state, path, value));
+    if (matches) {
+      return button;
+    }
+  }
+
+  return null;
+}
+
+function resolvePresetTargets(button, state, derived) {
+  const patch = buildPresetPatch(button, state, derived);
+  if (!patch) {
+    return [];
+  }
+
+  return flattenPresetPatch(patch);
+}
+
+function flattenPresetPatch(patch, prefix = []) {
+  if (!isPlainObject(patch)) {
+    return [{ path: prefix, value: patch }];
+  }
+
+  const entries = [];
+  Object.entries(patch).forEach(([key, value]) => {
+    const nextPath = prefix.concat(key);
+    if (isPlainObject(value)) {
+      entries.push(...flattenPresetPatch(value, nextPath));
+    } else {
+      entries.push({ path: nextPath, value });
+    }
+  });
+  return entries;
+}
+
+function getStateValueAtPath(source, path) {
+  if (!Array.isArray(path) || !path.length) {
+    return undefined;
+  }
+
+  return path.reduce((acc, segment) => {
+    if (!acc || typeof acc !== 'object') {
+      return undefined;
+    }
+    return acc[segment];
+  }, source);
+}
+
+function stateValueMatches(state, path, expected) {
+  if (!Array.isArray(path) || !path.length) {
+    return false;
+  }
+
+  const actual = getStateValueAtPath(state, path);
+
+  if (typeof expected === 'number') {
+    const numericActual = Number(actual);
+    if (!Number.isFinite(numericActual)) {
+      return false;
+    }
+    return Math.abs(numericActual - expected) <= NUMERIC_TOLERANCE;
+  }
+
+  if (typeof expected === 'string') {
+    if (actual === null || actual === undefined) {
+      return false;
+    }
+    return String(actual).toLowerCase() === expected.toLowerCase();
+  }
+
+  if (typeof expected === 'boolean') {
+    return Boolean(actual) === expected;
+  }
+
+  return actual === expected;
 }
 
 function markActivePreset(container, activeButton) {

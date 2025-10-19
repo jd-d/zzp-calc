@@ -5,6 +5,26 @@ import { mountScenarioToolbar } from './ui/scenario-toolbar.js';
 import { mountPortfolio } from './ui/portfolio.js';
 import { bindSliderPair } from './ui/components.js';
 
+const percentFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+const monthFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+
+function formatPercentDisplay(value) {
+  if (!Number.isFinite(value)) {
+    return '0%';
+  }
+  const formatted = percentFormatter.format(value);
+  return `${formatted}%`;
+}
+
+function formatMonthsDisplay(value) {
+  if (!Number.isFinite(value)) {
+    return '0 months';
+  }
+  const formatted = monthFormatter.format(value);
+  const singular = Math.abs(value - 1) < 0.001;
+  return `${formatted} ${singular ? 'month' : 'months'}`;
+}
+
 export * from './state.js';
 export { initializeCalculatorUI } from './ui/calculator.js';
 export { initializePageUi } from './ui/main.js';
@@ -23,7 +43,19 @@ export function initializeApp() {
   bindSliderPair({
     sliderId: 'monthsOff',
     inputId: 'months-off',
-    stateKey: ['capacity', 'monthsOff']
+    stateKey: ['capacity', 'monthsOff'],
+    displayId: 'months-off-display',
+    format: formatMonthsDisplay,
+    debounceMs: 180
+  });
+
+  bindSliderPair({
+    sliderId: 'utilization-slider',
+    inputId: 'utilization',
+    stateKey: ['capacity', 'utilizationPercent'],
+    displayId: 'utilization-display',
+    format: formatPercentDisplay,
+    debounceMs: 180
   });
 
   bindSliderPair({
@@ -45,9 +77,21 @@ export function initializeApp() {
   });
 
   bindSliderPair({
+    sliderId: 'tax-reserve-slider',
+    inputId: 'tax-rate',
+    stateKey: ['costs', 'taxRatePercent'],
+    displayId: 'tax-reserve-display',
+    format: formatPercentDisplay,
+    debounceMs: 180
+  });
+
+  bindSliderPair({
     sliderId: 'travel-friction-slider',
     inputId: 'travel-friction',
-    stateKey: ['modifiers', 'travelFrictionPercent']
+    stateKey: ['modifiers', 'travelFrictionPercent'],
+    displayId: 'travel-friction-display',
+    format: formatPercentDisplay,
+    debounceMs: 180
   });
 
   bindSliderPair({
