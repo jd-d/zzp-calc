@@ -1,0 +1,7 @@
+Manual Playwright verification (`browser_container.run_playwright_script`):
+- errors []
+- collapsed True
+- slider_val 25.0
+- tooltip_visible True
+- tooltip_text Displayed before amounts.
+- tooltip_count 0
