@@ -237,10 +237,82 @@
             >2 months</output>
           </div>
         </div>
+        <div class="hero-controls__nav cluster" role="navigation" aria-label="Jump to sections">
+          <a class="btn btn--secondary" href="#target-to-plan">Target to plan</a>
+          <a class="btn btn--secondary" href="#sandbox">Sandbox levers</a>
+          <a class="btn btn--secondary" href="#portfolio">Portfolio snapshot</a>
+        </div>
       </div>
     </section>
 
-    <div class="layout motion-stagger">
+    <section id="target-to-plan" class="motion-slide-up" aria-labelledby="target-plan-heading">
+      <div class="stack">
+        <article class="surface-card">
+          <div class="surface-content stack stack--tight">
+            <h2 id="target-plan-heading">Target to plan</h2>
+            <p class="field-note">Preview how target presets shape the initial plan scaffolding.</p>
+          </div>
+        </article>
+        <div class="grid two">
+          <article class="surface-card">
+            <div class="surface-content stack stack--tight">
+              <h3>Net target summary</h3>
+              <dl class="kv two-col">
+                <div><dt>Annual net target</dt><dd>—</dd></div>
+                <div><dt>Buffer uplift</dt><dd>—</dd></div>
+                <div><dt>Gross aim</dt><dd>—</dd></div>
+                <div><dt>Plan readiness</dt><dd>—</dd></div>
+              </dl>
+            </div>
+          </article>
+          <article class="surface-card">
+            <div class="surface-content stack stack--tight">
+              <h3>Schedule guardrails</h3>
+              <dl class="kv two-col">
+                <div><dt>Planned months off</dt><dd>—</dd></div>
+                <div><dt>Hands-on quota</dt><dd>—</dd></div>
+                <div><dt>Comfort margin</dt><dd>—</dd></div>
+                <div><dt>Travel cushion</dt><dd>—</dd></div>
+              </dl>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sandbox" aria-labelledby="sandbox-heading" class="stack">
+      <article class="surface-card motion-slide-up">
+        <div class="surface-content stack stack--tight">
+          <h2 id="sandbox-heading">Sandbox</h2>
+          <p class="field-note">Use the sandbox to fine-tune mixes, buffers, and service rhythms.</p>
+        </div>
+      </article>
+      <div class="grid two motion-slide-up">
+        <article class="surface-card">
+          <div class="surface-content stack stack--tight">
+            <h3>Scenario levers</h3>
+            <dl class="kv two-col">
+              <div><dt>Preset applied</dt><dd>—</dd></div>
+              <div><dt>Tax mode</dt><dd>—</dd></div>
+              <div><dt>Service mix</dt><dd>—</dd></div>
+              <div><dt>Time-off plan</dt><dd>—</dd></div>
+            </dl>
+          </div>
+        </article>
+        <article class="surface-card">
+          <div class="surface-content stack stack--tight">
+            <h3>Stress checks</h3>
+            <dl class="kv two-col">
+              <div><dt>Buffer coverage</dt><dd>—</dd></div>
+              <div><dt>Capacity swing</dt><dd>—</dd></div>
+              <div><dt>Seasonality drag</dt><dd>—</dd></div>
+              <div><dt>Alerts queued</dt><dd>—</dd></div>
+            </dl>
+          </div>
+        </article>
+      </div>
+
+      <div class="layout motion-stagger">
       <section class="card surface-card controls motion-slide-up" aria-labelledby="inputs-heading">
         <div class="surface-content stack">
           <h2 id="inputs-heading">Inputs</h2>
@@ -1216,63 +1288,6 @@
         </div>
       </section>
 
-      <section class="card wrapper" id="portfolio" aria-labelledby="portfolio-heading">
-        <div class="grid two">
-          <div>
-            <h2 id="portfolio-heading">Portfolio totals</h2>
-            <p class="portfolio-status" id="portfolio-status">Waiting for scenario…</p>
-            <dl class="kv two-col">
-              <div>
-                <dt>Revenue</dt>
-                <dd>
-                  <span id="p-rev">—</span>
-                  <span class="metric-violation" id="p-rev-violation" aria-live="polite"></span>
-                </dd>
-              </div>
-              <div>
-                <dt>Costs</dt>
-                <dd>
-                  <span id="p-cost">—</span>
-                  <span class="metric-violation" id="p-cost-violation" aria-live="polite"></span>
-                </dd>
-              </div>
-              <div>
-                <dt>Tax reserve</dt>
-                <dd>
-                  <span id="p-tax">—</span>
-                  <span class="metric-violation" id="p-tax-violation" aria-live="polite"></span>
-                </dd>
-              </div>
-              <div>
-                <dt>Net</dt>
-                <dd>
-                  <span id="p-net">—</span>
-                  <span class="metric-violation" id="p-net-violation" aria-live="polite"></span>
-                </dd>
-              </div>
-            </dl>
-            <div class="comfort-meter" id="portfolio-comfort" aria-live="polite" aria-busy="true">
-              <div class="comfort-meter__header">
-                <span class="comfort-meter__title">Comfort index</span>
-                <span class="comfort-meter__value" data-comfort-value>N/A</span>
-              </div>
-              <div class="comfort-meter__track" role="presentation">
-                <div class="comfort-meter__fill" data-comfort-fill style="width: 0%;"></div>
-              </div>
-              <p class="comfort-meter__summary" data-comfort-summary>Comfort score will appear once the solver runs.</p>
-            </div>
-          </div>
-          <div>
-            <h2>Weekly plan</h2>
-            <ol class="week" id="p-week" aria-live="polite"></ol>
-          </div>
-        </div>
-        <div class="portfolio-violations" id="portfolio-violations" role="alert" hidden>
-          <h3>Constraints to review</h3>
-          <ul id="portfolio-violations-list"></ul>
-        </div>
-      </section>
-
       <section class="tables surface-card motion-slide-up" aria-live="polite">
         <div class="surface-content stack">
           <div class="table-grid" id="tables-container">
@@ -1285,6 +1300,89 @@
         </div>
       </section>
     </div>
+
+    </section>
+
+    <section class="card wrapper" id="portfolio" aria-labelledby="portfolio-heading">
+      <div class="grid two">
+        <article class="surface-card">
+          <div class="surface-content stack stack--tight">
+            <h3>Comfort signals</h3>
+            <dl class="kv two-col">
+              <div><dt>Comfort index</dt><dd>—</dd></div>
+              <div><dt>Buffer health</dt><dd>—</dd></div>
+              <div><dt>Risk alerts</dt><dd>—</dd></div>
+              <div><dt>Next action</dt><dd>—</dd></div>
+            </dl>
+          </div>
+        </article>
+        <article class="surface-card">
+          <div class="surface-content stack stack--tight">
+            <h3>Delivery outlook</h3>
+            <dl class="kv two-col">
+              <div><dt>Active services</dt><dd>—</dd></div>
+              <div><dt>Weekly capacity</dt><dd>—</dd></div>
+              <div><dt>Travel overhead</dt><dd>—</dd></div>
+              <div><dt>Confidence</dt><dd>—</dd></div>
+            </dl>
+          </div>
+        </article>
+      </div>
+      <div class="grid two">
+        <div>
+          <h2 id="portfolio-heading">Portfolio totals</h2>
+          <p class="portfolio-status" id="portfolio-status">Waiting for scenario…</p>
+          <dl class="kv two-col">
+            <div>
+              <dt>Revenue</dt>
+              <dd>
+                <span id="p-rev">—</span>
+                <span class="metric-violation" id="p-rev-violation" aria-live="polite"></span>
+              </dd>
+            </div>
+            <div>
+              <dt>Costs</dt>
+              <dd>
+                <span id="p-cost">—</span>
+                <span class="metric-violation" id="p-cost-violation" aria-live="polite"></span>
+              </dd>
+            </div>
+            <div>
+              <dt>Tax reserve</dt>
+              <dd>
+                <span id="p-tax">—</span>
+                <span class="metric-violation" id="p-tax-violation" aria-live="polite"></span>
+              </dd>
+            </div>
+            <div>
+              <dt>Net</dt>
+              <dd>
+                <span id="p-net">—</span>
+                <span class="metric-violation" id="p-net-violation" aria-live="polite"></span>
+              </dd>
+            </div>
+          </dl>
+          <div class="comfort-meter" id="portfolio-comfort" aria-live="polite" aria-busy="true">
+            <div class="comfort-meter__header">
+              <span class="comfort-meter__title">Comfort index</span>
+              <span class="comfort-meter__value" data-comfort-value>N/A</span>
+            </div>
+            <div class="comfort-meter__track" role="presentation">
+              <div class="comfort-meter__fill" data-comfort-fill style="width: 0%;"></div>
+            </div>
+            <p class="comfort-meter__summary" data-comfort-summary>Comfort score will appear once the solver runs.</p>
+          </div>
+        </div>
+        <div>
+          <h2>Weekly plan</h2>
+          <ol class="week" id="p-week" aria-live="polite"></ol>
+        </div>
+      </div>
+      <div class="portfolio-violations" id="portfolio-violations" role="alert" hidden>
+        <h3>Constraints to review</h3>
+        <ul id="portfolio-violations-list"></ul>
+      </div>
+    </section>
 
     <section class="card surface-card privacy-info motion-fade-in" id="privacy-info" aria-labelledby="privacy-heading">
       <div class="surface-content stack">
