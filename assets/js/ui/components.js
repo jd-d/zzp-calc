@@ -803,7 +803,47 @@ export function registerSliderBinding(rangeTarget, inputTarget, options = {}) {
   };
 }
 
-export function renderSparkline(el, values, { width = 96, height = 32 } = {}) {
+function clamp(value, min, max) {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  return Math.min(Math.max(value, min), max);
+}
+
+function interpolatePoint(points, data, position, minValue, maxValue, width, height) {
+  if (!points.length) {
+    return null;
+  }
+
+  if (points.length === 1) {
+    return { ...points[0], value: data[0] };
+  }
+
+  const clamped = clamp(position, 0, 1);
+  const scaled = clamped * (points.length - 1);
+  const lowerIndex = Math.floor(scaled);
+  const upperIndex = Math.ceil(scaled);
+  const lower = points[lowerIndex];
+  const upper = points[upperIndex];
+
+  if (!lower || !upper) {
+    return null;
+  }
+
+  if (lowerIndex === upperIndex) {
+    return { ...lower, value: data[lowerIndex] };
+  }
+
+  const ratio = scaled - lowerIndex;
+  const value = data[lowerIndex] + (data[upperIndex] - data[lowerIndex]) * ratio;
+  const normalized = (value - minValue) / (maxValue - minValue || 1);
+  const y = height - normalized * height;
+  const x = lower.x + (upper.x - lower.x) * ratio;
+
+  return { x, y, value };
+}
+
+export function renderSparkline(el, values, options = {}) {
   if (!(el instanceof HTMLElement)) {
     return;
   }
@@ -816,18 +856,33 @@ export function renderSparkline(el, values, { width = 96, height = 32 } = {}) {
     return;
   }
 
-  el.removeAttribute('aria-hidden');
+  const width = Number.isFinite(options.width) && options.width > 0 ? options.width : 96;
+  const height = Number.isFinite(options.height) && options.height > 0 ? options.height : 32;
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
+  const thresholdValue = Number.isFinite(options.thresholdValue) ? options.thresholdValue : null;
+  const baselineValue = Number.isFinite(options.baselineValue) ? options.baselineValue : null;
+
+  let minValue = Math.min(...data);
+  let maxValue = Math.max(...data);
+
+  if (thresholdValue !== null) {
+    minValue = Math.min(minValue, thresholdValue);
+    maxValue = Math.max(maxValue, thresholdValue);
+  }
+
+  if (baselineValue !== null) {
+    minValue = Math.min(minValue, baselineValue);
+    maxValue = Math.max(maxValue, baselineValue);
+  }
+
+  const range = maxValue - minValue || 1;
   const count = data.length;
 
   const points = data.map((value, index) => {
     const x = count === 1 ? width / 2 : (index / (count - 1)) * width;
-    const normalized = (value - min) / range;
+    const normalized = (value - minValue) / range;
     const y = height - normalized * height;
-    return { x, y };
+    return { x, y, value };
   });
 
   const pathData = points
@@ -839,26 +894,136 @@ export function renderSparkline(el, values, { width = 96, height = 32 } = {}) {
   svg.setAttribute('height', String(height));
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.setAttribute('fill', 'none');
-  svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
+
+  if (options.responsive) {
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.style.width = '100%';
+    svg.style.height = 'auto';
+  }
+
+  if (typeof options.ariaLabel === 'string' && options.ariaLabel.trim()) {
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', options.ariaLabel.trim());
+  } else {
+    svg.setAttribute('aria-hidden', 'true');
+  }
+
+  if (typeof options.title === 'string' && options.title.trim()) {
+    const title = document.createElementNS(SVG_NS, 'title');
+    title.textContent = options.title.trim();
+    svg.append(title);
+  }
+
+  if (thresholdValue !== null) {
+    const normalized = (thresholdValue - minValue) / range;
+    const y = height - normalized * height;
+    const threshold = document.createElementNS(SVG_NS, 'line');
+    threshold.setAttribute('x1', '0');
+    threshold.setAttribute('y1', y.toFixed(2));
+    threshold.setAttribute('x2', String(width));
+    threshold.setAttribute('y2', y.toFixed(2));
+    threshold.setAttribute('stroke', 'currentColor');
+    threshold.setAttribute('stroke-opacity', '0.2');
+    threshold.setAttribute('stroke-dasharray', '4 2');
+    threshold.setAttribute('stroke-width', '1');
+    svg.append(threshold);
+  }
 
   const path = document.createElementNS(SVG_NS, 'path');
   path.setAttribute('d', pathData);
-  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke', options.stroke || 'currentColor');
   path.setAttribute('stroke-width', '1.5');
   path.setAttribute('stroke-linecap', 'round');
   path.setAttribute('stroke-linejoin', 'round');
+  svg.append(path);
 
-  const baselineY = Math.max(Math.min(points[points.length - 1].y, height), 0);
-  const baseline = document.createElementNS(SVG_NS, 'line');
-  baseline.setAttribute('x1', '0');
-  baseline.setAttribute('y1', baselineY.toFixed(2));
-  baseline.setAttribute('x2', String(width));
-  baseline.setAttribute('y2', baselineY.toFixed(2));
-  baseline.setAttribute('stroke', 'currentColor');
-  baseline.setAttribute('stroke-opacity', '0.2');
-  baseline.setAttribute('stroke-width', '1');
+  const baselineEnabled = options.baseline !== false;
+  const baselineSource = baselineValue !== null ? baselineValue : data[data.length - 1];
 
-  svg.append(path, baseline);
+  if (baselineEnabled && Number.isFinite(baselineSource)) {
+    const normalized = (baselineSource - minValue) / range;
+    const y = height - normalized * height;
+    const baseline = document.createElementNS(SVG_NS, 'line');
+    baseline.setAttribute('x1', '0');
+    baseline.setAttribute('y1', y.toFixed(2));
+    baseline.setAttribute('x2', String(width));
+    baseline.setAttribute('y2', y.toFixed(2));
+    baseline.setAttribute('stroke', options.baselineStroke || 'currentColor');
+    baseline.setAttribute('stroke-opacity', '0.2');
+    baseline.setAttribute('stroke-width', '1');
+    svg.append(baseline);
+  }
+
+  const markerLayer = document.createElementNS(SVG_NS, 'g');
+
+  const markers = Array.isArray(options.markers) ? options.markers : [];
+  markers.forEach(marker => {
+    if (!marker) {
+      return;
+    }
+
+    let resolved;
+    if (Number.isFinite(marker.position)) {
+      resolved = interpolatePoint(points, data, marker.position, minValue, maxValue, width, height);
+    } else if (Number.isFinite(marker.index)) {
+      const idx = clamp(Math.round(marker.index), 0, points.length - 1);
+      const base = points[idx];
+      if (base) {
+        resolved = { ...base };
+      }
+    }
+
+    if (!resolved) {
+      return;
+    }
+
+    const x = resolved.x;
+    const y = resolved.y;
+    const stroke = marker.stroke || 'var(--accent)';
+    const fill = marker.fill || 'var(--surface-0)';
+    const strokeWidth = Number.isFinite(marker.strokeWidth) ? marker.strokeWidth : 1.5;
+    const radius = Number.isFinite(marker.radius) ? marker.radius : 3;
+
+    if (marker.line === 'vertical') {
+      const line = document.createElementNS(SVG_NS, 'line');
+      line.setAttribute('x1', x.toFixed(2));
+      line.setAttribute('y1', '0');
+      line.setAttribute('x2', x.toFixed(2));
+      line.setAttribute('y2', String(height));
+      line.setAttribute('stroke', stroke);
+      line.setAttribute('stroke-width', '1');
+      line.setAttribute('stroke-dasharray', marker.dasharray || '2 2');
+      line.setAttribute('stroke-opacity', marker.opacity != null ? String(marker.opacity) : '0.45');
+      markerLayer.append(line);
+    }
+
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('cx', x.toFixed(2));
+    circle.setAttribute('cy', y.toFixed(2));
+    circle.setAttribute('r', radius.toFixed(2));
+    circle.setAttribute('stroke', stroke);
+    circle.setAttribute('stroke-width', strokeWidth.toFixed(2));
+    circle.setAttribute('fill', fill);
+    circle.setAttribute('aria-hidden', 'true');
+
+    if (typeof marker.className === 'string' && marker.className.trim()) {
+      circle.setAttribute('class', marker.className.trim());
+    }
+
+    if (typeof marker.tooltip === 'string' && marker.tooltip.trim()) {
+      const title = document.createElementNS(SVG_NS, 'title');
+      title.textContent = marker.tooltip.trim();
+      circle.append(title);
+    }
+
+    markerLayer.append(circle);
+  });
+
+  if (markerLayer.childNodes.length > 0) {
+    svg.append(markerLayer);
+  }
+
   el.replaceChildren(svg);
+  el.removeAttribute('aria-hidden');
 }

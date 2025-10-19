@@ -3,6 +3,7 @@ import { initializeCalculatorUI } from './ui/calculator.js';
 import { initializePageUi } from './ui/main.js';
 import { mountScenarioToolbar } from './ui/scenario-toolbar.js';
 import { mountPortfolio } from './ui/portfolio.js';
+import { mountSandboxCharts } from './ui/sandbox-charts.js';
 import { bindSliderPair } from './ui/components.js';
 
 const percentFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
@@ -39,6 +40,7 @@ export function initializeApp() {
   const calculator = initializeCalculatorUI();
   const scenario = mountScenarioToolbar(store);
   const portfolio = mountPortfolio(store);
+  const sensitivity = mountSandboxCharts(store);
 
   bindSliderPair({
     sliderId: 'monthsOff',
@@ -104,6 +106,7 @@ export function initializeApp() {
     calculator,
     scenario,
     portfolio,
+    sensitivity,
     store
   };
 }
