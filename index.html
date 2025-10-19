@@ -143,6 +143,7 @@
           id="scenario-presets"
           role="group"
           aria-label="Net target sandbox presets"
+          data-preset-group="scenarios"
         >
           <button
             type="button"
@@ -168,6 +169,110 @@
           >
             €70k net growth · +20% buffer
           </button>
+        </div>
+        <div class="hero-controls__preset-rows">
+          <div class="hero-controls__preset-row">
+            <p id="timeoff-presets-label" class="preset-row__label">Time off plan</p>
+            <div
+              class="preset-row__actions"
+              data-preset-group="timeoff"
+              role="group"
+              aria-labelledby="timeoff-presets-label"
+            >
+              <button
+                type="button"
+                class="chip"
+                data-preset="timeoff:0"
+                aria-pressed="false"
+              >
+                0 months
+              </button>
+              <button
+                type="button"
+                class="chip"
+                data-preset="timeoff:1"
+                aria-pressed="false"
+              >
+                1 month
+              </button>
+              <button
+                type="button"
+                class="chip is-active"
+                data-preset="timeoff:2"
+                aria-pressed="true"
+              >
+                2 months
+              </button>
+            </div>
+          </div>
+          <div class="hero-controls__preset-row">
+            <p id="weekly-presets-label" class="preset-row__label">Weekly hours target</p>
+            <div
+              class="preset-row__actions"
+              data-preset-group="weekly"
+              role="group"
+              aria-labelledby="weekly-presets-label"
+            >
+              <button
+                type="button"
+                class="chip"
+                data-preset="weekly:32"
+                aria-pressed="false"
+              >
+                32 hours
+              </button>
+              <button
+                type="button"
+                class="chip"
+                data-preset="weekly:36"
+                aria-pressed="false"
+              >
+                36 hours
+              </button>
+              <button
+                type="button"
+                class="chip"
+                data-preset="weekly:40"
+                aria-pressed="false"
+              >
+                40 hours
+              </button>
+            </div>
+          </div>
+          <div class="hero-controls__preset-row">
+            <p id="travel-presets-label" class="preset-row__label">Travel intensity</p>
+            <div
+              class="preset-row__actions"
+              data-preset-group="travel"
+              role="group"
+              aria-labelledby="travel-presets-label"
+            >
+              <button
+                type="button"
+                class="chip is-active"
+                data-preset="travel:low"
+                aria-pressed="true"
+              >
+                Light travel
+              </button>
+              <button
+                type="button"
+                class="chip"
+                data-preset="travel:base"
+                aria-pressed="false"
+              >
+                Base travel
+              </button>
+              <button
+                type="button"
+                class="chip"
+                data-preset="travel:high"
+                aria-pressed="false"
+              >
+                Heavy travel
+              </button>
+            </div>
+          </div>
         </div>
         <div class="hero-controls__sliders control-group">
           <div class="control control--range">

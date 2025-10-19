@@ -1,5 +1,7 @@
 import { announce, fmt, on, qs, registerSliderBinding, setText } from './components.js';
 import { translate } from './i18n.js';
+import { translateTimeOffToWeekly } from '../state.js';
+import { BASE_WORK_DAYS_PER_WEEK } from '../constants.js';
 
 const percentFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const monthFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
@@ -14,7 +16,12 @@ const PRESET_ALIASES = {
   bufferpercent: 'buffer',
   taxrate: 'tax',
   vat: 'vat',
-  currency: 'currency'
+  currency: 'currency',
+  weeklyhours: 'weekly',
+  hoursperweek: 'weekly',
+  hours: 'weekly',
+  travelintensity: 'travel',
+  travelmode: 'travel'
 };
 
 const PRESET_TOKEN_HANDLERS = {
@@ -25,6 +32,8 @@ const PRESET_TOKEN_HANDLERS = {
   weeks: value => createNumericPatch(['capacity', 'weeksOffCycle'], value, { min: 0 }),
   days: value => createNumericPatch(['capacity', 'daysOffWeek'], value, { min: 0 }),
   vat: value => createNumericPatch(['costs', 'vatRatePercent'], value, { min: 0 }),
+  weekly: (value, context) => createWeeklyHoursPatch(value, context),
+  travel: value => createTravelPresetPatch(value),
   basis: value => {
     const normalized = typeof value === 'string' ? value.trim() : '';
     if (!normalized) {
@@ -41,72 +50,48 @@ const PRESET_TOKEN_HANDLERS = {
   }
 };
 
+const TRAVEL_INTENSITY_VALUES = Object.freeze({
+  low: 0,
+  base: 20,
+  medium: 20,
+  high: 45
+});
+
 export function mountScenarioToolbar(calcState, root = document) {
   const store = calcState && typeof calcState === 'object' ? calcState : {};
   const patch = typeof store.patch === 'function' ? store.patch : null;
   const subscribe = typeof store.subscribe === 'function' ? store.subscribe : null;
   const getState = typeof store.get === 'function' ? store.get : null;
+  const getDerived = typeof store.getDerived === 'function' ? store.getDerived : null;
 
   let latestState = typeof getState === 'function' ? getState() : null;
+  let latestDerived = typeof getDerived === 'function' ? getDerived() : null;
   const context = resolveContext(root);
 
   const sliderBindings = patch
     ? setupQuickSliders(context, patch, () => latestState)
     : [];
-
-  const presetsContainer = qs('#scenario-presets', context);
   const cleanups = [];
+
+  if (patch) {
+    const presetGroupCleanups = setupPresetGroups(context, patch, () => latestState, () => latestDerived);
+    cleanups.push(...presetGroupCleanups);
+  }
 
   if (sliderBindings.length) {
     syncSliderBindings(sliderBindings, latestState);
   }
 
   if (typeof subscribe === 'function') {
-    const unsubscribe = subscribe(nextState => {
+    const unsubscribe = subscribe((nextState, nextDerived) => {
       latestState = nextState;
+      latestDerived = nextDerived;
       if (sliderBindings.length) {
         syncSliderBindings(sliderBindings, latestState);
       }
     });
     if (typeof unsubscribe === 'function') {
       cleanups.push(unsubscribe);
-    }
-  }
-
-  if (presetsContainer && patch) {
-    const handlePresetClick = event => {
-      const presetElement = event.delegateTarget instanceof HTMLElement
-        ? event.delegateTarget
-        : event.target instanceof Element
-          ? event.target.closest('[data-preset]')
-          : null;
-
-      if (!(presetElement instanceof HTMLElement)) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const presetPatch = buildPresetPatch(presetElement);
-      if (!presetPatch) {
-        return;
-      }
-
-      patch(presetPatch);
-      markActivePreset(presetsContainer, presetElement);
-      announce(translate('quickControls.status.updated'));
-    };
-
-    const detach = on(presetsContainer, 'click', handlePresetClick, { delegate: '[data-preset]' });
-    if (typeof detach === 'function') {
-      cleanups.push(detach);
-    }
-
-    const initialActive = presetsContainer.querySelector('[data-preset][aria-pressed="true"]');
-    if (initialActive instanceof HTMLElement) {
-      markActivePreset(presetsContainer, initialActive);
-    } else {
-      markActivePreset(presetsContainer, null);
     }
   }
 
@@ -122,6 +107,64 @@ export function mountScenarioToolbar(calcState, root = document) {
         entry.binding.destroy();
       }
     });
+  };
+}
+
+function setupPresetGroups(context, patch, readState, readDerived) {
+  if (!(context instanceof Document || context instanceof Element || context instanceof DocumentFragment)) {
+    return [];
+  }
+
+  const containers = Array.from(context.querySelectorAll('[data-preset-group]'));
+  return containers
+    .map(container => setupPresetGroup(container, patch, readState, readDerived))
+    .filter(fn => typeof fn === 'function');
+}
+
+function setupPresetGroup(container, patch, readState, readDerived) {
+  if (!(container instanceof HTMLElement) || typeof patch !== 'function') {
+    return null;
+  }
+
+  const handlePresetClick = event => {
+    const presetElement = event.delegateTarget instanceof HTMLElement
+      ? event.delegateTarget
+      : event.target instanceof Element
+        ? event.target.closest('[data-preset]')
+        : null;
+
+    if (!(presetElement instanceof HTMLElement)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const state = typeof readState === 'function' ? readState() : null;
+    const derived = typeof readDerived === 'function' ? readDerived() : null;
+    const presetPatch = buildPresetPatch(presetElement, state, derived);
+
+    if (!presetPatch) {
+      return;
+    }
+
+    patch(presetPatch);
+    markActivePreset(container, presetElement);
+    announce(translate('quickControls.status.updated'));
+  };
+
+  const detach = on(container, 'click', handlePresetClick, { delegate: '[data-preset]' });
+
+  const initialActive = container.querySelector('[data-preset][aria-pressed="true"]');
+  if (initialActive instanceof HTMLElement) {
+    markActivePreset(container, initialActive);
+  } else {
+    markActivePreset(container, null);
+  }
+
+  return () => {
+    if (typeof detach === 'function') {
+      detach();
+    }
   };
 }
 
@@ -195,7 +238,7 @@ function syncSliderBindings(bindings, state) {
   });
 }
 
-function buildPresetPatch(element) {
+function buildPresetPatch(element, state, derived) {
   const attr = element && typeof element.getAttribute === 'function'
     ? element.getAttribute('data-preset')
     : '';
@@ -203,6 +246,8 @@ function buildPresetPatch(element) {
   if (!attr) {
     return null;
   }
+
+  const context = { state, derived };
 
   const tokens = attr
     .split(/[,\s]+/)
@@ -226,9 +271,9 @@ function buildPresetPatch(element) {
       if (!handler) {
         return null;
       }
-      return handler(value);
+      return handler(value, context);
     })
-    .filter(Boolean);
+    .filter(partial => isPlainObject(partial));
 
   if (!partials.length) {
     return null;
@@ -285,6 +330,64 @@ function clampNumber(value, { min = -Infinity, max = Infinity } = {}) {
 function normalizeNumber(value, limits = {}, fallback = 0) {
   const numeric = Number.isFinite(value) ? value : fallback;
   return clampNumber(numeric, limits);
+}
+
+function createWeeklyHoursPatch(rawValue, context = {}) {
+  const hours = toNumber(rawValue);
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return null;
+  }
+
+  const derivedCapacity = context && context.derived && context.derived.capacity
+    ? context.derived.capacity
+    : null;
+
+  let workingDaysPerWeek = derivedCapacity && Number.isFinite(derivedCapacity.workingDaysPerWeek)
+    ? derivedCapacity.workingDaysPerWeek
+    : NaN;
+
+  if (!Number.isFinite(workingDaysPerWeek) || workingDaysPerWeek <= 0) {
+    const metrics = translateTimeOffToWeekly(context && context.state ? context.state : undefined);
+    if (metrics && Number.isFinite(metrics.workingDaysPerWeek)) {
+      workingDaysPerWeek = metrics.workingDaysPerWeek;
+    }
+  }
+
+  if (!Number.isFinite(workingDaysPerWeek) || workingDaysPerWeek <= 0) {
+    workingDaysPerWeek = BASE_WORK_DAYS_PER_WEEK;
+  }
+
+  const safeWorkingDays = Math.max(workingDaysPerWeek, 1);
+  const sessionLength = hours / safeWorkingDays;
+
+  if (!Number.isFinite(sessionLength) || sessionLength <= 0) {
+    return null;
+  }
+
+  const normalized = clampNumber(sessionLength, { min: 0.25, max: 12 });
+  const rounded = Math.round(normalized * 100) / 100;
+  return createNestedPatch(['sessionLength'], rounded);
+}
+
+function createTravelPresetPatch(rawValue) {
+  if (rawValue === null || rawValue === undefined) {
+    return null;
+  }
+
+  const key = String(rawValue).toLowerCase();
+  let percent = Object.prototype.hasOwnProperty.call(TRAVEL_INTENSITY_VALUES, key)
+    ? TRAVEL_INTENSITY_VALUES[key]
+    : undefined;
+
+  if (percent === undefined) {
+    const numeric = toNumber(rawValue);
+    if (!Number.isFinite(numeric)) {
+      return null;
+    }
+    percent = clampNumber(numeric, { min: 0, max: 150 });
+  }
+
+  return createNestedPatch(['modifiers', 'travelFrictionPercent'], percent);
 }
 
 function toNumber(value) {
