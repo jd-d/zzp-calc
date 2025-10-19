@@ -10,7 +10,6 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 ### Sprint 2 Core Capacity and State Engine
 - [ ] [Build a unified calcState store with capacity pipeline covering time off, availability, and utilization.](ROADMAP.md#task-21-build-a-unified-calcstate-store-with-capacity-pipeline-covering-time-off-availability-and-utilization)
 - [ ] [Refactor UI inputs to drive the new state store and surface validation for impossible schedules.](ROADMAP.md#task-22-refactor-ui-inputs-to-drive-the-new-state-store-and-surface-validation-for-impossible-schedules)
-- [ ] [Centralize cost aggregation for fixed, hourly, and travel expenses in preparation for service cards.](ROADMAP.md#task-23-centralize-cost-aggregation-for-fixed-hourly-and-travel-expenses-in-preparation-for-service-cards)
 
 ### Sprint 3 Service Models and Cards
 - [ ] [Model each service with rate and volume solvers that respect hours per unit and travel overhead.](ROADMAP.md#task-31-model-each-service-with-rate-and-volume-solvers-that-respect-hours-per-unit-and-travel-overhead)
@@ -45,3 +44,4 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 - [x] Display portfolio summaries (revenue, costs, tax, net) and a compact weekly schedule preview. (2025-10-19)
 - [x] Integrate comfort meter, seasonality sliders, travel friction, and hands-on quota constraints. (2025-10-18)
 - [x] Pre-fill the form with a 50k preset and add a target gross/net radio button with corresponding calculation adjustments. (2025-10-20)
+- [x] [Centralize cost aggregation for fixed, hourly, and travel expenses in preparation for service cards.](ROADMAP.md#task-23-centralize-cost-aggregation-for-fixed-hourly-and-travel-expenses-in-preparation-for-service-cards) (2025-10-21)

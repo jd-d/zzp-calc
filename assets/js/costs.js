@@ -1,3 +1,6 @@
+import { MONTHS_PER_YEAR } from './constants.js';
+import { normalizeScenarioModifiers } from './modifiers.js';
+
 function toNumber(value, fallback = 0) {
   if (value == null || value === '') {
     return fallback;
@@ -35,8 +38,6 @@ function sumFixedCosts(costsState) {
     return total + (numeric > 0 ? numeric : 0);
   }, 0);
 }
-
-import { normalizeScenarioModifiers } from './modifiers.js';
 
 function computeVariableCostTotals(costsState = {}, capacity = {}) {
   const perWorkingDay = Math.max(
@@ -87,6 +88,75 @@ function computeVariableCostTotals(costsState = {}, capacity = {}) {
   };
 }
 
+function computeFixedCostTotals(costsState = {}) {
+  const annual = Math.max(sumFixedCosts(costsState), 0);
+  return {
+    annual,
+    monthly: annual / MONTHS_PER_YEAR
+  };
+}
+
+function computeHourlyCostTotals(variableCosts = {}, capacity = {}) {
+  const workingContribution = Math.max(variableCosts.annualWorkingDayCost || 0, 0);
+  const billableContribution = Math.max(variableCosts.annualBillableDayCost || 0, 0);
+  const annual = workingContribution + billableContribution;
+  const billableHours = Math.max(toNumber(capacity.billableHoursPerYear, 0), 0);
+
+  return {
+    annual,
+    monthly: annual / MONTHS_PER_YEAR,
+    perBillableHour: billableHours > 0 ? annual / billableHours : 0,
+    perWorkingDay: variableCosts.perWorkingDay || 0,
+    perBillableDay: variableCosts.perBillableDay || 0,
+    workingDays: variableCosts.workingDays || 0,
+    billableDays: variableCosts.billableDays || 0
+  };
+}
+
+function computeTravelCostTotals(variableCosts = {}) {
+  const annual = Math.max(variableCosts.annualTravelCost || 0, 0);
+  return {
+    annual,
+    monthly: annual / MONTHS_PER_YEAR,
+    perDay: variableCosts.perTravelDay || 0,
+    days: variableCosts.travelDays || 0
+  };
+}
+
+function computeOtherVariableCostTotals(variableCosts = {}) {
+  const annual = Math.max(variableCosts.otherAnnualCost || 0, 0);
+  return {
+    annual,
+    monthly: annual / MONTHS_PER_YEAR
+  };
+}
+
+function aggregateCostTotals(costsState = {}, capacity = {}, variableCosts = null) {
+  const variableDetail = variableCosts || computeVariableCostTotals(costsState, capacity);
+  const fixed = computeFixedCostTotals(costsState);
+  const hourly = computeHourlyCostTotals(variableDetail, capacity);
+  const travel = computeTravelCostTotals(variableDetail);
+  const other = computeOtherVariableCostTotals(variableDetail);
+  const variableAnnual = Math.max(variableDetail.annualTotal || 0, 0);
+  const variableMonthly = variableAnnual / MONTHS_PER_YEAR;
+  const totalAnnual = fixed.annual + variableAnnual;
+
+  return {
+    fixed,
+    hourly,
+    travel,
+    other,
+    variable: {
+      annual: variableAnnual,
+      monthly: variableMonthly
+    },
+    total: {
+      annual: totalAnnual,
+      monthly: totalAnnual / MONTHS_PER_YEAR
+    }
+  };
+}
+
 export function computeCosts(state, capacityMetrics = {}) {
   const costsState = (state && state.costs) || {};
 
@@ -102,10 +172,10 @@ export function computeCosts(state, capacityMetrics = {}) {
   const bufferPercentEffective = bufferPercent + comfortMarginPercent;
   const buffer = bufferPercentEffective / 100;
 
-  const fixedCosts = Math.max(sumFixedCosts(costsState), 0);
-
   const variableCosts = computeVariableCostTotals(costsState, capacityMetrics);
   const annualVariableCosts = Math.max(variableCosts.annualTotal, 0);
+  const totals = aggregateCostTotals(costsState, capacityMetrics, variableCosts);
+  const fixedCosts = totals.fixed.annual;
 
   const currencySymbol =
     state && state.config && typeof state.config.currencySymbol === 'string'
@@ -125,8 +195,14 @@ export function computeCosts(state, capacityMetrics = {}) {
     annualVariableCosts,
     variableCostPerClass: variableCosts.perWorkingDay,
     variableCosts,
+    totals,
     currencySymbol
   };
 }
 
-export { sumFixedCosts, computeVariableCostTotals, normalizePercent };
+export {
+  sumFixedCosts,
+  computeVariableCostTotals,
+  normalizePercent,
+  aggregateCostTotals
+};
