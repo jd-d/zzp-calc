@@ -719,6 +719,24 @@ header.hero {
   gap: var(--space-4);
 }
 
+.hero-controls__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.hero-controls__nav .btn {
+  flex: 1 1 180px;
+  justify-content: center;
+  text-align: center;
+}
+
+@media (min-width: 720px) {
+  .hero-controls__nav .btn {
+    flex: 0 0 auto;
+  }
+}
+
 .control--range {
   gap: var(--space-2);
 }
@@ -826,8 +844,13 @@ header.hero {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: clamp(var(--space-6), 4vw, var(--space-8));
+}
+
+@media (min-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  }
 }
 .service-cards {
   grid-column: 1 / -1;
