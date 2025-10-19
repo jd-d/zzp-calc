@@ -424,6 +424,31 @@
           </article>
         </div>
 
+        <article class="surface-card" id="sandbox-sensitivity">
+          <div class="surface-content stack stack--tight">
+            <div class="stack stack--tight">
+              <h3>Net sensitivity</h3>
+              <p class="field-note">See how projected annual net shifts as you dial months off and utilization.</p>
+            </div>
+            <div class="sensitivity-grid">
+              <section class="sensitivity-chart" data-sensitivity="months" aria-labelledby="net-months-heading">
+                <header class="sensitivity-chart__header">
+                  <h4 id="net-months-heading">Months off stress test</h4>
+                  <p id="net-months-summary" class="sensitivity-chart__summary">Not enough data yet.</p>
+                </header>
+                <div class="sensitivity-chart__spark" id="net-months-chart" aria-hidden="true"></div>
+              </section>
+              <section class="sensitivity-chart" data-sensitivity="utilization" aria-labelledby="net-utilization-heading">
+                <header class="sensitivity-chart__header">
+                  <h4 id="net-utilization-heading">Utilization stress test</h4>
+                  <p id="net-utilization-summary" class="sensitivity-chart__summary">Not enough data yet.</p>
+                </header>
+                <div class="sensitivity-chart__spark" id="net-utilization-chart" aria-hidden="true"></div>
+              </section>
+            </div>
+          </div>
+        </article>
+
         <div class="layout motion-stagger">
           <section class="card surface-card controls motion-slide-up" aria-labelledby="inputs-heading">
             <div class="surface-content stack">
