@@ -1472,6 +1472,13 @@ header.hero {
   color: var(--text-muted);
 }
 
+.field-warning {
+  margin: 0.35rem 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--warn);
+  font-weight: 600;
+}
+
 .persist-controls {
   display: flex;
   align-items: center;
