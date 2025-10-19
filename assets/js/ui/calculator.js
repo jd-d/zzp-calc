@@ -4,6 +4,9 @@ import {
   patch,
   subscribe,
   parseNumber,
+  getBillableHours,
+  getNonBillableShare,
+  getTravelDaysPerYear,
   setTargetNetBasis,
   setIncomeTargetValue,
   setMonthsOff,
@@ -215,9 +218,12 @@ export function initializeCalculatorUI() {
 
   function deriveCalcViews(state, derived) {
     const modifiers = normalizeScenarioModifiers(state.modifiers);
+    const sessionLength = Number.isFinite(state.sessionLength)
+      ? state.sessionLength
+      : 1.5;
     const capacity = derived && derived.capacity
       ? derived.capacity
-      : deriveCapacity(state.capacity, state.modifiers);
+      : deriveCapacity(state.capacity, state.modifiers, { sessionLength });
     const costs = derived && derived.costs ? derived.costs : computeCosts(state, capacity);
     const defaults = deriveTargetNetDefaults(capacity);
     const incomeBase = deriveIncomeTargets(state, capacity);
@@ -802,12 +808,18 @@ export function initializeCalculatorUI() {
       : modifiersView.comfortMarginPercent;
     const bufferPercentEffective = bufferPercentBase + comfortMarginPercent;
     const bufferEffective = bufferPercentEffective / 100;
-    const effectiveBillableDays = Number.isFinite(capacity.billableDaysAfterTravel)
-      ? capacity.billableDaysAfterTravel
-      : capacity.billableDaysPerYear;
-    const billableHours = Number.isFinite(sessionLength) && sessionLength > 0 && Number.isFinite(effectiveBillableDays) && effectiveBillableDays > 0
-      ? effectiveBillableDays * sessionLength
-      : null;
+    const billableHours = Number.isFinite(capacity.billableHoursPerYear)
+      ? capacity.billableHoursPerYear
+      : getBillableHours(currentState);
+    const nonBillableShare = Number.isFinite(capacity.nonBillableShare)
+      ? capacity.nonBillableShare
+      : getNonBillableShare(currentState);
+    const travelAllowanceDaysValue = Number.isFinite(capacity.travelAllowanceDays)
+      ? capacity.travelAllowanceDays
+      : getTravelDaysPerYear(currentState);
+    const travelDaysPerYearValue = Number.isFinite(capacity.travelDaysPerYear)
+      ? capacity.travelDaysPerYear
+      : travelAllowanceDaysValue;
     const taxInfo = tax && typeof tax === 'object' ? tax : {};
     const taxMode = typeof taxInfo.mode === 'string'
       ? taxInfo.mode
@@ -931,16 +943,17 @@ export function initializeCalculatorUI() {
       billableDaysPerYear: capacity.billableDaysPerYear,
       billableDaysAfterTravel: capacity.billableDaysAfterTravel,
       travelDaysPerMonth: capacity.travelDaysPerMonth,
-      travelDaysPerYear: capacity.travelDaysPerYear,
+      travelDaysPerYear: travelDaysPerYearValue,
       travelWeeksPerYear: capacity.travelWeeksPerYear,
-      travelAllowanceDays: capacity.travelAllowanceDays,
+      travelAllowanceDays: travelAllowanceDaysValue,
       travelAllowanceShare: capacity.travelAllowanceShare,
       travelAllowanceBillableShare: capacity.travelAllowanceBillableShare,
       seasonalityPercent: modifiersView.seasonalityPercent,
       travelFrictionPercent: modifiersView.travelFrictionPercent,
       handsOnQuotaPercent: modifiersView.handsOnQuotaPercent,
       sessionLength,
-      billableHours
+      billableHours,
+      nonBillableShare
     };
   }
 
@@ -1003,7 +1016,8 @@ export function initializeCalculatorUI() {
       travelFrictionPercent,
       handsOnQuotaPercent,
       sessionLength,
-      billableHours
+      billableHours,
+      nonBillableShare
     } = inputs;
 
     const activeMonthPercentage = activeMonthShare * 100;
@@ -1021,6 +1035,9 @@ export function initializeCalculatorUI() {
     const sessionLengthDisplay = formatFixed(sessionLength, 2);
     const billableHoursDisplay = Number.isFinite(billableHours)
       ? formatFixed(billableHours, 2)
+      : '—';
+    const nonBillableShareDisplay = Number.isFinite(nonBillableShare)
+      ? formatFixed(nonBillableShare * 100, 1)
       : '—';
     const bufferBaseDisplay = formatFixed(bufferPercentBase ?? 0, 1);
     const comfortMarginDisplay = formatFixed(comfortMarginPercent ?? 0, 1);
@@ -1192,6 +1209,7 @@ export function initializeCalculatorUI() {
     listItems.push(`Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`);
     listItems.push(`Target utilization during active weeks: ${utilizationDisplay}%`);
     listItems.push(`Billable days before travel allowances: ${billableDaysPerYearDisplay} (after travel: ${billableDaysAfterTravelDisplay})`);
+    listItems.push(`Non-billable share of active days: ${nonBillableShareDisplay === '—' ? '—' : `${nonBillableShareDisplay}%`}`);
     listItems.push(`Session length assumption: ${sessionLengthDisplay} hours`);
     listItems.push(`Estimated billable hours per year: ${billableHoursDisplay}`);
     listItems.push(`Travel days planned per active month: ${travelDaysPerMonthDisplay}; ≈ ${travelDaysPerYearDisplay} days (${travelWeeksPerYearDisplay} weeks) per year`);
@@ -1693,9 +1711,6 @@ export function initializeCalculatorUI() {
       ...capacityUpdates
     };
 
-    const capacityMetrics = deriveCapacity(nextCapacity);
-    const defaults = deriveTargetNetDefaults(capacityMetrics);
-
     const sessionLength = Math.max(
       parseNumber(sessionLengthRaw, calcState.sessionLength ?? 1.5, {
         min: 0.25,
@@ -1703,6 +1718,9 @@ export function initializeCalculatorUI() {
       }),
       0.25
     );
+
+    const capacityMetrics = deriveCapacity(nextCapacity, calcState.modifiers, { sessionLength });
+    const defaults = deriveTargetNetDefaults(capacityMetrics);
 
     const modifierFallbacks = normalizeScenarioModifiers(calcState.modifiers);
     const modifiersUpdates = {
