@@ -383,8 +383,16 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, mod
   const variableShare = clamp(toNumber(config.variableCostShare, usageShare || hours.share), 0, 1);
 
   const directCostPerUnit = toPositive(config.directCostPerUnit ?? config.costPerUnit, 0);
-  const fixedAnnual = Math.max(toNumber(costs.fixedCosts, 0), 0) * fixedShare;
-  const variableAnnual = Math.max(toNumber(costs.annualVariableCosts, 0), 0) * variableShare;
+  const fixedAnnualTotal = Math.max(
+    toNumber(costs?.totals?.fixed?.annual ?? costs?.fixedCosts, 0),
+    0
+  );
+  const variableAnnualTotal = Math.max(
+    toNumber(costs?.totals?.variable?.annual ?? costs?.annualVariableCosts, 0),
+    0
+  );
+  const fixedAnnual = fixedAnnualTotal * fixedShare;
+  const variableAnnual = variableAnnualTotal * variableShare;
 
   const revenueAnnual = revenueMetrics.pricePerUnit * annualUnits;
   const directCostAnnual = directCostPerUnit * annualUnits + fixedAnnual + variableAnnual;
@@ -885,12 +893,24 @@ export function computeServiceRevenue(config, hoursMetrics, costs = {}) {
     : basePrice * (1 + buffer);
 
   const directCostPerUnit = toPositive(config.directCostPerUnit ?? config.costPerUnit, 0);
-  const allocatedFixed = Math.max(toNumber(costs.fixedCosts, 0), 0) / 12 * clamp(
+  const fallbackFixedMonthly = Number.isFinite(costs?.fixedCosts) ? costs.fixedCosts / 12 : 0;
+  const fixedMonthlyTotal = Math.max(
+    toNumber(costs?.totals?.fixed?.monthly ?? fallbackFixedMonthly, 0),
+    0
+  );
+  const fallbackVariableMonthly = Number.isFinite(costs?.annualVariableCosts)
+    ? costs.annualVariableCosts / 12
+    : 0;
+  const variableMonthlyTotal = Math.max(
+    toNumber(costs?.totals?.variable?.monthly ?? fallbackVariableMonthly, 0),
+    0
+  );
+  const allocatedFixed = fixedMonthlyTotal * clamp(
     toNumber(config.fixedCostShare, hoursMetrics.share),
     0,
     1
   );
-  const allocatedVariable = Math.max(toNumber(costs.annualVariableCosts, 0), 0) / 12 * clamp(
+  const allocatedVariable = variableMonthlyTotal * clamp(
     toNumber(config.variableCostShare, hoursMetrics.share),
     0,
     1
