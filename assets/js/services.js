@@ -120,6 +120,52 @@ function readServiceOverrides(id) {
   return {};
 }
 
+function normalizeComfortRatio(value, fallback = 0) {
+  const numeric = toNumber(value, NaN);
+  if (!Number.isFinite(numeric)) {
+    return clamp(fallback, 0, 0.95);
+  }
+
+  const interpreted = numeric > 1 ? numeric / 100 : numeric;
+  return clamp(interpreted, 0, 0.95);
+}
+
+function resolveComfortTargets(source = {}, costs = {}, modifiers = {}) {
+  const uplift = clamp(
+    Number.isFinite(modifiers?.comfortMargin)
+      ? modifiers.comfortMargin
+      : Number.isFinite(modifiers?.comfortMarginPercent)
+        ? modifiers.comfortMarginPercent / 100
+        : 0,
+    0,
+    0.95
+  );
+
+  const override = source
+    ? source.comfortBuffer ?? source.comfortBufferMin ?? source.bufferFloor ?? source.comfortFloor
+    : undefined;
+
+  let base = normalizeComfortRatio(override, NaN);
+
+  if (!Number.isFinite(base)) {
+    if (Number.isFinite(costs?.bufferPercentBase)) {
+      base = normalizeComfortRatio(costs.bufferPercentBase / 100, 0);
+    } else if (Number.isFinite(costs?.buffer)) {
+      base = normalizeComfortRatio(costs.buffer - uplift, 0);
+    } else {
+      base = 0;
+    }
+  }
+
+  const total = clamp(base + uplift, 0, 0.95);
+
+  return {
+    base,
+    uplift,
+    total
+  };
+}
+
 const HANDS_ON_SERVICE_IDS = new Set(['ops', 'qc', 'training']);
 const EPSILON = 1e-6;
 
@@ -461,11 +507,8 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, mod
     config.maxPricePerUnit ?? config.maximumPrice ?? config.priceCeiling ?? (pricingFloor ? pricingFloor * 2 : Infinity),
     Infinity
   );
-  const comfortFloor = clamp(
-    toNumber(config.comfortBuffer ?? config.comfortBufferMin ?? costs.buffer ?? 0),
-    0,
-    0.95
-  );
+  const comfortTargets = resolveComfortTargets(config, costs, modifiers);
+  const comfortFloor = comfortTargets.total;
 
   const handsOnWeight = resolveHandsOnWeight(entry.id, config);
   const handsOnDays = serviceDays * handsOnWeight;
@@ -511,6 +554,8 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, mod
     handsOnDays,
     grossMargin,
     comfortFloor,
+    comfortBase: comfortTargets.base,
+    comfortUplift: comfortTargets.uplift,
     pricingFloor,
     pricingCeiling,
     violations: optionViolations
@@ -565,11 +610,8 @@ function normalizeSolverConstraints(snapshot, capacityMetrics, costs, serviceEnt
     ? clamp(handsOnTarget + handsOnTolerance, 0, 1)
     : null;
 
-  const comfortFloor = clamp(
-    toNumber(overridesSource.comfortBufferMin ?? overridesSource.bufferFloor ?? costs.buffer ?? 0),
-    0,
-    0.95
-  );
+  const comfortTargets = resolveComfortTargets(overridesSource, costs, modifiers);
+  const comfortFloor = comfortTargets.total;
 
   return {
     maxServiceDays,
@@ -577,6 +619,8 @@ function normalizeSolverConstraints(snapshot, capacityMetrics, costs, serviceEnt
     handsOnMin,
     handsOnMax,
     comfortFloor,
+    comfortFloorBase: comfortTargets.base,
+    comfortMargin: comfortTargets.uplift,
     handsOnTarget: Number.isFinite(handsOnTarget) ? clamp(handsOnTarget, 0, 1) : null,
     handsOnTolerance,
     modifiers
@@ -627,6 +671,11 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
   const targetNet = incomeTargets.targetNet || 0;
   const modifiers = normalizeScenarioModifiers(snapshot.modifiers);
   const taxStrategy = calculateTaxReserve(safeState, capacity, costs, incomeTargets);
+  const portfolioComfortTargets = resolveComfortTargets(
+    snapshot.portfolioConstraints || snapshot.portfolio || {},
+    costs,
+    modifiers
+  );
 
   const serviceEntries = descriptors.map((descriptor) => {
     const storeOverrides = readServiceOverrides(descriptor.id);
@@ -664,6 +713,9 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       handsOnDays: 0,
       taxMode: taxStrategy ? taxStrategy.mode : null
     };
+    totals.bufferPercentBase = portfolioComfortTargets.base * 100;
+    totals.comfortMarginPercent = portfolioComfortTargets.uplift * 100;
+    totals.bufferPercentEffective = portfolioComfortTargets.total * 100;
     const violations = [];
 
     for (const option of selection) {
@@ -694,6 +746,8 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
         handsOnDays: option.handsOnDays,
         grossMargin: option.grossMargin,
         comfortFloor: option.comfortFloor,
+        comfortFloorBase: option.comfortBase,
+        comfortMarginUplift: option.comfortUplift,
         pricingFloor: option.pricingFloor,
         pricingCeiling: option.pricingCeiling
       };
@@ -828,7 +882,10 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
         grossMargin: 0,
         taxMode: taxStrategy ? taxStrategy.mode : null,
         targetNet,
-        netGap: -targetNet
+        netGap: -targetNet,
+        bufferPercentBase: portfolioComfortTargets.base * 100,
+        comfortMarginPercent: portfolioComfortTargets.uplift * 100,
+        bufferPercentEffective: portfolioComfortTargets.total * 100
       },
       violations: [],
       metrics: {
@@ -856,7 +913,10 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       grossMargin: 0,
       taxMode: taxStrategy ? taxStrategy.mode : null,
       targetNet,
-      netGap: -targetNet
+      netGap: -targetNet,
+      bufferPercentBase: portfolioComfortTargets.base * 100,
+      comfortMarginPercent: portfolioComfortTargets.uplift * 100,
+      bufferPercentEffective: portfolioComfortTargets.total * 100
     },
     violations: [],
     comfort: computeComfortSnapshot({
@@ -1389,6 +1449,7 @@ function createServiceDescriptor(id) {
       const allocatedVariable = Number.isFinite(revenueMetrics.allocatedVariable)
         ? revenueMetrics.allocatedVariable
         : 0;
+      const comfortTargets = resolveComfortTargets(config, costMetrics, modifiers);
 
       const computeView = (unitsValue, priceValue, locked) => {
         const unitsPerMonth = Number.isFinite(unitsValue) ? unitsValue : 0;
@@ -1398,6 +1459,14 @@ function createServiceDescriptor(id) {
         const totalDirectCost = directUnitsCost + allocatedFixed + allocatedVariable;
         const taxValue = revenueValue * taxRate;
         const netValue = revenueValue - totalDirectCost - taxValue;
+
+        const grossMargin = revenueValue > 0
+          ? (revenueValue - totalDirectCost) / revenueValue
+          : 0;
+        const comfortFloor = comfortTargets.total;
+        const shortfall = Number.isFinite(grossMargin) && grossMargin + EPSILON < comfortFloor
+          ? comfortFloor - grossMargin
+          : 0;
 
         const shares = revenueValue > 0
           ? {
@@ -1419,7 +1488,12 @@ function createServiceDescriptor(id) {
           net: netValue,
           costShares: shares,
           buffer: bufferValue,
-          locked
+          locked,
+          grossMargin,
+          comfortFloor,
+          comfortFloorBase: comfortTargets.base,
+          comfortUplift: comfortTargets.uplift,
+          comfortShortfall: shortfall
         };
       };
 
@@ -1442,6 +1516,11 @@ function createServiceDescriptor(id) {
         travelDaysPerUnit: hoursMetrics.travelDaysPerUnit,
         annualTravelDays: hoursMetrics.annualTravelDays,
         hoursPerUnit: hoursMetrics.totalHoursPerUnit,
+        comfort: {
+          base: comfortTargets.base,
+          uplift: comfortTargets.uplift,
+          floor: comfortTargets.total
+        },
         targets: {
           pricePerUnit: rateTarget.pricePerUnit,
           unitsPerMonth: volumeTarget.unitsPerMonth,

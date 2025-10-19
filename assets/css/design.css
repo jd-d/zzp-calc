@@ -978,6 +978,51 @@ header.hero {
   font-size: clamp(1rem, 2.4vw, 1.1rem);
 }
 
+.service-card__metrics dd.is-alert {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.service-card.is-underperforming {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent);
+}
+
+.service-card.is-underperforming .service-card__header {
+  border-bottom-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+
+.service-card.is-underperforming .service-card__icon {
+  color: var(--danger);
+}
+
+.service-card__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
+  line-height: 1.2;
+}
+
+.service-card__flag[hidden] {
+  display: none;
+}
+
+.service-card__flag-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.service-card__flag-label {
+  white-space: nowrap;
+}
+
 .service-card__spark {
   min-height: 72px;
   border-radius: var(--radius-md);
@@ -1082,6 +1127,14 @@ header.hero {
   margin: 0;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.kv dd .portfolio-buffer-note {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 .portfolio-status {
