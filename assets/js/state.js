@@ -41,7 +41,8 @@ const TAX_MODE_VALUES = ['simple', 'dutch2025'];
 const DEFAULT_CAPACITY_STATE = {
   monthsOff: 2,
   weeksOffCycle: 1,
-  daysOffWeek: 2
+  daysOffWeek: 2,
+  utilizationPercent: 70
 };
 
 const DEFAULT_SESSION_LENGTH = 1.5;
@@ -392,6 +393,17 @@ export function setDaysOffWeek(rawValue) {
   });
   patch({
     capacity: { daysOffWeek: normalized }
+  });
+  return refreshIncomeTargetDefaultsFromState();
+}
+
+export function setUtilizationPercent(rawValue) {
+  const normalized = parseNumber(rawValue, state.capacity.utilizationPercent || 0, {
+    min: 0,
+    max: 100
+  });
+  patch({
+    capacity: { utilizationPercent: normalized }
   });
   return refreshIncomeTargetDefaultsFromState();
 }

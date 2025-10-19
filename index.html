@@ -693,12 +693,41 @@
                 </div>
                 <p class="field-note">Choose how the calculator estimates your tax reserve.</p>
               </div>
-              <div class="control">
-                <label for="tax-rate">
+              <div class="control control--range control--pair">
+                <label id="tax-reserve-label" for="tax-reserve-slider">
                   <span class="label-text">Effective income tax rate (%)</span>
                   <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
                 </label>
-                <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
+                <div class="control-pair">
+                  <div class="control-pair__range">
+                    <input
+                      type="range"
+                      id="tax-reserve-slider"
+                      min="0"
+                      max="60"
+                      step="0.5"
+                      value="40"
+                      aria-controls="tax-rate"
+                      aria-describedby="tax-reserve-display"
+                    />
+                    <output
+                      id="tax-reserve-display"
+                      class="range-output"
+                      role="status"
+                      aria-live="polite"
+                    >40%</output>
+                  </div>
+                  <input
+                    type="number"
+                    id="tax-rate"
+                    value="40"
+                    min="0"
+                    max="60"
+                    step="0.5"
+                    inputmode="decimal"
+                    aria-labelledby="tax-reserve-label"
+                  />
+                </div>
               </div>
               <div class="control control--fixed-costs">
                 <div class="fixed-costs-header">
@@ -903,12 +932,85 @@
               </button>
             </div>
             <div class="section-body" id="section-time-off">
-              <div class="control">
-                <label for="months-off">
+              <div class="control control--range control--pair">
+                <label id="months-off-label" for="monthsOff">
                   <span class="label-text">Months off per year</span>
                   <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Total months you plan to take completely off." data-tooltip="Total months you plan to take completely off.">ℹ️</span>
                 </label>
-                <input type="number" id="months-off" value="2" min="0" max="12" step="0.5" inputmode="decimal" />
+                <div class="control-pair">
+                  <div class="control-pair__range">
+                    <input
+                      type="range"
+                      id="monthsOff"
+                      min="0"
+                      max="12"
+                      step="0.5"
+                      value="2"
+                      aria-controls="months-off"
+                      aria-describedby="months-off-display"
+                    />
+                    <output
+                      id="months-off-display"
+                      class="range-output"
+                      role="status"
+                      aria-live="polite"
+                    >2 months</output>
+                  </div>
+                  <input
+                    type="number"
+                    id="months-off"
+                    value="2"
+                    min="0"
+                    max="12"
+                    step="0.5"
+                    inputmode="decimal"
+                    aria-labelledby="months-off-label"
+                  />
+                </div>
+              </div>
+              <div class="control control--range control--pair">
+                <label id="utilization-label" for="utilization-slider">
+                  <span class="label-text">Target utilization during active weeks (%)</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Share of available working days you expect to bill once you are on the clock."
+                    data-tooltip="Share of available working days you expect to bill once you are on the clock."
+                  >ℹ️</span>
+                </label>
+                <div class="control-pair">
+                  <div class="control-pair__range">
+                    <input
+                      type="range"
+                      id="utilization-slider"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value="70"
+                      aria-controls="utilization"
+                      aria-describedby="utilization-display"
+                    />
+                    <output
+                      id="utilization-display"
+                      class="range-output"
+                      role="status"
+                      aria-live="polite"
+                    >70%</output>
+                  </div>
+                  <input
+                    type="number"
+                    id="utilization"
+                    value="70"
+                    min="0"
+                    max="100"
+                    step="1"
+                    inputmode="decimal"
+                    aria-labelledby="utilization-label"
+                  />
+                </div>
+                <p class="field-note">Share of active days you expect to bill after accounting for admin, prep, and recovery time.</p>
               </div>
               <div class="control">
                 <label for="weeks-off-cycle">
@@ -1017,7 +1119,7 @@
                 </div>
               </div>
               <div class="control control--range control--pair">
-                <label for="travel-friction">
+                <label id="travel-friction-label" for="travel-friction-slider">
                   <span class="label-text">Travel friction overhead (%)</span>
                   <span
                     class="info-icon"
@@ -1029,8 +1131,34 @@
                   >ℹ️</span>
                 </label>
                 <div class="control-pair">
-                  <input type="range" id="travel-friction-slider" min="0" max="150" step="1" value="0" aria-controls="travel-friction" />
-                  <input type="number" id="travel-friction" value="0" min="0" max="150" step="1" inputmode="decimal" />
+                  <div class="control-pair__range">
+                    <input
+                      type="range"
+                      id="travel-friction-slider"
+                      min="0"
+                      max="150"
+                      step="1"
+                      value="0"
+                      aria-controls="travel-friction"
+                      aria-describedby="travel-friction-display"
+                    />
+                    <output
+                      id="travel-friction-display"
+                      class="range-output"
+                      role="status"
+                      aria-live="polite"
+                    >0%</output>
+                  </div>
+                  <input
+                    type="number"
+                    id="travel-friction"
+                    value="0"
+                    min="0"
+                    max="150"
+                    step="1"
+                    inputmode="decimal"
+                    aria-labelledby="travel-friction-label"
+                  />
                 </div>
               </div>
               <div class="control control--range control--pair">

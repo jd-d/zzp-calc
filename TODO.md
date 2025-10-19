@@ -16,7 +16,6 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 - [ ] [Render dual-tab service cards showing rate needed and volume needed with two-column metric tables.](ROADMAP.md#task-32-render-dual-tab-service-cards-showing-rate-needed-and-volume-needed-with-two-column-metric-tables)
 
 ### Sprint 4 Scenario Sandbox Controls
-- [ ] [Expose sandbox sliders for months off, utilization, tax reserve, and travel friction with instant recompute.](ROADMAP.md#task-42-expose-sandbox-sliders-for-months-off-utilization-tax-reserve-and-travel-friction-with-instant-recompute)
 - [ ] [Add sparkline sensitivity visuals for net vs months off and net vs utilization.](ROADMAP.md#task-43-add-sparkline-sensitivity-visuals-for-net-vs-months-off-and-net-vs-utilization)
 
 ### Sprint 5 Portfolio Optimizer
@@ -45,3 +44,4 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 - [x] [Centralize cost aggregation for fixed, hourly, and travel expenses in preparation for service cards.](ROADMAP.md#task-23-centralize-cost-aggregation-for-fixed-hourly-and-travel-expenses-in-preparation-for-service-cards) (2025-10-21)
 - [x] [Add comfort buffer controls feeding net contributions and highlight under-target services.](ROADMAP.md#task-33-add-comfort-buffer-controls-feeding-net-contributions-and-highlight-under-target-services) (2025-10-22)
 - [x] [Deliver quick scenario strips for time off, weekly hours, and travel intensity presets.](ROADMAP.md#task-41-deliver-quick-scenario-strips-for-time-off-weekly-hours-and-travel-intensity-presets) (2025-10-19)
+- [x] [Expose sandbox sliders for months off, utilization, tax reserve, and travel friction with instant recompute.](ROADMAP.md#task-42-expose-sandbox-sliders-for-months-off-utilization-tax-reserve-and-travel-friction-with-instant-recompute) (2025-10-23)

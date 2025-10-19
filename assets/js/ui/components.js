@@ -243,7 +243,7 @@ function formatSliderValue(value, decimals) {
   return String(value);
 }
 
-export function bindSliderPair({ sliderId, inputId, stateKey }) {
+export function bindSliderPair({ sliderId, inputId, stateKey, displayId, format, debounceMs = 0 }) {
   const slider = typeof sliderId === 'string' ? document.getElementById(sliderId) : sliderId;
   const input = typeof inputId === 'string' ? document.getElementById(inputId) : inputId;
 
@@ -257,10 +257,20 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
 
   const path = deriveStatePath(stateKey);
 
+  const displayElement = typeof displayId === 'string'
+    ? document.getElementById(displayId)
+    : displayId instanceof HTMLElement
+      ? displayId
+      : null;
+
   const min = toFiniteNumber(slider.min);
   const max = toFiniteNumber(slider.max);
   const step = toFiniteNumber(slider.step);
   const stepDecimals = countStepDecimals(step, slider.step);
+
+  const formatDisplay = typeof format === 'function'
+    ? format
+    : value => formatSliderValue(value, stepDecimals);
 
   const normalize = rawValue => {
     const parsed = toFiniteNumber(rawValue);
@@ -290,6 +300,18 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
     return Number.isFinite(nextValue) ? nextValue : null;
   };
 
+  const setDisplayValue = value => {
+    if (!(displayElement instanceof HTMLElement)) {
+      return;
+    }
+
+    const nextText = formatDisplay(value);
+    const normalized = nextText == null ? '' : String(nextText);
+    if (displayElement.textContent !== normalized) {
+      displayElement.textContent = normalized;
+    }
+  };
+
   const setElementValues = value => {
     const display = formatSliderValue(value, stepDecimals);
     if (slider.value !== display) {
@@ -298,6 +320,7 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
     if (input.value !== display) {
       input.value = display;
     }
+    setDisplayValue(value);
   };
 
   const applyState = value => {
@@ -319,6 +342,7 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
   };
 
   let currentValue = readCurrentState();
+  let debounceTimer = null;
 
   if (currentValue === null) {
     const inputSeed = normalize(input.value);
@@ -329,6 +353,21 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
   if (currentValue !== null) {
     setElementValues(currentValue);
   }
+
+  const clearPendingCommit = () => {
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+  };
+
+  const dispatchChange = () => {
+    if (currentValue === null) {
+      return;
+    }
+    applyState(currentValue);
+    announce('Scenario slider changed');
+  };
 
   const commit = value => {
     if (value === null) {
@@ -342,8 +381,17 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
 
     currentValue = value;
     setElementValues(currentValue);
-    applyState(currentValue);
-    announce('Scenario slider changed');
+
+    if (debounceMs > 0) {
+      clearPendingCommit();
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        dispatchChange();
+      }, debounceMs);
+      return;
+    }
+
+    dispatchChange();
   };
 
   const handleSliderInput = () => {
@@ -376,6 +424,7 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
       if (currentValue === null || Math.abs(currentValue - fromState) > 1e-6) {
         currentValue = fromState;
         setElementValues(currentValue);
+        clearPendingCommit();
       }
     });
   }
@@ -383,6 +432,7 @@ export function bindSliderPair({ sliderId, inputId, stateKey }) {
   return () => {
     slider.removeEventListener('input', handleSliderInput);
     input.removeEventListener('input', handleNumberInput);
+    clearPendingCommit();
     if (typeof unsubscribe === 'function') {
       unsubscribe();
     }
