@@ -33,6 +33,18 @@ function formatCount(value) {
   return formatter.format(value);
 }
 
+function formatPercentValue(value, { signed = false } = {}) {
+  if (!Number.isFinite(value)) {
+    return signed ? '+0%' : '0%';
+  }
+
+  const formatted = fractionalFormatter.format(value);
+  if (signed && value > 0) {
+    return `+${formatted}%`;
+  }
+  return `${formatted}%`;
+}
+
 function readCapacity(derived) {
   if (derived && typeof derived === 'object' && derived.capacity) {
     return derived.capacity;
@@ -260,6 +272,38 @@ function updateStatus(statusElement, totals, symbol) {
   }
 }
 
+function updateBufferSummary(elements, totals) {
+  const effectiveEl = elements?.effective instanceof HTMLElement ? elements.effective : null;
+  const breakdownEl = elements?.breakdown instanceof HTMLElement ? elements.breakdown : null;
+
+  const base = Number.isFinite(totals?.bufferPercentBase) ? totals.bufferPercentBase : null;
+  const uplift = Number.isFinite(totals?.comfortMarginPercent) ? totals.comfortMarginPercent : null;
+  const effective = Number.isFinite(totals?.bufferPercentEffective)
+    ? totals.bufferPercentEffective
+    : base !== null && uplift !== null
+      ? base + uplift
+      : null;
+
+  if (effectiveEl) {
+    setText(effectiveEl, effective !== null ? formatPercentValue(effective) : '—');
+  }
+
+  if (breakdownEl) {
+    if (base === null && uplift === null) {
+      setText(breakdownEl, '');
+    } else {
+      const segments = [];
+      if (base !== null) {
+        segments.push(`Base ${formatPercentValue(base)}`);
+      }
+      if (uplift !== null && Math.abs(uplift) > 0.001) {
+        segments.push(`Comfort ${formatPercentValue(uplift, { signed: true })}`);
+      }
+      setText(breakdownEl, segments.join(' · '));
+    }
+  }
+}
+
 function updateComfortIndicator(container, comfort) {
   if (!(container instanceof HTMLElement)) {
     return;
@@ -323,6 +367,10 @@ export function mountPortfolio(calcState, root = document) {
     tax: qs('#p-tax', section),
     net: qs('#p-net', section)
   };
+  const bufferElements = {
+    effective: qs('#p-buffer-effective', section),
+    breakdown: qs('#p-buffer-breakdown', section)
+  };
 
   const weekList = qs('#p-week', section);
   const statusElement = qs('#portfolio-status', section);
@@ -353,6 +401,7 @@ export function mountPortfolio(calcState, root = document) {
 
     const totals = portfolio && typeof portfolio === 'object' ? portfolio.totals : null;
     updateTotals(totalsElements, totals, symbol);
+    updateBufferSummary(bufferElements, totals);
     updateStatus(statusElement, totals, symbol);
     updateComfortIndicator(comfortElement, portfolio ? portfolio.comfort : null);
     renderWeeklyPlan(weekList, portfolio ? portfolio.mix : null, capacity, symbol);

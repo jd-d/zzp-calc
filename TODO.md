@@ -14,7 +14,6 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 ### Sprint 3 Service Models and Cards
 - [ ] [Model each service with rate and volume solvers that respect hours per unit and travel overhead.](ROADMAP.md#task-31-model-each-service-with-rate-and-volume-solvers-that-respect-hours-per-unit-and-travel-overhead)
 - [ ] [Render dual-tab service cards showing rate needed and volume needed with two-column metric tables.](ROADMAP.md#task-32-render-dual-tab-service-cards-showing-rate-needed-and-volume-needed-with-two-column-metric-tables)
-- [ ] [Add comfort buffer controls feeding net contributions and highlight under-target services.](ROADMAP.md#task-33-add-comfort-buffer-controls-feeding-net-contributions-and-highlight-under-target-services)
 
 ### Sprint 4 Scenario Sandbox Controls
 - [ ] [Deliver quick scenario strips for time off, weekly hours, and travel intensity presets.](ROADMAP.md#task-41-deliver-quick-scenario-strips-for-time-off-weekly-hours-and-travel-intensity-presets)
@@ -45,3 +44,4 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 - [x] Integrate comfort meter, seasonality sliders, travel friction, and hands-on quota constraints. (2025-10-18)
 - [x] Pre-fill the form with a 50k preset and add a target gross/net radio button with corresponding calculation adjustments. (2025-10-20)
 - [x] [Centralize cost aggregation for fixed, hourly, and travel expenses in preparation for service cards.](ROADMAP.md#task-23-centralize-cost-aggregation-for-fixed-hourly-and-travel-expenses-in-preparation-for-service-cards) (2025-10-21)
+- [x] [Add comfort buffer controls feeding net contributions and highlight under-target services.](ROADMAP.md#task-33-add-comfort-buffer-controls-feeding-net-contributions-and-highlight-under-target-services) (2025-10-22)
