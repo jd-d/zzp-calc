@@ -3,10 +3,10 @@ const localeStore = Object.create(null);
 
 localeStore[DEFAULT_LOCALE] = {
   hero: {
-    eyebrow: 'Income planning lab',
-    heading: 'Course Pricing Calculator',
+    eyebrow: 'Fruit trade CFO sandbox',
+    heading: 'ZZP Pricing Lab',
     intro:
-      'Estimate per-student pricing to reach your target income. All calculations stay on this page.',
+      'Translate your net target into a resilient service mix with comfort buffer guardrails built in.',
     howToUse: 'How To Use This Tool',
     privacyLink: 'Your Info Is Safe'
   },
@@ -22,26 +22,26 @@ localeStore[DEFAULT_LOCALE] = {
     }
   },
   quickControls: {
-    heading: 'Quick scenario controls',
-    description: 'Pick a preset or adjust the sliders before diving into the full inputs.',
-    presetsGroup: 'Income goal presets',
+    heading: 'Net target sandbox controls',
+    description: 'Start with a net target preset, then explore service mix levers and comfort buffers.',
+    presetsGroup: 'Net target sandbox presets',
     presets: {
-      starter: 'Starter ramp',
-      steady: 'Steady state',
-      growth: 'Growth push'
+      starter: '€40k net ramp · lean mix',
+      steady: '€50k net steady · +15% buffer',
+      growth: '€70k net growth · +20% buffer'
     },
     sliders: {
-      targetNet: 'Target net income per year',
-      buffer: 'Safety margin cushion (%)',
-      monthsOff: 'Months off per year'
+      targetNet: 'Annual net target',
+      buffer: 'Comfort buffer uplift (%)',
+      monthsOff: 'Planned months off'
     },
     status: {
       updated: 'Scenario updated'
     }
   },
   actions: {
-    recalculate: 'Recalculate',
-    downloadCsv: 'Download CSV'
+    recalculate: 'Recompute net plan',
+    downloadCsv: 'Export service mix CSV'
   },
   status: {
     ready: 'Ready to calculate',
