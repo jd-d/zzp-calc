@@ -11,7 +11,11 @@ export function initializePageUi() {
   let previouslyFocusedElement = null;
 
   const COLLAPSIBLE_SECTION_SELECTOR = '.control-section[data-collapsible]';
+  const TOOLTIP_SELECTOR = '[data-tooltip]';
   const collapsibleSections = new Map();
+  const tooltipTriggers = new Map();
+  let activeTooltip = null;
+  let tooltipIdCounter = 0;
 
   function getSectionLabel(section, index = 0) {
     if (!section) {
@@ -107,7 +111,7 @@ export function initializePageUi() {
 
       const handler = event => {
         event.preventDefault();
-        setSectionExpanded(section, !section.classList.contains('collapsed'), toggle);
+        setSectionExpanded(section, section.classList.contains('collapsed'), toggle);
       };
 
       toggle.addEventListener('click', handler);
@@ -208,7 +212,296 @@ export function initializePageUi() {
     });
   }
 
+  function positionTooltip(trigger, tooltip) {
+    if (!(trigger instanceof HTMLElement) || !(tooltip instanceof HTMLElement)) {
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    const tooltipRect = tooltip.getBoundingClientRect();
+
+    const viewportWidth = document.documentElement.clientWidth || window.innerWidth || 0;
+    const viewportHeight = document.documentElement.clientHeight || window.innerHeight || 0;
+
+    let top = rect.bottom + scrollY + 8;
+    let left = rect.left + scrollX + rect.width / 2 - tooltipRect.width / 2;
+
+    const minLeft = scrollX + 8;
+    const maxLeft = scrollX + Math.max(viewportWidth - tooltipRect.width - 8, 0);
+    if (left < minLeft) {
+      left = minLeft;
+    } else if (left > maxLeft) {
+      left = maxLeft;
+    }
+
+    const maxBottom = scrollY + Math.max(viewportHeight - 8, 0);
+    if (top + tooltipRect.height > maxBottom) {
+      top = rect.top + scrollY - tooltipRect.height - 8;
+    }
+
+    const minTop = scrollY + 8;
+    if (top < minTop) {
+      top = minTop;
+    }
+
+    tooltip.style.position = 'absolute';
+    tooltip.style.left = `${Math.round(left)}px`;
+    tooltip.style.top = `${Math.round(top)}px`;
+  }
+
+  function hideTooltip(trigger) {
+    if (!activeTooltip) {
+      return;
+    }
+
+    if (trigger && activeTooltip.trigger !== trigger) {
+      return;
+    }
+
+    const { trigger: activeTrigger, tooltip, previousDescribedBy } = activeTooltip;
+
+    if (tooltip && tooltip.parentNode) {
+      tooltip.parentNode.removeChild(tooltip);
+    }
+
+    if (activeTrigger) {
+      activeTrigger.setAttribute('aria-expanded', 'false');
+
+      if (previousDescribedBy) {
+        activeTrigger.setAttribute('aria-describedby', previousDescribedBy);
+      } else {
+        activeTrigger.removeAttribute('aria-describedby');
+      }
+    }
+
+    activeTooltip = null;
+  }
+
+  function showTooltip(trigger, { persistent = false } = {}) {
+    if (!(trigger instanceof HTMLElement)) {
+      return;
+    }
+
+    const text = trigger.getAttribute('data-tooltip');
+    if (!text) {
+      return;
+    }
+
+    const message = text.trim();
+    if (!message) {
+      return;
+    }
+
+    if (activeTooltip && activeTooltip.trigger === trigger) {
+      activeTooltip.persistent = persistent || activeTooltip.persistent;
+      if (activeTooltip.tooltip) {
+        positionTooltip(trigger, activeTooltip.tooltip);
+      }
+      return;
+    }
+
+    hideTooltip();
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+
+    const tooltipId = trigger.getAttribute('data-tooltip-id') || `tooltip-${++tooltipIdCounter}`;
+    tooltip.id = tooltipId;
+    trigger.setAttribute('data-tooltip-id', tooltipId);
+
+    tooltip.textContent = message;
+
+    document.body.appendChild(tooltip);
+    positionTooltip(trigger, tooltip);
+
+    const previousDescribedBy = trigger.getAttribute('aria-describedby') || '';
+    const tokens = previousDescribedBy.split(/\s+/).filter(Boolean);
+    if (!tokens.includes(tooltipId)) {
+      tokens.push(tooltipId);
+    }
+
+    if (tokens.length) {
+      trigger.setAttribute('aria-describedby', tokens.join(' '));
+    } else {
+      trigger.removeAttribute('aria-describedby');
+    }
+
+    trigger.setAttribute('aria-expanded', 'true');
+
+    activeTooltip = {
+      trigger,
+      tooltip,
+      id: tooltipId,
+      persistent,
+      previousDescribedBy
+    };
+  }
+
+  function toggleTooltip(trigger) {
+    if (!(trigger instanceof HTMLElement)) {
+      return;
+    }
+
+    if (activeTooltip && activeTooltip.trigger === trigger && activeTooltip.persistent) {
+      hideTooltip(trigger);
+    } else {
+      showTooltip(trigger, { persistent: true });
+    }
+  }
+
+  function handleDocumentPointerDown(event) {
+    if (!activeTooltip) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Node)) {
+      hideTooltip();
+      return;
+    }
+
+    const { trigger, tooltip, persistent } = activeTooltip;
+    if (!trigger) {
+      hideTooltip();
+      return;
+    }
+
+    if (trigger.contains(target) || (tooltip && tooltip.contains(target))) {
+      if (!persistent) {
+        hideTooltip();
+      }
+      return;
+    }
+
+    hideTooltip();
+  }
+
+  function handleGlobalKeydown(event) {
+    if (event.key === 'Escape' && activeTooltip) {
+      const trigger = activeTooltip.trigger;
+      hideTooltip();
+      if (trigger && typeof trigger.focus === 'function') {
+        trigger.focus();
+      }
+    }
+  }
+
+  function handleViewportChange() {
+    if (!activeTooltip) {
+      return;
+    }
+
+    if (activeTooltip.persistent && activeTooltip.trigger && activeTooltip.tooltip) {
+      positionTooltip(activeTooltip.trigger, activeTooltip.tooltip);
+    } else {
+      hideTooltip();
+    }
+  }
+
+  function registerTooltipTrigger(trigger) {
+    if (!(trigger instanceof HTMLElement)) {
+      return;
+    }
+
+    if (tooltipTriggers.has(trigger)) {
+      return;
+    }
+
+    const text = trigger.getAttribute('data-tooltip');
+    if (!text) {
+      return;
+    }
+
+    if (!trigger.hasAttribute('aria-expanded')) {
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    const handleClick = event => {
+      event.preventDefault();
+      toggleTooltip(trigger);
+    };
+
+    const handleKeydown = event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleTooltip(trigger);
+      } else if (event.key === 'Escape') {
+        hideTooltip(trigger);
+      }
+    };
+
+    const handleFocus = () => {
+      showTooltip(trigger);
+    };
+
+    const handleBlur = () => {
+      if (!activeTooltip || activeTooltip.trigger !== trigger || activeTooltip.persistent) {
+        return;
+      }
+      hideTooltip(trigger);
+    };
+
+    const handlePointerEnter = event => {
+      if (event.pointerType === 'mouse') {
+        showTooltip(trigger);
+      }
+    };
+
+    const handlePointerLeave = event => {
+      if (event.pointerType === 'mouse' && activeTooltip && activeTooltip.trigger === trigger && !activeTooltip.persistent) {
+        hideTooltip(trigger);
+      }
+    };
+
+    trigger.addEventListener('click', handleClick);
+    trigger.addEventListener('keydown', handleKeydown);
+    trigger.addEventListener('focus', handleFocus);
+    trigger.addEventListener('blur', handleBlur);
+    trigger.addEventListener('pointerenter', handlePointerEnter);
+    trigger.addEventListener('pointerleave', handlePointerLeave);
+
+    tooltipTriggers.set(trigger, () => {
+      trigger.removeEventListener('click', handleClick);
+      trigger.removeEventListener('keydown', handleKeydown);
+      trigger.removeEventListener('focus', handleFocus);
+      trigger.removeEventListener('blur', handleBlur);
+      trigger.removeEventListener('pointerenter', handlePointerEnter);
+      trigger.removeEventListener('pointerleave', handlePointerLeave);
+      if (activeTooltip && activeTooltip.trigger === trigger) {
+        hideTooltip(trigger);
+      }
+    });
+  }
+
+  function unregisterTooltipTrigger(trigger) {
+    const cleanup = tooltipTriggers.get(trigger);
+    if (typeof cleanup === 'function') {
+      cleanup();
+    }
+    tooltipTriggers.delete(trigger);
+  }
+
+  function refreshTooltips(root = document) {
+    Array.from(root.querySelectorAll(TOOLTIP_SELECTOR)).forEach(trigger => {
+      registerTooltipTrigger(trigger);
+    });
+  }
+
   refreshCollapsibleSections(document);
+  refreshTooltips(document);
+
+  if (typeof document.addEventListener === 'function') {
+    document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+    document.addEventListener('keydown', handleGlobalKeydown);
+  }
+
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('scroll', handleViewportChange, true);
+    window.addEventListener('resize', handleViewportChange);
+  }
 
   if (typeof MutationObserver === 'function') {
     const observerTarget = document.body || document.documentElement;
@@ -229,6 +522,16 @@ export function initializePageUi() {
                 registerCollapsibleSection(childSection);
               });
             }
+
+            if (node.matches && node.matches(TOOLTIP_SELECTOR)) {
+              registerTooltipTrigger(node);
+            }
+
+            if (typeof node.querySelectorAll === 'function') {
+              node.querySelectorAll(TOOLTIP_SELECTOR).forEach(childTrigger => {
+                registerTooltipTrigger(childTrigger);
+              });
+            }
           });
 
           mutation.removedNodes?.forEach(node => {
@@ -243,6 +546,16 @@ export function initializePageUi() {
             if (typeof node.querySelectorAll === 'function') {
               node.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR).forEach(childSection => {
                 unregisterCollapsibleSection(childSection);
+              });
+            }
+
+            if (tooltipTriggers.has(node)) {
+              unregisterTooltipTrigger(node);
+            }
+
+            if (typeof node.querySelectorAll === 'function') {
+              node.querySelectorAll(TOOLTIP_SELECTOR).forEach(childTrigger => {
+                unregisterTooltipTrigger(childTrigger);
               });
             }
           });

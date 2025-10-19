@@ -966,6 +966,7 @@ export function initializeCalculatorUI() {
       incomeTax,
       zvwContribution,
       profitBeforeTax,
+      taxMode,
       zelfstandigenaftrek,
       startersaftrek,
       mkbVrijstelling,
