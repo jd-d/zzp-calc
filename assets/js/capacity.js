@@ -5,7 +5,7 @@ import {
 } from './constants.js';
 import { normalizeScenarioModifiers } from './modifiers.js';
 
-const WEEKS_PER_CYCLE = 4;
+export const WEEKS_PER_CYCLE = 4;
 
 function toNumber(value, fallback = 0) {
   if (value == null || value === '') {
@@ -23,6 +23,70 @@ function clamp(value, min, max) {
 function clampPercent(value, fallback = 0, { min = 0, max = 100 } = {}) {
   const normalized = toNumber(value, fallback);
   return clamp(normalized, min, max);
+}
+
+export function normalizeTimeOff(capacityState = {}) {
+  const monthsOff = clamp(
+    toNumber(capacityState.monthsOff, 0),
+    0,
+    MONTHS_PER_YEAR
+  );
+
+  const weeksOffPerCycle = clamp(
+    toNumber(capacityState.weeksOffCycle, 0),
+    0,
+    WEEKS_PER_CYCLE
+  );
+
+  const daysOffPerWeek = clamp(
+    toNumber(capacityState.daysOffWeek, 0),
+    0,
+    BASE_WORK_DAYS_PER_WEEK
+  );
+
+  const activeMonths = MONTHS_PER_YEAR - monthsOff;
+  const activeMonthShare = MONTHS_PER_YEAR > 0 ? activeMonths / MONTHS_PER_YEAR : 0;
+
+  const workingWeeksPerCycle = WEEKS_PER_CYCLE - weeksOffPerCycle;
+  const weeksShare = WEEKS_PER_CYCLE > 0 ? workingWeeksPerCycle / WEEKS_PER_CYCLE : 0;
+
+  const workingDaysPerWeek = BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek;
+
+  return {
+    monthsOff,
+    weeksOffPerCycle,
+    daysOffPerWeek,
+    activeMonths,
+    activeMonthShare,
+    workingWeeksPerCycle,
+    weeksShare,
+    workingDaysPerWeek
+  };
+}
+
+export function calculateWeeklyCapacity(timeOffMetrics = {}, modifiers = {}) {
+  const activeMonthShare = Number.isFinite(timeOffMetrics.activeMonthShare)
+    ? timeOffMetrics.activeMonthShare
+    : 0;
+  const weeksShare = Number.isFinite(timeOffMetrics.weeksShare)
+    ? timeOffMetrics.weeksShare
+    : 0;
+  const workingDaysPerWeek = Number.isFinite(timeOffMetrics.workingDaysPerWeek)
+    ? timeOffMetrics.workingDaysPerWeek
+    : 0;
+
+  const seasonalityPenalty = Math.max(1 - (modifiers?.seasonality || 0), 0.1);
+  const baseWorkingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
+  const workingWeeks = baseWorkingWeeks * seasonalityPenalty;
+  const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
+
+  return {
+    seasonalityPenalty,
+    baseWorkingWeeks,
+    workingWeeks,
+    workingDaysPerWeek,
+    workingDaysPerYear
+  };
 }
 
 function deriveUtilization(capacityState, modifiers) {
@@ -103,47 +167,53 @@ function deriveTravelAllowances(capacityState, context, modifiers) {
   };
 }
 
-export function deriveCapacity(capacityState = {}, modifiersState = {}) {
+export function calculateBillableHours(capacityMetrics = {}, sessionLength) {
+  const length = Number.isFinite(sessionLength) && sessionLength > 0 ? sessionLength : null;
+  const workingDaysPerWeek = toNumber(capacityMetrics.workingDaysPerWeek, 0);
+  const workingDaysPerYear = toNumber(capacityMetrics.workingDaysPerYear, 0);
+  const workingWeeks = toNumber(capacityMetrics.workingWeeks, 0);
+  const effectiveBillableDays = Number.isFinite(capacityMetrics.billableDaysAfterTravel)
+    ? capacityMetrics.billableDaysAfterTravel
+    : toNumber(capacityMetrics.billableDaysPerYear, 0);
+
+  if (!Number.isFinite(length) || length <= 0) {
+    return {
+      workingHoursPerWeek: null,
+      workingHoursPerYear: null,
+      billableHoursPerYear: null,
+      billableHoursPerWeek: null
+    };
+  }
+
+  const workingHoursPerWeek = workingDaysPerWeek * length;
+  const workingHoursPerYear = workingDaysPerYear * length;
+  const billableHoursPerYear = effectiveBillableDays * length;
+  const billableHoursPerWeek = workingWeeks > 0 && Number.isFinite(billableHoursPerYear)
+    ? billableHoursPerYear / workingWeeks
+    : null;
+
+  return {
+    workingHoursPerWeek,
+    workingHoursPerYear,
+    billableHoursPerYear,
+    billableHoursPerWeek
+  };
+}
+
+export function deriveCapacity(capacityState = {}, modifiersState = {}, { sessionLength } = {}) {
   const modifiers = normalizeScenarioModifiers(modifiersState);
-  const monthsOff = clamp(
-    toNumber(capacityState.monthsOff, 0),
-    0,
-    MONTHS_PER_YEAR
-  );
-
-  const activeMonths = MONTHS_PER_YEAR - monthsOff;
-  const activeMonthShare = MONTHS_PER_YEAR > 0 ? activeMonths / MONTHS_PER_YEAR : 0;
-
-  const weeksOffPerCycle = clamp(
-    toNumber(capacityState.weeksOffCycle, 0),
-    0,
-    WEEKS_PER_CYCLE
-  );
-
-  const workingWeeksPerCycle = WEEKS_PER_CYCLE - weeksOffPerCycle;
-  const weeksShare = WEEKS_PER_CYCLE > 0 ? workingWeeksPerCycle / WEEKS_PER_CYCLE : 0;
-
-  const baseWorkingWeeks = WEEKS_PER_YEAR * activeMonthShare * weeksShare;
-  const workingWeeks = baseWorkingWeeks * Math.max(1 - modifiers.seasonality, 0.1);
-
-  const daysOffPerWeek = clamp(
-    toNumber(capacityState.daysOffWeek, 0),
-    0,
-    BASE_WORK_DAYS_PER_WEEK
-  );
-
-  const workingDaysPerWeek = BASE_WORK_DAYS_PER_WEEK - daysOffPerWeek;
-  const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
+  const timeOff = normalizeTimeOff(capacityState);
+  const weeklyCapacity = calculateWeeklyCapacity(timeOff, modifiers);
 
   const { utilizationPercent, utilizationRate, seasonalityPenalty } = deriveUtilization(capacityState, modifiers);
 
-  const billableWeeks = workingWeeks * utilizationRate;
-  const billableDaysPerYear = workingDaysPerYear * utilizationRate;
+  const billableWeeks = weeklyCapacity.workingWeeks * utilizationRate;
+  const billableDaysPerYear = weeklyCapacity.workingDaysPerYear * utilizationRate;
 
   const travelAllowances = deriveTravelAllowances(capacityState, {
-    activeMonths,
-    workingWeeks,
-    workingDaysPerYear,
+    activeMonths: timeOff.activeMonths,
+    workingWeeks: weeklyCapacity.workingWeeks,
+    workingDaysPerYear: weeklyCapacity.workingDaysPerYear,
     billableDaysPerYear
   }, modifiers);
 
@@ -152,22 +222,30 @@ export function deriveCapacity(capacityState = {}, modifiersState = {}) {
     0
   );
 
+  const hours = calculateBillableHours({
+    ...weeklyCapacity,
+    billableDaysPerYear,
+    billableDaysAfterTravel
+  }, sessionLength);
+
+  const nonBillableDays = Number.isFinite(weeklyCapacity.workingDaysPerYear)
+    ? Math.max(weeklyCapacity.workingDaysPerYear - billableDaysAfterTravel, 0)
+    : null;
+  const nonBillableShare = Number.isFinite(weeklyCapacity.workingDaysPerYear) && weeklyCapacity.workingDaysPerYear > 0
+    ? nonBillableDays / weeklyCapacity.workingDaysPerYear
+    : null;
+
   return {
-    monthsOff,
-    weeksOffPerCycle,
-    daysOffPerWeek,
-    activeMonths,
-    activeMonthShare,
-    workingWeeksPerCycle,
-    weeksShare,
-    workingWeeks,
-    workingDaysPerWeek,
-    workingDaysPerYear,
+    ...timeOff,
+    ...weeklyCapacity,
     utilizationPercent,
     utilizationRate,
     billableWeeks,
     billableDaysPerYear,
     billableDaysAfterTravel,
+    nonBillableDays,
+    nonBillableShare,
+    ...hours,
     ...travelAllowances,
     seasonalityPercent: modifiers.seasonalityPercent,
     seasonalityPenalty,
