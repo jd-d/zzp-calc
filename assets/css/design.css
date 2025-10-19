@@ -1069,6 +1069,54 @@ header.hero {
   border: 1px dashed var(--border-default);
 }
 
+.sensitivity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: clamp(var(--space-4), 3vw, var(--space-6));
+}
+
+.sensitivity-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: clamp(var(--space-4), 2.5vw, var(--space-5));
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--surface-1);
+}
+
+.sensitivity-chart__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sensitivity-chart__summary {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.sensitivity-chart__spark {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.sensitivity-chart__spark svg {
+  width: 100%;
+  height: auto;
+}
+
+.spark-marker--break {
+  color: var(--accent);
+}
+
+.spark-marker--current {
+  color: var(--text-strong);
+}
+
 #portfolio {
   position: relative;
   grid-column: 1 / -1;
