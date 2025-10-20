@@ -1757,6 +1757,20 @@
               </dd>
             </div>
             <div>
+              <dt>Utilization</dt>
+              <dd>
+                <span id="p-utilization">—</span>
+                <span class="metric-violation" id="p-utilization-violation" aria-live="polite"></span>
+              </dd>
+            </div>
+            <div>
+              <dt>Travel load</dt>
+              <dd>
+                <span id="p-travel">—</span>
+                <span class="metric-violation" id="p-travel-violation" aria-live="polite"></span>
+              </dd>
+            </div>
+            <div>
               <dt>Buffer uplift</dt>
               <dd>
                 <span id="p-buffer-effective">—</span>
@@ -1775,9 +1789,45 @@
             <p class="comfort-meter__summary" data-comfort-summary>Comfort score will appear once the solver runs.</p>
           </div>
         </div>
-        <div>
-          <h2>Weekly plan</h2>
-          <ol class="week" id="p-week" aria-live="polite"></ol>
+        <div class="portfolio-weekly">
+          <div class="portfolio-weekly__header">
+            <h2>Weekly plan</h2>
+            <div class="portfolio-weekly__actions">
+              <button type="button" class="chip" id="portfolio-pin" disabled>Pin this mix</button>
+            </div>
+          </div>
+          <ol class="week week-grid" id="p-week" aria-live="polite"></ol>
+          <div class="portfolio-compare" id="portfolio-compare" hidden>
+            <div class="portfolio-compare__header">
+              <h3>Pinned comparison</h3>
+              <button type="button" class="chip chip--outline" id="portfolio-clear-pin">Clear pin</button>
+            </div>
+            <div class="portfolio-compare__grid">
+              <section class="portfolio-compare__column">
+                <h4>Current mix</h4>
+                <dl class="kv">
+                  <div><dt>Revenue</dt><dd id="compare-current-rev">—</dd></div>
+                  <div><dt>Costs</dt><dd id="compare-current-cost">—</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="compare-current-tax">—</dd></div>
+                  <div><dt>Net</dt><dd id="compare-current-net">—</dd></div>
+                  <div><dt>Utilization</dt><dd id="compare-current-utilization">—</dd></div>
+                  <div><dt>Travel load</dt><dd id="compare-current-travel">—</dd></div>
+                </dl>
+              </section>
+              <section class="portfolio-compare__column">
+                <h4>Pinned mix</h4>
+                <dl class="kv">
+                  <div><dt>Revenue</dt><dd id="compare-pinned-rev">—</dd></div>
+                  <div><dt>Costs</dt><dd id="compare-pinned-cost">—</dd></div>
+                  <div><dt>Tax reserve</dt><dd id="compare-pinned-tax">—</dd></div>
+                  <div><dt>Net</dt><dd id="compare-pinned-net">—</dd></div>
+                  <div><dt>Utilization</dt><dd id="compare-pinned-utilization">—</dd></div>
+                  <div><dt>Travel load</dt><dd id="compare-pinned-travel">—</dd></div>
+                </dl>
+              </section>
+            </div>
+            <p class="portfolio-compare__note" id="portfolio-compare-note"></p>
+          </div>
         </div>
       </div>
       <div class="portfolio-violations" id="portfolio-violations" role="alert" hidden>
