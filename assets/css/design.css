@@ -1344,110 +1344,142 @@ header.hero {
   contain-intrinsic-size: 1px 320px;
 }
 
-.portfolio-week__item {
+.portfolio-weekly {
   display: grid;
-  grid-template-columns: auto 1fr;
+  gap: var(--space-4);
+}
+
+.portfolio-weekly__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
-  align-items: start;
+}
+
+.portfolio-weekly__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.week-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.week-grid__day {
+  display: grid;
+  gap: var(--space-3);
   padding: clamp(var(--space-4), 2vw, var(--space-5));
   border-radius: var(--radius-md);
   border: 1px solid var(--border-row);
   background: var(--surface-1);
 }
 
-.portfolio-week__number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--accent-strong);
+@media (min-width: 640px) {
+  .week-grid__day {
+    grid-template-columns: minmax(76px, auto) 1fr;
+    align-items: start;
+  }
+}
+
+.week-grid__label {
   font-weight: 600;
-  border: 1px solid var(--border-accent);
-}
-
-.portfolio-week__body {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.portfolio-week__header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.portfolio-week__service {
-  font-weight: 600;
-}
-
-.portfolio-week__days {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-.portfolio-week__metrics {
-  margin: 0;
+.week-grid__slots {
   display: grid;
   gap: var(--space-2);
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
-.portfolio-week__metric {
+.week-grid__slot {
   display: grid;
-  gap: var(--space-1);
+  gap: 0.35rem;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-row);
+  background: var(--surface-2);
 }
 
-.portfolio-week__metric dt {
-  margin: 0;
+.week-grid__slot-title {
+  font-weight: 600;
+}
+
+.week-grid__slot-meta {
   font-size: var(--font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--text-muted);
-}
-
-.portfolio-week__metric dd {
-  margin: 0;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.portfolio-week__badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: var(--space-1) 0;
-}
-
-.portfolio-week__badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--inactive-strong);
-  background: color-mix(in srgb, var(--inactive-bg) 70%, transparent);
-  border: 1px solid var(--inactive-border);
 }
 
-.portfolio-week__badge--alert {
-  color: #fca5a5;
-  background: color-mix(in srgb, #ef4444 20%, transparent);
-  border-color: color-mix(in srgb, #ef4444 45%, transparent);
+.week-grid__slot--travel {
+  border-color: color-mix(in srgb, var(--accent-strong) 45%, transparent);
+  background: color-mix(in srgb, var(--accent-strong) 12%, transparent);
 }
 
-.portfolio-week__empty {
+.week-grid__slot--open {
+  border-style: dashed;
+  color: var(--text-muted);
+  background: var(--surface-1);
+}
+
+.week-grid__empty {
   padding: clamp(var(--space-4), 2vw, var(--space-5));
   border-radius: var(--radius-md);
   border: 1px dashed var(--border-row);
   color: var(--text-muted);
   text-align: center;
+}
+
+.portfolio-compare {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-row);
+  background: var(--surface-1);
+  display: grid;
+  gap: var(--space-4);
+  padding: clamp(var(--space-4), 2vw, var(--space-5));
+}
+
+.portfolio-compare__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.portfolio-compare__grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 720px) {
+  .portfolio-compare__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.portfolio-compare__column {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.portfolio-compare__column h4 {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.portfolio-compare__note {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
 }
 
 .portfolio-violations {

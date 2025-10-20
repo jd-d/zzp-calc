@@ -8,6 +8,8 @@ const fractionalFormatter = new Intl.NumberFormat(undefined, {
 });
 const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
+const DAY_LABELS = Object.freeze(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+
 function getCurrencySymbol(state) {
   const raw = state && state.config && state.config.currencySymbol;
   if (typeof raw === 'string' && raw.trim()) {
@@ -124,120 +126,476 @@ function buildPlanItems(mix, capacity) {
     });
 }
 
-function createMetric(label, value) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'portfolio-week__metric';
-
-  const dt = document.createElement('dt');
-  dt.className = 'portfolio-week__metric-label';
-  setText(dt, label);
-
-  const dd = document.createElement('dd');
-  dd.className = 'portfolio-week__metric-value';
-  setText(dd, value);
-
-  wrapper.append(dt, dd);
-  return wrapper;
+function formatDayShare(value) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '';
+  }
+  const rounded = Math.round(value * 10) / 10;
+  const formatted = formatCount(rounded);
+  const suffix = Math.abs(rounded - 1) < 0.05 ? 'day' : 'days';
+  return `${formatted} ${suffix}`;
 }
 
-function renderWeeklyPlan(listElement, mix, capacity, symbol) {
+function formatSlotShare(value) {
+  const label = formatDayShare(value);
+  if (!label) {
+    return '';
+  }
+  return `~${label}/wk`;
+}
+
+function clampWorkingDays(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return 5;
+  }
+  return Math.min(Math.max(Math.round(numeric), 1), DAY_LABELS.length);
+}
+
+function computeUsageMetrics(totals, capacity) {
+  const serviceDays = Number.isFinite(totals?.serviceDays) ? totals.serviceDays : null;
+  const travelDays = Number.isFinite(totals?.travelDays) ? totals.travelDays : null;
+  const workingWeeks = Number.isFinite(capacity?.workingWeeks) && capacity.workingWeeks > 0
+    ? capacity.workingWeeks
+    : null;
+  const billableAfterTravel = Number.isFinite(capacity?.billableDaysAfterTravel) && capacity.billableDaysAfterTravel > 0
+    ? capacity.billableDaysAfterTravel
+    : null;
+  const travelAllowanceDays = Number.isFinite(capacity?.travelAllowanceDays) && capacity.travelAllowanceDays > 0
+    ? capacity.travelAllowanceDays
+    : null;
+
+  const serviceDaysPerWeek = workingWeeks && serviceDays !== null
+    ? serviceDays / workingWeeks
+    : null;
+  const travelDaysPerWeek = workingWeeks && travelDays !== null
+    ? travelDays / workingWeeks
+    : null;
+  const availableBillableDaysPerWeek = workingWeeks && billableAfterTravel
+    ? billableAfterTravel / workingWeeks
+    : null;
+
+  const utilizationPercent = billableAfterTravel && serviceDays !== null
+    ? (serviceDays / billableAfterTravel) * 100
+    : null;
+  const travelAllowancePercent = travelAllowanceDays && travelDays !== null
+    ? (travelDays / travelAllowanceDays) * 100
+    : null;
+
+  return {
+    serviceDays,
+    travelDays,
+    serviceDaysPerWeek,
+    travelDaysPerWeek,
+    utilizationPercent,
+    travelAllowancePercent,
+    workingWeeks,
+    billableDaysAfterTravel,
+    travelAllowanceDays,
+    availableBillableDaysPerWeek
+  };
+}
+
+function buildScheduleModel(mix, totals, capacity) {
+  const workingDays = clampWorkingDays(capacity?.workingDaysPerWeek);
+  const usage = computeUsageMetrics(totals, capacity);
+  const items = buildPlanItems(mix, capacity)
+    .map(item => ({
+      id: item.id,
+      title: item.title,
+      kind: 'service',
+      daysPerWeek: Math.max(item.daysPerWeek, 0)
+    }));
+
+  const travelPerWeek = Number.isFinite(usage.travelDaysPerWeek)
+    ? usage.travelDaysPerWeek
+    : 0;
+  if (travelPerWeek > 0.05) {
+    items.push({
+      id: 'travel',
+      title: 'Travel overhead',
+      kind: 'travel',
+      daysPerWeek: travelPerWeek
+    });
+  }
+
+  const serviceDaysPerWeek = Number.isFinite(usage.serviceDaysPerWeek)
+    ? usage.serviceDaysPerWeek
+    : items
+        .filter(entry => entry.kind === 'service')
+        .reduce((sum, entry) => sum + entry.daysPerWeek, 0);
+
+  const availableServicePerWeek = Number.isFinite(usage.availableBillableDaysPerWeek)
+    ? usage.availableBillableDaysPerWeek
+    : null;
+
+  let openDaysPerWeek = 0;
+  if (availableServicePerWeek !== null) {
+    openDaysPerWeek = Math.max(availableServicePerWeek - serviceDaysPerWeek, 0);
+  } else {
+    openDaysPerWeek = Math.max(workingDays - serviceDaysPerWeek - travelPerWeek, 0);
+  }
+
+  if (openDaysPerWeek > 0.05) {
+    items.push({
+      id: 'open',
+      title: 'Open capacity',
+      kind: 'open',
+      daysPerWeek: openDaysPerWeek
+    });
+  }
+
+  const filtered = items.filter(item => item.daysPerWeek > 0);
+  const totalSlots = Math.max(workingDays * 2, 0);
+
+  if (!filtered.length || totalSlots <= 0) {
+    return {
+      hasData: false,
+      days: Array.from({ length: workingDays }, (_, index) => ({
+        label: DAY_LABELS[index] || `Day ${index + 1}`,
+        slots: []
+      }))
+    };
+  }
+
+  const allocations = filtered.map(item => {
+    const rawSlots = item.daysPerWeek * 2;
+    let slotCount = Math.floor(rawSlots);
+    const remainder = rawSlots - slotCount;
+    if (slotCount === 0) {
+      slotCount = 1;
+    }
+    return { item, rawSlots, slotCount, remainder };
+  });
+
+  let assigned = allocations.reduce((sum, entry) => sum + entry.slotCount, 0);
+  let slotsRemaining = totalSlots - assigned;
+
+  if (slotsRemaining > 0) {
+    const sorted = allocations.slice().sort((a, b) => b.remainder - a.remainder);
+    let index = 0;
+    while (slotsRemaining > 0 && sorted.length > 0) {
+      const target = sorted[index % sorted.length];
+      if (target.remainder > 1e-3 || target.slotCount === 0) {
+        target.slotCount += 1;
+        slotsRemaining -= 1;
+      } else {
+        index += 1;
+        if (index >= sorted.length) {
+          break;
+        }
+        continue;
+      }
+      index += 1;
+    }
+  } else if (slotsRemaining < 0) {
+    const sorted = allocations.slice().sort((a, b) => a.remainder - b.remainder);
+    let index = 0;
+    while (slotsRemaining < 0 && sorted.length > 0) {
+      const target = sorted[index % sorted.length];
+      if (target.slotCount > 1) {
+        target.slotCount -= 1;
+        slotsRemaining += 1;
+      } else {
+        index += 1;
+        if (index >= sorted.length) {
+          break;
+        }
+        continue;
+      }
+      index += 1;
+    }
+  }
+
+  assigned = allocations.reduce((sum, entry) => sum + entry.slotCount, 0);
+
+  const slots = [];
+  allocations.forEach(entry => {
+    const { item, slotCount } = entry;
+    const sharePerSlot = slotCount > 0 ? item.daysPerWeek / slotCount : 0;
+    for (let index = 0; index < slotCount; index += 1) {
+      slots.push({
+        id: item.id,
+        title: item.title,
+        kind: item.kind,
+        portion: sharePerSlot
+      });
+    }
+  });
+
+  if (slots.length > totalSlots) {
+    slots.length = totalSlots;
+  } else if (slots.length < totalSlots) {
+    let fillerPortion = 0;
+    if (totalSlots - slots.length > 0) {
+      const derivedPortion = Math.max(openDaysPerWeek, 0) / Math.max(totalSlots - slots.length, 1);
+      fillerPortion = Number.isFinite(derivedPortion) && derivedPortion > 0 ? derivedPortion : 0.5;
+    }
+    while (slots.length < totalSlots) {
+      slots.push({
+        id: 'open',
+        title: 'Open capacity',
+        kind: 'open',
+        portion: fillerPortion
+      });
+    }
+  }
+
+  const days = [];
+  for (let dayIndex = 0; dayIndex < workingDays; dayIndex += 1) {
+    const label = DAY_LABELS[dayIndex] || `Day ${dayIndex + 1}`;
+    const slotsForDay = [];
+    for (let column = 0; column < 2; column += 1) {
+      const slotIndex = dayIndex * 2 + column;
+      slotsForDay.push(slots[slotIndex] || null);
+    }
+    days.push({ label, slots: slotsForDay });
+  }
+
+  return {
+    hasData: true,
+    days
+  };
+}
+
+function renderWeeklyPlan(listElement, schedule) {
   if (!(listElement instanceof HTMLElement)) {
     return;
   }
 
-  const items = buildPlanItems(mix, capacity);
+  const model = schedule && typeof schedule === 'object'
+    ? schedule
+    : { hasData: false, days: [] };
+
   listElement.replaceChildren();
 
-  if (!items.length) {
+  if (!model.hasData) {
     const empty = document.createElement('li');
-    empty.className = 'portfolio-week__empty';
+    empty.className = 'week-grid__empty';
     setText(empty, 'Adjust your services to see a weekly mix.');
     listElement.append(empty);
     return;
   }
 
-  items.forEach((item, index) => {
+  model.days.forEach(day => {
     const li = document.createElement('li');
-    li.className = 'portfolio-week__item';
+    li.className = 'week-grid__day';
 
-    const number = document.createElement('span');
-    number.className = 'portfolio-week__number';
-    setText(number, String(index + 1));
+    const label = document.createElement('div');
+    label.className = 'week-grid__label';
+    setText(label, day.label);
 
-    const body = document.createElement('div');
-    body.className = 'portfolio-week__body';
+    const slots = document.createElement('div');
+    slots.className = 'week-grid__slots';
 
-    const header = document.createElement('div');
-    header.className = 'portfolio-week__header';
+    day.slots.forEach(slot => {
+      const slotEl = document.createElement('div');
+      slotEl.className = 'week-grid__slot';
 
-    const name = document.createElement('span');
-    name.className = 'portfolio-week__service';
-    setText(name, item.title);
-
-    const days = document.createElement('span');
-    days.className = 'portfolio-week__days';
-    setText(
-      days,
-      item.daysPerWeek > 0
-        ? `${formatCount(item.daysPerWeek)} d/wk`
-        : '0 d/wk'
-    );
-
-    header.append(name, days);
-
-    const badges = document.createElement('div');
-    badges.className = 'portfolio-week__badges';
-
-    const fence = item.pricingFence && typeof item.pricingFence === 'object' ? item.pricingFence : null;
-    const pricePerUnit = Number.isFinite(item.pricePerUnit) ? item.pricePerUnit : null;
-    if (fence && (fence.status === 'belowMin' || fence.status === 'aboveStretch')) {
-      const badge = document.createElement('span');
-      badge.className = 'portfolio-week__badge portfolio-week__badge--alert';
-      const delta = Number.isFinite(fence.delta) ? Math.abs(fence.delta) : null;
-      const diffLabel = delta !== null ? formatCurrency(symbol, delta) : null;
-      const badgeText = fence.status === 'belowMin'
-        ? diffLabel
-          ? `Below min fence by ${diffLabel}`
-          : 'Below min fence'
-        : diffLabel
-          ? `Above stretch fence by +${diffLabel}`
-          : 'Above stretch fence';
-      setText(badge, badgeText);
-
-      const fenceValue = fence.status === 'belowMin'
-        ? (Number.isFinite(fence.min) ? fence.min : null)
-        : (Number.isFinite(fence.stretch) ? fence.stretch : null);
-      if (pricePerUnit !== null && fenceValue !== null) {
-        const currentLabel = formatCurrency(symbol, pricePerUnit);
-        const fenceLabel = formatCurrency(symbol, fenceValue);
-        badge.dataset.tooltip = `Current ${currentLabel} vs fence ${fenceLabel}`;
-        badge.setAttribute('aria-label', `${badgeText}. Current ${currentLabel} vs fence ${fenceLabel}.`);
-      } else {
-        badge.setAttribute('aria-label', badgeText);
+      if (!slot || slot.kind === 'open') {
+        slotEl.classList.add('week-grid__slot--open');
+      } else if (slot.kind === 'travel') {
+        slotEl.classList.add('week-grid__slot--travel');
       }
 
-      badges.append(badge);
-    }
+      const title = document.createElement('span');
+      title.className = 'week-grid__slot-title';
+      setText(title, slot && slot.title ? slot.title : 'Open capacity');
+      slotEl.append(title);
 
-    const metrics = document.createElement('dl');
-    metrics.className = 'portfolio-week__metrics';
+      const shareLabel = slot ? formatSlotShare(slot.portion) : '';
+      if (shareLabel) {
+        const meta = document.createElement('span');
+        meta.className = 'week-grid__slot-meta';
+        setText(meta, shareLabel);
+        slotEl.append(meta);
+      }
 
-    const unitsDisplay = item.unitsPerMonth > 0
-      ? `${formatCount(item.unitsPerMonth)} /mo`
-      : '0 /mo';
-    metrics.append(
-      createMetric('Units', unitsDisplay),
-      createMetric('Net/week', formatCurrency(symbol, item.netPerWeek))
-    );
+      slots.append(slotEl);
+    });
 
-    body.append(header);
-    if (badges.childElementCount > 0) {
-      body.append(badges);
-    }
-    body.append(metrics);
-    li.append(number, body);
+    li.append(label, slots);
     listElement.append(li);
   });
+}
+
+function computeMixFingerprint(mix) {
+  if (!mix || typeof mix !== 'object') {
+    return '';
+  }
+
+  const entries = Object.entries(mix).map(([id, config]) => {
+    const descriptor = config && typeof config === 'object' ? config : {};
+    const units = Number.isFinite(descriptor.unitsPerMonth)
+      ? Number(descriptor.unitsPerMonth.toFixed(3))
+      : 0;
+    const price = Number.isFinite(descriptor.pricePerUnit)
+      ? Number(descriptor.pricePerUnit.toFixed(2))
+      : 0;
+    const net = Number.isFinite(descriptor.net)
+      ? Math.round(descriptor.net)
+      : 0;
+    return [id, units, price, net];
+  });
+
+  entries.sort((a, b) => a[0].localeCompare(b[0]));
+  return JSON.stringify(entries);
+}
+
+function createPinnedSnapshot(portfolio, capacity, symbol) {
+  if (!portfolio || typeof portfolio !== 'object') {
+    return null;
+  }
+
+  const totals = portfolio.totals && typeof portfolio.totals === 'object'
+    ? JSON.parse(JSON.stringify(portfolio.totals))
+    : null;
+
+  if (!totals) {
+    return null;
+  }
+
+  const mix = portfolio.mix && typeof portfolio.mix === 'object'
+    ? JSON.parse(JSON.stringify(portfolio.mix))
+    : {};
+
+  const capacitySnapshot = capacity && typeof capacity === 'object'
+    ? {
+        workingWeeks: capacity.workingWeeks,
+        workingDaysPerWeek: capacity.workingDaysPerWeek,
+        billableDaysAfterTravel: capacity.billableDaysAfterTravel,
+        travelAllowanceDays: capacity.travelAllowanceDays
+      }
+    : {};
+
+  return {
+    totals,
+    mix,
+    capacity: capacitySnapshot,
+    symbol,
+    fingerprint: computeMixFingerprint(mix)
+  };
+}
+
+function setComparisonColumn(elements, totals, usage, symbol) {
+  if (!elements) {
+    return;
+  }
+
+  const valueMappings = [
+    ['revenue', totals?.revenue],
+    ['cost', totals?.directCost],
+    ['tax', totals?.tax],
+    ['net', totals?.net]
+  ];
+
+  valueMappings.forEach(([key, value]) => {
+    const target = elements[key];
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    if (Number.isFinite(value)) {
+      setText(target, formatCurrency(symbol, value));
+    } else {
+      setText(target, '—');
+    }
+  });
+
+  if (elements.utilization instanceof HTMLElement) {
+    if (Number.isFinite(usage?.utilizationPercent)) {
+      setText(elements.utilization, formatPercentValue(usage.utilizationPercent));
+    } else {
+      setText(elements.utilization, '—');
+    }
+  }
+
+  if (elements.travel instanceof HTMLElement) {
+    const travelParts = [];
+    if (Number.isFinite(usage?.travelDaysPerWeek) && usage.travelDaysPerWeek > 0.01) {
+      travelParts.push(`${formatCount(usage.travelDaysPerWeek)} d/wk`);
+    }
+    if (Number.isFinite(usage?.travelAllowancePercent)) {
+      travelParts.push(`${formatPercentValue(usage.travelAllowancePercent)} of allowance`);
+    }
+    setText(elements.travel, travelParts.length ? travelParts.join(' · ') : '—');
+  }
+}
+
+function updateComparison(compareElements, pinnedSnapshot, currentTotals, capacity, symbol) {
+  if (!compareElements || !(compareElements.block instanceof HTMLElement)) {
+    return;
+  }
+
+  if (!pinnedSnapshot || !pinnedSnapshot.totals) {
+    compareElements.block.setAttribute('hidden', '');
+    if (compareElements.note instanceof HTMLElement) {
+      setText(compareElements.note, '');
+    }
+    if (compareElements.clearButton instanceof HTMLElement) {
+      compareElements.clearButton.setAttribute('disabled', '');
+    }
+    return;
+  }
+
+  compareElements.block.removeAttribute('hidden');
+  if (compareElements.clearButton instanceof HTMLElement) {
+    compareElements.clearButton.removeAttribute('disabled');
+  }
+
+  const pinnedUsage = computeUsageMetrics(pinnedSnapshot.totals, pinnedSnapshot.capacity || {});
+  const currentUsage = computeUsageMetrics(currentTotals, capacity);
+
+  setComparisonColumn(compareElements.current, currentTotals, currentUsage, symbol);
+  setComparisonColumn(compareElements.pinned, pinnedSnapshot.totals, pinnedUsage, pinnedSnapshot.symbol || symbol);
+
+  if (compareElements.note instanceof HTMLElement) {
+    if (!Number.isFinite(currentTotals?.net) || !Number.isFinite(pinnedSnapshot.totals?.net)) {
+      setText(compareElements.note, '');
+    } else if (pinnedSnapshot.symbol && pinnedSnapshot.symbol !== symbol) {
+      setText(compareElements.note, 'Pinned mix uses a different currency. Compare amounts manually.');
+    } else {
+      const diff = currentTotals.net - pinnedSnapshot.totals.net;
+      if (Math.abs(diff) < 1) {
+        setText(compareElements.note, 'Current mix matches pinned net outcome.');
+      } else if (diff > 0) {
+        setText(compareElements.note, `Current mix is ${formatCurrency(symbol, diff)} ahead of pinned net.`);
+      } else {
+        setText(compareElements.note, `Current mix trails pinned net by ${formatCurrency(symbol, Math.abs(diff))}.`);
+      }
+    }
+  }
+}
+
+function refreshPinControls(pinElements, pinnedSnapshot, currentFingerprint, hasActiveSchedule) {
+  if (!pinElements || !(pinElements.pinButton instanceof HTMLElement)) {
+    return;
+  }
+
+  const button = pinElements.pinButton;
+  const clearButton = pinElements.clearButton instanceof HTMLElement ? pinElements.clearButton : null;
+
+  if (!hasActiveSchedule) {
+    button.setAttribute('disabled', '');
+    button.setAttribute('aria-pressed', 'false');
+    setText(button, 'Pin this mix');
+  } else {
+    button.removeAttribute('disabled');
+    const isActive = Boolean(pinnedSnapshot && pinnedSnapshot.fingerprint && pinnedSnapshot.fingerprint === currentFingerprint);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    if (pinnedSnapshot) {
+      setText(button, isActive ? 'Pinned mix active' : 'Update pin');
+    } else {
+      setText(button, 'Pin this mix');
+    }
+  }
+
+  if (clearButton) {
+    if (pinnedSnapshot) {
+      clearButton.removeAttribute('disabled');
+    } else {
+      clearButton.setAttribute('disabled', '');
+    }
+  }
 }
 
 function renderViolations(block, list, violations) {
@@ -270,7 +628,7 @@ function renderViolations(block, list, violations) {
   return summaryParts.join('; ');
 }
 
-function updateTotals(elements, totals, symbol) {
+function updateTotals(elements, totals, symbol, capacity) {
   const data = totals && typeof totals === 'object'
     ? totals
     : {};
@@ -293,6 +651,71 @@ function updateTotals(elements, totals, symbol) {
       setText(el, '—');
     }
   });
+
+  const usage = computeUsageMetrics(data, capacity);
+
+  const utilizationEl = elements.utilization;
+  if (utilizationEl instanceof HTMLElement) {
+    if (Number.isFinite(usage.utilizationPercent)) {
+      setText(utilizationEl, formatPercentValue(usage.utilizationPercent));
+    } else {
+      setText(utilizationEl, '—');
+    }
+  }
+
+  const utilizationViolationEl = elements.utilizationViolation instanceof HTMLElement
+    ? elements.utilizationViolation
+    : null;
+  if (utilizationViolationEl) {
+    const overDays = Number.isFinite(usage.serviceDays) && Number.isFinite(usage.billableDaysAfterTravel)
+      ? usage.serviceDays - usage.billableDaysAfterTravel
+      : null;
+    if (Number.isFinite(overDays) && overDays > 0.5) {
+      const overPerWeek = Number.isFinite(usage.workingWeeks) && usage.workingWeeks > 0
+        ? overDays / usage.workingWeeks
+        : null;
+      if (Number.isFinite(overPerWeek) && overPerWeek > 0.05) {
+        setText(utilizationViolationEl, `${formatCount(overPerWeek)} d/wk over plan`);
+      } else {
+        setText(utilizationViolationEl, `${formatCount(overDays)} days over plan`);
+      }
+    } else {
+      setText(utilizationViolationEl, '');
+    }
+  }
+
+  const travelEl = elements.travel;
+  if (travelEl instanceof HTMLElement) {
+    const parts = [];
+    if (Number.isFinite(usage.travelDaysPerWeek) && usage.travelDaysPerWeek > 0.01) {
+      parts.push(`${formatCount(usage.travelDaysPerWeek)} d/wk`);
+    }
+    if (Number.isFinite(usage.travelAllowancePercent)) {
+      parts.push(`${formatPercentValue(usage.travelAllowancePercent)} of allowance`);
+    }
+    setText(travelEl, parts.length ? parts.join(' · ') : '—');
+  }
+
+  const travelViolationEl = elements.travelViolation instanceof HTMLElement
+    ? elements.travelViolation
+    : null;
+  if (travelViolationEl) {
+    const overTravel = Number.isFinite(usage.travelDays) && Number.isFinite(usage.travelAllowanceDays)
+      ? usage.travelDays - usage.travelAllowanceDays
+      : null;
+    if (Number.isFinite(overTravel) && overTravel > 0.5) {
+      const overPerWeek = Number.isFinite(usage.workingWeeks) && usage.workingWeeks > 0
+        ? overTravel / usage.workingWeeks
+        : null;
+      if (Number.isFinite(overPerWeek) && overPerWeek > 0.05) {
+        setText(travelViolationEl, `${formatCount(overPerWeek)} d/wk above allowance`);
+      } else {
+        setText(travelViolationEl, `${formatCount(overTravel)} days above allowance`);
+      }
+    } else {
+      setText(travelViolationEl, '');
+    }
+  }
 }
 
 function updateStatus(statusElement, totals, symbol) {
@@ -449,7 +872,11 @@ export function mountPortfolio(calcState, root = document) {
     revenue: qs('#p-rev', section),
     cost: qs('#p-cost', section),
     tax: qs('#p-tax', section),
-    net: qs('#p-net', section)
+    net: qs('#p-net', section),
+    utilization: qs('#p-utilization', section),
+    utilizationViolation: qs('#p-utilization-violation', section),
+    travel: qs('#p-travel', section),
+    travelViolation: qs('#p-travel-violation', section)
   };
   const bufferElements = {
     effective: qs('#p-buffer-effective', section),
@@ -462,12 +889,79 @@ export function mountPortfolio(calcState, root = document) {
   const violationsBlock = qs('#portfolio-violations', section);
   const violationsList = qs('#portfolio-violations-list', section);
 
+  const pinButton = qs('#portfolio-pin', section);
+  const clearPinButton = qs('#portfolio-clear-pin', section);
+  const compareElements = {
+    block: qs('#portfolio-compare', section),
+    note: qs('#portfolio-compare-note', section),
+    clearButton: clearPinButton,
+    current: {
+      revenue: qs('#compare-current-rev', section),
+      cost: qs('#compare-current-cost', section),
+      tax: qs('#compare-current-tax', section),
+      net: qs('#compare-current-net', section),
+      utilization: qs('#compare-current-utilization', section),
+      travel: qs('#compare-current-travel', section)
+    },
+    pinned: {
+      revenue: qs('#compare-pinned-rev', section),
+      cost: qs('#compare-pinned-cost', section),
+      tax: qs('#compare-pinned-tax', section),
+      net: qs('#compare-pinned-net', section),
+      utilization: qs('#compare-pinned-utilization', section),
+      travel: qs('#compare-pinned-travel', section)
+    }
+  };
+  const pinControls = { pinButton, clearButton: clearPinButton };
+
   const store = calcState && typeof calcState === 'object' ? calcState : {};
   const subscribe = typeof store.subscribe === 'function' ? store.subscribe.bind(store) : null;
   const getState = typeof store.get === 'function' ? store.get.bind(store) : null;
   const getDerived = typeof store.getDerived === 'function' ? store.getDerived.bind(store) : null;
 
   let lastViolationSummary = '';
+  let pinnedSnapshot = null;
+  let latestPortfolio = null;
+  let latestTotals = null;
+  let latestCapacity = null;
+  let latestSymbol = getCurrencySymbol(typeof getState === 'function' ? getState() : null);
+  let latestSchedule = { hasData: false, days: [] };
+  let latestFingerprint = '';
+
+  const cleanups = [];
+
+  if (pinButton instanceof HTMLElement) {
+    const handlePinClick = () => {
+      if (!latestPortfolio || !latestSchedule?.hasData) {
+        return;
+      }
+      const snapshot = createPinnedSnapshot(latestPortfolio, latestCapacity || {}, latestSymbol);
+      if (!snapshot) {
+        announce('Unable to pin the current mix.', { politeness: 'assertive' });
+        return;
+      }
+      pinnedSnapshot = snapshot;
+      updateComparison(compareElements, pinnedSnapshot, latestTotals || {}, latestCapacity || {}, latestSymbol);
+      refreshPinControls(pinControls, pinnedSnapshot, latestFingerprint, latestSchedule?.hasData);
+      announce('Pinned current mix for comparison.');
+    };
+    pinButton.addEventListener('click', handlePinClick);
+    cleanups.push(() => pinButton.removeEventListener('click', handlePinClick));
+  }
+
+  if (clearPinButton instanceof HTMLElement) {
+    const handleClear = () => {
+      if (!pinnedSnapshot) {
+        return;
+      }
+      pinnedSnapshot = null;
+      updateComparison(compareElements, pinnedSnapshot, latestTotals || {}, latestCapacity || {}, latestSymbol);
+      refreshPinControls(pinControls, pinnedSnapshot, latestFingerprint, latestSchedule?.hasData);
+      announce('Cleared pinned mix.');
+    };
+    clearPinButton.addEventListener('click', handleClear);
+    cleanups.push(() => clearPinButton.removeEventListener('click', handleClear));
+  }
 
   const runUpdate = (stateSnapshot, derivedState) => {
     const snapshot = stateSnapshot || (typeof getState === 'function' ? getState() : null);
@@ -484,11 +978,24 @@ export function mountPortfolio(calcState, root = document) {
     }
 
     const totals = portfolio && typeof portfolio === 'object' ? portfolio.totals : null;
-    updateTotals(totalsElements, totals, symbol);
+    latestPortfolio = portfolio;
+    latestTotals = totals;
+    latestCapacity = capacity;
+    latestSymbol = symbol;
+
+    updateTotals(totalsElements, totals, symbol, capacity);
     updateBufferSummary(bufferElements, totals);
     updateStatus(statusElement, totals, symbol);
     updateComfortIndicator(comfortElement, portfolio ? portfolio.comfort : null);
-    renderWeeklyPlan(weekList, portfolio ? portfolio.mix : null, capacity, symbol);
+    const schedule = buildScheduleModel(portfolio ? portfolio.mix : null, totals, capacity);
+    latestSchedule = schedule;
+    renderWeeklyPlan(weekList, schedule);
+
+    const fingerprint = computeMixFingerprint(portfolio ? portfolio.mix : null);
+    latestFingerprint = fingerprint;
+
+    updateComparison(compareElements, pinnedSnapshot, totals || {}, capacity || {}, symbol);
+    refreshPinControls(pinControls, pinnedSnapshot, fingerprint, schedule?.hasData);
 
     const summary = renderViolations(violationsBlock, violationsList, portfolio ? portfolio.violations : []);
     if (summary && summary !== lastViolationSummary) {
@@ -502,16 +1009,21 @@ export function mountPortfolio(calcState, root = document) {
 
   runUpdate(typeof getState === 'function' ? getState() : null, typeof getDerived === 'function' ? getDerived() : null);
 
+  let unsubscribe = null;
   if (typeof subscribe === 'function') {
-    const unsubscribe = subscribe((nextState, derivedState) => {
+    unsubscribe = subscribe((nextState, derivedState) => {
       runUpdate(nextState, derivedState);
     });
-    return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    };
   }
 
-  return () => {};
+  return () => {
+    if (typeof unsubscribe === 'function') {
+      unsubscribe();
+    }
+    cleanups.forEach(fn => {
+      if (typeof fn === 'function') {
+        fn();
+      }
+    });
+  };
 }
