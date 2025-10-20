@@ -718,6 +718,28 @@
                 </div>
                 <p class="field-note">Choose how the calculator estimates your tax reserve.</p>
               </div>
+              <div class="control control--tax-deductions">
+                <span class="label-text" id="tax-deductions-label">Dutch deductions</span>
+                <div class="tax-deduction-options" role="group" aria-labelledby="tax-deductions-label">
+                  <label class="tax-deduction-option">
+                    <input type="checkbox" id="tax-zelfstandigenaftrek" checked />
+                    <span>Zelfstandigenaftrek</span>
+                  </label>
+                  <label class="tax-deduction-option">
+                    <input type="checkbox" id="tax-startersaftrek" />
+                    <span>Starter deduction</span>
+                  </label>
+                  <label class="tax-deduction-option">
+                    <input type="checkbox" id="tax-mkb-vrijstelling" checked />
+                    <span>MKB-vrijstelling</span>
+                  </label>
+                  <label class="tax-deduction-option">
+                    <input type="checkbox" id="tax-include-zvw" checked />
+                    <span>Zvw health contribution</span>
+                  </label>
+                </div>
+                <p class="field-note">Toggle each deduction or contribution when using the Dutch tax strategy.</p>
+              </div>
               <div class="control control--range control--pair">
                 <label id="tax-reserve-label" for="tax-reserve-slider">
                   <span class="label-text">Effective income tax rate (%)</span>

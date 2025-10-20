@@ -22,7 +22,6 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 - [ ] [Present weekly schedule grid and summary metrics fed by solver selections.](ROADMAP.md#task-53-present-weekly-schedule-grid-and-summary-metrics-fed-by-solver-selections)
 
 ### Sprint 6 Advanced Tax and Experience Enhancers
-- [ ] [Implement advanced Dutch 2025 tax calculators with toggles for Zelfstandigenaftrek, starters deduction, MKB, and Zvw.](ROADMAP.md#task-61-implement-advanced-dutch-2025-tax-calculators-with-toggles-for-zelfstandigenaftrek-starters-deduction-mkb-and-zvw)
 - [ ] [Ship one-click plan presets plus pricing fences badges for Min, Target, Stretch.](ROADMAP.md#task-62-ship-one-click-plan-presets-plus-pricing-fences-badges-for-min-target-stretch)
 - [ ] [Add EN-ES language toggle, travel comfort meter, and wrap-up QA for deployment.](ROADMAP.md#task-63-add-en-es-language-toggle-travel-comfort-meter-and-wrap-up-qa-for-deployment)
 
@@ -45,3 +44,4 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 - [x] [Expose sandbox sliders for months off, utilization, tax reserve, and travel friction with instant recompute.](ROADMAP.md#task-42-expose-sandbox-sliders-for-months-off-utilization-tax-reserve-and-travel-friction-with-instant-recompute) (2025-10-23)
 - [x] [Add sparkline sensitivity visuals for net vs months off and net vs utilization.](ROADMAP.md#task-43-add-sparkline-sensitivity-visuals-for-net-vs-months-off-and-net-vs-utilization) (2025-10-24)
 - [x] [Integrate pricing fences and comfort buffers into optimization scoring and outputs.](ROADMAP.md#task-52-integrate-pricing-fences-and-comfort-buffers-into-optimization-scoring-and-outputs) (2025-10-19)
+- [x] [Implement advanced Dutch 2025 tax calculators with toggles for Zelfstandigenaftrek, starters deduction, MKB, and Zvw.](ROADMAP.md#task-61-implement-advanced-dutch-2025-tax-calculators-with-toggles-for-zelfstandigenaftrek-starters-deduction-mkb-and-zvw) (2025-10-20)

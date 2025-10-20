@@ -3,8 +3,8 @@ import { deriveIncomeTargets } from './income.js';
 
 export const ZELFSTANDIGENAFTREK_2025 = 2470;
 export const STARTERSAFTREK_2025 = 2123;
-export const MKB_VRIJSTELLING_RATE_2025 = 0.1331;
-export const ZVW_RATE_2025 = 0.0532;
+export const MKB_VRIJSTELLING_RATE_2025 = 0.127;
+export const ZVW_RATE_2025 = 0.0526;
 export const ZVW_MAXIMUM_INCOME_2025 = 80000;
 
 const BOX1_BRACKETS_2025 = [
@@ -22,6 +22,14 @@ const TAX_TOGGLE_DEFAULTS = {
   includeZvw: true
 };
 
+const TAX_OVERRIDE_DEFAULTS = {
+  zelfstandigenaftrekAmount: ZELFSTANDIGENAFTREK_2025,
+  startersaftrekAmount: STARTERSAFTREK_2025,
+  mkbVrijstellingRate: MKB_VRIJSTELLING_RATE_2025,
+  zvwRate: ZVW_RATE_2025,
+  zvwMaximumIncome: ZVW_MAXIMUM_INCOME_2025
+};
+
 function normalizeStateForTax(state) {
   const safeState = state && typeof state === 'object' ? state : {};
   const normalizedConfig = safeState.config && typeof safeState.config === 'object'
@@ -33,7 +41,13 @@ function normalizeStateForTax(state) {
   if (!normalizedConfig.defaults.incomeTargets || typeof normalizedConfig.defaults.incomeTargets !== 'object') {
     normalizedConfig.defaults.incomeTargets = {};
   }
-  return { ...safeState, config: normalizedConfig };
+  const normalizedTax = safeState.tax && typeof safeState.tax === 'object'
+    ? { ...safeState.tax }
+    : {};
+  if (!normalizedTax.overrides || typeof normalizedTax.overrides !== 'object') {
+    normalizedTax.overrides = {};
+  }
+  return { ...safeState, config: normalizedConfig, tax: normalizedTax };
 }
 
 function normalizeTaxMode(value) {
@@ -77,6 +91,50 @@ function readTaxToggle(key, state, defaultValue) {
   return defaultValue;
 }
 
+function resolveOverrideSources(state) {
+  const sources = [];
+  const calcTax = calcState && calcState.tax && typeof calcState.tax === 'object'
+    ? calcState.tax
+    : null;
+  if (calcTax && calcTax.overrides && typeof calcTax.overrides === 'object') {
+    sources.push(calcTax.overrides);
+  }
+  if (calcTax) {
+    sources.push(calcTax);
+  }
+  const stateTax = state && state.tax && typeof state.tax === 'object' ? state.tax : null;
+  if (stateTax && stateTax.overrides && typeof stateTax.overrides === 'object') {
+    sources.push(stateTax.overrides);
+  }
+  if (stateTax) {
+    sources.push(stateTax);
+  }
+  return sources;
+}
+
+function readTaxOverrideNumber(key, state, defaultValue, { min = -Infinity, max = Infinity } = {}) {
+  const sources = resolveOverrideSources(state);
+  for (const source of sources) {
+    if (!source || typeof source !== 'object') {
+      continue;
+    }
+    if (!Object.prototype.hasOwnProperty.call(source, key)) {
+      continue;
+    }
+    const raw = source[key];
+    if (raw === null || raw === undefined || raw === '') {
+      continue;
+    }
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric)) {
+      continue;
+    }
+    const clamped = Math.min(Math.max(numeric, min), max);
+    return clamped;
+  }
+  return defaultValue;
+}
+
 export function isZelfstandigenaftrekEnabled(state) {
   return readTaxToggle('zelfstandigenaftrek', state, TAX_TOGGLE_DEFAULTS.zelfstandigenaftrek);
 }
@@ -94,11 +152,70 @@ export function isZvwContributionEnabled(state) {
 }
 
 function resolveTaxSettings(state) {
+  const normalizedState = normalizeStateForTax(state);
+  const zelfstandigenaftrekEnabled = isZelfstandigenaftrekEnabled(normalizedState);
+  const startersaftrekEnabled = isStartersaftrekEnabled(normalizedState);
+  const mkbVrijstellingEnabled = isMkbVrijstellingEnabled(normalizedState);
+  const zvwEnabled = isZvwContributionEnabled(normalizedState);
+
+  const zelfstandigenaftrekAmount = zelfstandigenaftrekEnabled
+    ? Math.max(
+      readTaxOverrideNumber(
+        'zelfstandigenaftrekAmount',
+        normalizedState,
+        TAX_OVERRIDE_DEFAULTS.zelfstandigenaftrekAmount,
+        { min: 0 }
+      ),
+      0
+    )
+    : 0;
+  const startersaftrekAmount = startersaftrekEnabled
+    ? Math.max(
+      readTaxOverrideNumber(
+        'startersaftrekAmount',
+        normalizedState,
+        TAX_OVERRIDE_DEFAULTS.startersaftrekAmount,
+        { min: 0 }
+      ),
+      0
+    )
+    : 0;
+  const mkbVrijstellingRate = mkbVrijstellingEnabled
+    ? readTaxOverrideNumber(
+      'mkbVrijstellingRate',
+      normalizedState,
+      TAX_OVERRIDE_DEFAULTS.mkbVrijstellingRate,
+      { min: 0, max: 0.9999 }
+    )
+    : 0;
+  const zvwRate = zvwEnabled
+    ? readTaxOverrideNumber(
+      'zvwRate',
+      normalizedState,
+      TAX_OVERRIDE_DEFAULTS.zvwRate,
+      { min: 0, max: 0.9999 }
+    )
+    : 0;
+  const zvwMaximumIncome = Math.max(
+    readTaxOverrideNumber(
+      'zvwMaximumIncome',
+      normalizedState,
+      TAX_OVERRIDE_DEFAULTS.zvwMaximumIncome,
+      { min: 0 }
+    ),
+    0
+  );
+
   return {
-    zelfstandigenaftrek: isZelfstandigenaftrekEnabled(state),
-    startersaftrek: isStartersaftrekEnabled(state),
-    mkbVrijstelling: isMkbVrijstellingEnabled(state),
-    includeZvw: isZvwContributionEnabled(state)
+    zelfstandigenaftrek: zelfstandigenaftrekEnabled,
+    zelfstandigenaftrekAmount,
+    startersaftrek: startersaftrekEnabled,
+    startersaftrekAmount,
+    mkbVrijstelling: mkbVrijstellingEnabled,
+    mkbVrijstellingRate,
+    includeZvw: zvwEnabled,
+    zvwRate,
+    zvwMaximumIncome
   };
 }
 
@@ -135,20 +252,22 @@ function computeProgressiveTax(income) {
 function computeTaxBreakdown(profitBeforeTax, settings) {
   const normalizedProfit = Math.max(profitBeforeTax, 0);
   const zelfstandigenaftrek = settings.zelfstandigenaftrek
-    ? Math.min(ZELFSTANDIGENAFTREK_2025, normalizedProfit)
+    ? Math.min(settings.zelfstandigenaftrekAmount, normalizedProfit)
     : 0;
   const startersaftrek = settings.startersaftrek
-    ? Math.min(STARTERSAFTREK_2025, Math.max(normalizedProfit - zelfstandigenaftrek, 0))
+    ? Math.min(settings.startersaftrekAmount, Math.max(normalizedProfit - zelfstandigenaftrek, 0))
     : 0;
 
   const taxableProfitBeforeMkb = Math.max(normalizedProfit - zelfstandigenaftrek - startersaftrek, 0);
-  const mkbVrijstellingRate = settings.mkbVrijstelling ? MKB_VRIJSTELLING_RATE_2025 : 0;
+  const mkbVrijstellingRate = settings.mkbVrijstelling ? settings.mkbVrijstellingRate : 0;
   const mkbVrijstelling = taxableProfitBeforeMkb * mkbVrijstellingRate;
   const taxableProfitAfterMkb = Math.max(taxableProfitBeforeMkb - mkbVrijstelling, 0);
 
   const incomeTax = computeProgressiveTax(taxableProfitAfterMkb);
-  const zvwBase = Math.max(Math.min(taxableProfitBeforeMkb, ZVW_MAXIMUM_INCOME_2025), 0);
-  const zvwContribution = settings.includeZvw ? zvwBase * ZVW_RATE_2025 : 0;
+  const zvwBase = settings.includeZvw
+    ? Math.max(Math.min(taxableProfitBeforeMkb, settings.zvwMaximumIncome), 0)
+    : 0;
+  const zvwContribution = settings.includeZvw ? zvwBase * settings.zvwRate : 0;
   const taxReserve = incomeTax + zvwContribution;
   const netIncome = normalizedProfit - taxReserve;
 
@@ -163,6 +282,8 @@ function computeTaxBreakdown(profitBeforeTax, settings) {
     incomeTax,
     zvwBase,
     zvwContribution,
+    zvwRate: settings.includeZvw ? settings.zvwRate : 0,
+    zvwMaximumIncome: settings.zvwMaximumIncome,
     taxReserve,
     netIncome
   };
@@ -228,7 +349,7 @@ export function calculateDutchTax2025(state, capacity, costs, incomeTargets) {
     ? incomeTargets
     : deriveIncomeTargets(normalizedState, safeCapacity);
   const targetNet = Number.isFinite(income.targetNet) ? Math.max(income.targetNet, 0) : 0;
-  const settings = resolveTaxSettings(safeState);
+  const settings = resolveTaxSettings(normalizedState);
   const breakdown = solveTaxBreakdown(targetNet, settings, costs);
   const effectiveTaxRate = breakdown.profitBeforeTax > 0
     ? breakdown.taxReserve / breakdown.profitBeforeTax
@@ -249,6 +370,8 @@ export function calculateDutchTax2025(state, capacity, costs, incomeTargets) {
     taxableProfitBeforeMkb: breakdown.taxableProfitBeforeMkb,
     taxableProfitAfterMkb: breakdown.taxableProfitAfterMkb,
     zvwBase: breakdown.zvwBase,
+    zvwRate: breakdown.zvwRate,
+    zvwMaximumIncome: breakdown.zvwMaximumIncome,
     netIncome: breakdown.netIncome
   };
 }
@@ -281,6 +404,8 @@ export function calculateSimpleTaxReserve(state, capacity, costs, incomeTargets)
     taxableProfitBeforeMkb: profitBeforeTax,
     taxableProfitAfterMkb: profitBeforeTax,
     zvwBase: null,
+    zvwRate: 0,
+    zvwMaximumIncome: null,
     netIncome: targetNet
   };
 }
@@ -322,6 +447,8 @@ export function calculateTaxFromProfit(state, costs, profitBeforeTax) {
       taxableProfitBeforeMkb: breakdown.taxableProfitBeforeMkb,
       taxableProfitAfterMkb: breakdown.taxableProfitAfterMkb,
       zvwBase: breakdown.zvwBase,
+      zvwRate: breakdown.zvwRate,
+      zvwMaximumIncome: breakdown.zvwMaximumIncome,
       netIncome: breakdown.netIncome
     };
   }
@@ -346,6 +473,8 @@ export function calculateTaxFromProfit(state, costs, profitBeforeTax) {
     taxableProfitBeforeMkb: normalizedProfit,
     taxableProfitAfterMkb: normalizedProfit,
     zvwBase: null,
+    zvwRate: 0,
+    zvwMaximumIncome: null,
     netIncome
   };
 }

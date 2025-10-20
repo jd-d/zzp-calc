@@ -1607,7 +1607,8 @@ header.hero {
 }
 
 .control--tax-mode,
-.control--target-mode {
+.control--target-mode,
+.control--tax-deductions {
   gap: var(--space-2);
 }
 
@@ -1618,8 +1619,15 @@ header.hero {
   gap: var(--space-3);
 }
 
+.tax-deduction-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
 .tax-mode-option,
-.target-mode-option {
+.target-mode-option,
+.tax-deduction-option {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -1631,7 +1639,8 @@ header.hero {
 }
 
 .tax-mode-option input[type='radio'],
-.target-mode-option input[type='radio'] {
+.target-mode-option input[type='radio'],
+.tax-deduction-option input[type='checkbox'] {
   width: 1rem;
   height: 1rem;
   accent-color: var(--accent-strong);

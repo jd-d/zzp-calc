@@ -91,7 +91,8 @@ const initialState = {
     zelfstandigenaftrek: true,
     startersaftrek: false,
     mkbVrijstelling: true,
-    includeZvw: true
+    includeZvw: true,
+    overrides: {}
   },
   config: {
     calendar: { ...CANONICAL_CALENDAR },
@@ -425,6 +426,38 @@ export function setTaxMode(nextMode) {
   return mode;
 }
 
+export function setZelfstandigenaftrekEnabled(rawValue) {
+  const enabled = Boolean(rawValue);
+  patch({
+    tax: { zelfstandigenaftrek: enabled }
+  });
+  return enabled;
+}
+
+export function setStartersaftrekEnabled(rawValue) {
+  const enabled = Boolean(rawValue);
+  patch({
+    tax: { startersaftrek: enabled }
+  });
+  return enabled;
+}
+
+export function setMkbVrijstellingEnabled(rawValue) {
+  const enabled = Boolean(rawValue);
+  patch({
+    tax: { mkbVrijstelling: enabled }
+  });
+  return enabled;
+}
+
+export function setIncludeZvwEnabled(rawValue) {
+  const enabled = Boolean(rawValue);
+  patch({
+    tax: { includeZvw: enabled }
+  });
+  return enabled;
+}
+
 export function setTaxRatePercent(rawValue) {
   const fallback = Number.isFinite(state.costs.taxRatePercent) ? state.costs.taxRatePercent : 40;
   const normalized = Math.min(Math.max(parseNumber(rawValue, fallback, { min: 0, max: 99.9 }), 0), 99.9);
@@ -516,6 +549,9 @@ Object.defineProperties(calcState, {
     get() {
       if (!state.tax || typeof state.tax !== 'object') {
         state.tax = deepClone(initialState.tax);
+      }
+      if (!state.tax.overrides || typeof state.tax.overrides !== 'object') {
+        state.tax.overrides = {};
       }
       return state.tax;
     },
