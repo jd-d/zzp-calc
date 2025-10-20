@@ -79,6 +79,15 @@ const initialState = {
     ...DEFAULT_CAPACITY_STATE
   },
   services: {},
+  portfolio: {
+    planPreset: 'retainer'
+  },
+  portfolioConstraints: {
+    maxTravelDays: null,
+    handsOnShareTarget: null,
+    handsOnShareTolerance: null,
+    comfortBuffer: null
+  },
   costs: {
     taxRatePercent: 40,
     fixedCosts: DEFAULT_FIXED_COST_TOTAL,

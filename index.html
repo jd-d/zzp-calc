@@ -1257,6 +1257,27 @@
                   Track the rate and volume targets for each offer. Switch tabs to see the same metrics expressed as required
                   volume per month.
                 </p>
+                <div
+                  class="service-cards__presets cluster"
+                  role="group"
+                  aria-label="Plan mix presets"
+                  data-preset-group="plans"
+                >
+                  <button
+                    type="button"
+                    class="chip is-active"
+                    data-preset="plan:retainer"
+                    aria-pressed="true"
+                  >
+                    Retainer led
+                  </button>
+                  <button type="button" class="chip" data-preset="plan:ops" aria-pressed="false">
+                    Ops heavy
+                  </button>
+                  <button type="button" class="chip" data-preset="plan:qc" aria-pressed="false">
+                    QC first
+                  </button>
+                </div>
               </div>
             </div>
             <div class="service-cards__grid">
@@ -1797,6 +1818,12 @@
               <dd>
                 <span id="p-buffer-effective">—</span>
                 <span class="portfolio-buffer-note" id="p-buffer-breakdown"></span>
+              </dd>
+            </div>
+            <div>
+              <dt>Pricing fences</dt>
+              <dd>
+                <span class="portfolio-pricing-badges" id="p-pricing-badges" aria-live="polite"></span>
               </dd>
             </div>
           </dl>
