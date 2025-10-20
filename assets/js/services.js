@@ -166,8 +166,121 @@ function resolveComfortTargets(source = {}, costs = {}, modifiers = {}) {
   };
 }
 
+function readPositiveNumber(...values) {
+  for (const value of values) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return numeric;
+    }
+  }
+  return NaN;
+}
+
+function resolvePricingFences(config = {}) {
+  const source = isPlainObject(config.pricingFences) ? config.pricingFences : {};
+  let min = readPositiveNumber(
+    source.min,
+    config.minPricePerUnit,
+    config.minimumPrice,
+    config.priceFloor,
+    config.basePrice
+  );
+  let target = readPositiveNumber(
+    source.target,
+    config.targetPrice,
+    config.targetRate,
+    config.basePrice,
+    min
+  );
+  let stretch = readPositiveNumber(
+    source.stretch,
+    config.stretchPrice,
+    config.maxPricePerUnit,
+    config.maximumPrice,
+    config.priceCeiling
+  );
+
+  if (!Number.isFinite(min) || min <= 0) {
+    min = Number.isFinite(target) && target > 0 ? target : 0;
+  }
+
+  if (!Number.isFinite(target) || target <= 0) {
+    target = Number.isFinite(min) && min > 0 ? min : 0;
+  }
+
+  if (!Number.isFinite(stretch) || stretch <= 0) {
+    if (target > 0) {
+      stretch = target * 1.25;
+    } else if (min > 0) {
+      stretch = min * 1.25;
+    } else {
+      stretch = Infinity;
+    }
+  }
+
+  if (target > 0 && min > 0 && target < min) {
+    target = min;
+  }
+
+  if (Number.isFinite(stretch)) {
+    if (target > 0 && stretch < target) {
+      stretch = target;
+    } else if (target <= 0 && min > 0 && stretch < min) {
+      stretch = min;
+    }
+  }
+
+  return {
+    min,
+    target,
+    stretch
+  };
+}
+
 const HANDS_ON_SERVICE_IDS = new Set(['ops', 'qc', 'training']);
 const EPSILON = 1e-6;
+
+function classifyPricingFence(pricePerUnit, fences = {}) {
+  if (!Number.isFinite(pricePerUnit) || pricePerUnit <= 0) {
+    return {
+      status: 'unknown',
+      delta: null,
+      penalty: 5
+    };
+  }
+
+  const min = Number.isFinite(fences.min) ? fences.min : 0;
+  const target = Number.isFinite(fences.target) ? fences.target : (min > 0 ? min : 0);
+  const stretch = Number.isFinite(fences.stretch) ? fences.stretch : Infinity;
+
+  if (min > 0 && pricePerUnit + EPSILON < min) {
+    const delta = pricePerUnit - min;
+    const base = target > 0 ? target : min;
+    return {
+      status: 'belowMin',
+      delta,
+      penalty: 2 + Math.abs(delta) / Math.max(base, 1)
+    };
+  }
+
+  if (Number.isFinite(stretch) && stretch > 0 && pricePerUnit - EPSILON > stretch) {
+    const delta = pricePerUnit - stretch;
+    const base = stretch > 0 ? stretch : target || pricePerUnit;
+    return {
+      status: 'aboveStretch',
+      delta,
+      penalty: 2 + Math.abs(delta) / Math.max(base, 1)
+    };
+  }
+
+  const reference = target > 0 ? target : (min > 0 ? min : pricePerUnit);
+  const delta = pricePerUnit - reference;
+  return {
+    status: 'within',
+    delta,
+    penalty: Math.abs(delta) / Math.max(reference, 1)
+  };
+}
 
 function clampScore(value) {
   if (!Number.isFinite(value)) {
@@ -499,14 +612,11 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, mod
     ? (revenueAnnual - directCostAnnual) / revenueAnnual
     : 0;
 
-  const pricingFloor = toPositive(
-    config.minPricePerUnit ?? config.minimumPrice ?? config.priceFloor ?? config.basePrice,
-    0
-  );
-  const pricingCeiling = toPositive(
-    config.maxPricePerUnit ?? config.maximumPrice ?? config.priceCeiling ?? (pricingFloor ? pricingFloor * 2 : Infinity),
-    Infinity
-  );
+  const pricingFences = resolvePricingFences(config);
+  const pricingFloor = Number.isFinite(pricingFences.min) ? pricingFences.min : 0;
+  const pricingCeiling = Number.isFinite(pricingFences.stretch) ? pricingFences.stretch : Infinity;
+  const pricingBand = classifyPricingFence(revenueMetrics.pricePerUnit, pricingFences);
+  const pricingPenalty = Number.isFinite(pricingBand.penalty) ? pricingBand.penalty : 0;
   const comfortTargets = resolveComfortTargets(config, costs, modifiers);
   const comfortFloor = comfortTargets.total;
 
@@ -514,20 +624,26 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, mod
   const handsOnDays = serviceDays * handsOnWeight;
 
   const optionViolations = [];
-  if (pricingFloor > 0 && revenueMetrics.pricePerUnit + EPSILON < pricingFloor) {
+  const serviceLabel = (entry.descriptor && entry.descriptor.copy && entry.descriptor.copy.title)
+    ? entry.descriptor.copy.title
+    : entry.id;
+  const pricingDelta = Number.isFinite(pricingBand.delta) ? Math.abs(pricingBand.delta) : 0;
+  if (pricingBand.status === 'belowMin') {
+    const detail = pricingDelta > 0 ? ` by €${Math.round(pricingDelta)}` : '';
     optionViolations.push({
-      type: 'pricingFloor',
+      type: 'pricingMin',
       serviceId: entry.id,
-      severity: pricingFloor - revenueMetrics.pricePerUnit,
-      message: `${entry.descriptor.copy.title || entry.id} price below floor`
+      severity: pricingDelta,
+      message: `${serviceLabel} rate below minimum fence${detail}`
     });
   }
-  if (Number.isFinite(pricingCeiling) && revenueMetrics.pricePerUnit - EPSILON > pricingCeiling) {
+  if (pricingBand.status === 'aboveStretch') {
+    const detail = pricingDelta > 0 ? ` by €${Math.round(pricingDelta)}` : '';
     optionViolations.push({
-      type: 'pricingCeiling',
+      type: 'pricingStretch',
       serviceId: entry.id,
-      severity: revenueMetrics.pricePerUnit - pricingCeiling,
-      message: `${entry.descriptor.copy.title || entry.id} price above ceiling`
+      severity: pricingDelta,
+      message: `${serviceLabel} rate above stretch fence${detail}`
     });
   }
   if (revenueAnnual > EPSILON && grossMargin + EPSILON < comfortFloor) {
@@ -535,7 +651,7 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, mod
       type: 'comfortBuffer',
       serviceId: entry.id,
       severity: comfortFloor - grossMargin,
-      message: `${entry.descriptor.copy.title || entry.id} gross margin below comfort buffer`
+      message: `${serviceLabel} gross margin below comfort buffer`
     });
   }
 
@@ -558,6 +674,10 @@ function evaluateServiceOption(entry, unitsPerMonth, capacityMetrics, costs, mod
     comfortUplift: comfortTargets.uplift,
     pricingFloor,
     pricingCeiling,
+    pricingFences,
+    pricingFenceStatus: pricingBand.status,
+    pricingFenceDelta: pricingBand.delta,
+    pricingPenalty,
     violations: optionViolations
   };
 }
@@ -612,6 +732,20 @@ function normalizeSolverConstraints(snapshot, capacityMetrics, costs, serviceEnt
 
   const comfortTargets = resolveComfortTargets(overridesSource, costs, modifiers);
   const comfortFloor = comfortTargets.total;
+  const netBufferRatio = normalizeComfortRatio(
+    overridesSource.netComfortMarginPercent
+      ?? overridesSource.netBufferPercent
+      ?? overridesSource.netTargetBufferPercent
+      ?? overridesSource.netComfortMargin
+      ?? overridesSource.netBufferMargin,
+    0
+  );
+  const netBufferAbsolute = toPositive(
+    overridesSource.netBufferAmount
+      ?? overridesSource.netComfortAmount
+      ?? overridesSource.netTargetBufferAmount,
+    0
+  );
 
   return {
     maxServiceDays,
@@ -623,7 +757,9 @@ function normalizeSolverConstraints(snapshot, capacityMetrics, costs, serviceEnt
     comfortMargin: comfortTargets.uplift,
     handsOnTarget: Number.isFinite(handsOnTarget) ? clamp(handsOnTarget, 0, 1) : null,
     handsOnTolerance,
-    modifiers
+    modifiers,
+    netBufferRatio,
+    netBufferAbsolute
   };
 }
 
@@ -631,15 +767,40 @@ function compareCandidates(next, current) {
   if (next.metrics.violationCount !== current.metrics.violationCount) {
     return next.metrics.violationCount - current.metrics.violationCount;
   }
+  if (next.metrics.meetsBuffer !== current.metrics.meetsBuffer) {
+    return next.metrics.meetsBuffer ? -1 : 1;
+  }
   if (next.metrics.meetsTarget !== current.metrics.meetsTarget) {
     return next.metrics.meetsTarget ? -1 : 1;
   }
+  if (next.metrics.pricingFenceViolations !== current.metrics.pricingFenceViolations) {
+    return next.metrics.pricingFenceViolations - current.metrics.pricingFenceViolations;
+  }
 
-  const nextGap = Math.abs(next.metrics.diff);
-  const currentGap = Math.abs(current.metrics.diff);
+  const nextGap = Number.isFinite(next.metrics.priorityDiff)
+    ? Math.abs(next.metrics.priorityDiff)
+    : Number.isFinite(next.metrics.diff)
+      ? Math.abs(next.metrics.diff)
+      : Infinity;
+  const currentGap = Number.isFinite(current.metrics.priorityDiff)
+    ? Math.abs(current.metrics.priorityDiff)
+    : Number.isFinite(current.metrics.diff)
+      ? Math.abs(current.metrics.diff)
+      : Infinity;
 
   if (nextGap !== currentGap) {
     return nextGap - currentGap;
+  }
+
+  const nextPenalty = Number.isFinite(next.metrics.pricingPenalty)
+    ? next.metrics.pricingPenalty
+    : Infinity;
+  const currentPenalty = Number.isFinite(current.metrics.pricingPenalty)
+    ? current.metrics.pricingPenalty
+    : Infinity;
+
+  if (nextPenalty !== currentPenalty) {
+    return nextPenalty - currentPenalty;
   }
 
   if (next.metrics.net !== current.metrics.net) {
@@ -686,6 +847,8 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
   });
 
   const constraints = normalizeSolverConstraints(snapshot, capacity, costs, serviceEntries, modifiers);
+  const netBufferRatio = Number.isFinite(constraints.netBufferRatio) ? constraints.netBufferRatio : 0;
+  const netBufferAbsolute = Number.isFinite(constraints.netBufferAbsolute) ? constraints.netBufferAbsolute : 0;
 
   const serviceOptions = serviceEntries.map((entry) => {
     const candidates = buildUnitRange(entry, capacity, modifiers);
@@ -717,6 +880,8 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
     totals.comfortMarginPercent = portfolioComfortTargets.uplift * 100;
     totals.bufferPercentEffective = portfolioComfortTargets.total * 100;
     const violations = [];
+    let pricingPenalty = 0;
+    let pricingFenceViolations = 0;
 
     for (const option of selection) {
       totals.revenue += option.revenue;
@@ -726,6 +891,12 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       totals.serviceDays += option.serviceDays;
       totals.travelDays += option.travelDays;
       totals.handsOnDays += option.handsOnDays;
+
+      const optionPenalty = Number.isFinite(option.pricingPenalty) ? option.pricingPenalty : 0;
+      pricingPenalty += optionPenalty;
+      if (option.pricingFenceStatus === 'belowMin' || option.pricingFenceStatus === 'aboveStretch') {
+        pricingFenceViolations += 1;
+      }
 
       if (option.violations.length > 0) {
         for (const violation of option.violations) {
@@ -749,9 +920,20 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
         comfortFloorBase: option.comfortBase,
         comfortMarginUplift: option.comfortUplift,
         pricingFloor: option.pricingFloor,
-        pricingCeiling: option.pricingCeiling
+        pricingCeiling: option.pricingCeiling,
+        pricingFence: {
+          min: option.pricingFences?.min ?? option.pricingFloor ?? null,
+          target: option.pricingFences?.target ?? null,
+          stretch: option.pricingFences?.stretch ?? option.pricingCeiling ?? null,
+          status: option.pricingFenceStatus || 'unknown',
+          delta: option.pricingFenceDelta ?? null,
+          penalty: optionPenalty
+        }
       };
     }
+
+    totals.pricingPenalty = pricingPenalty;
+    totals.pricingFenceViolations = pricingFenceViolations;
 
     const handsOnShare = totals.serviceDays > 0
       ? totals.handsOnDays / totals.serviceDays
@@ -810,7 +992,26 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       });
     }
 
-    const diff = totals.net - targetNet;
+    const diffTarget = totals.net - targetNet;
+    const bufferedTargetNet = targetNet * (1 + netBufferRatio) + netBufferAbsolute;
+    const bufferDiff = totals.net - bufferedTargetNet;
+    const meetsBuffer = bufferDiff >= -EPSILON;
+    const bufferShortfall = bufferedTargetNet - totals.net;
+    totals.targetNetBuffered = bufferedTargetNet;
+    totals.netBufferGap = bufferDiff;
+    totals.netBufferRatio = netBufferRatio;
+    totals.netBufferAbsolute = netBufferAbsolute;
+
+    if ((netBufferRatio > EPSILON || netBufferAbsolute > EPSILON) && bufferShortfall > EPSILON) {
+      violations.push({
+        type: 'netBuffer',
+        severity: bufferShortfall,
+        message: `Net comfort buffer shortfall of €${Math.round(bufferShortfall)}`,
+        limit: bufferedTargetNet,
+        actual: totals.net
+      });
+    }
+
     const comfort = computeComfortSnapshot({
       totals: { ...totals, handsOnShare, grossMargin },
       constraints,
@@ -824,15 +1025,21 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
         handsOnShare,
         grossMargin,
         targetNet,
-        netGap: diff
+        netGap: diffTarget
       },
       violations,
       comfort,
       metrics: {
         violationCount: violations.length,
-        meetsTarget: diff >= -EPSILON,
-        diff,
-        net: totals.net
+        meetsBuffer,
+        meetsTarget: diffTarget >= -EPSILON,
+        priorityDiff: (netBufferRatio > EPSILON || netBufferAbsolute > EPSILON) ? bufferDiff : diffTarget,
+        bufferDiff,
+        targetDiff: diffTarget,
+        diff: diffTarget,
+        net: totals.net,
+        pricingPenalty,
+        pricingFenceViolations
       }
     };
 
@@ -868,6 +1075,7 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
   }
 
   if (serviceOptions.length === 0) {
+    const bufferedTargetNet = targetNet * (1 + netBufferRatio) + netBufferAbsolute;
     bestCandidate = {
       mix: {},
       totals: {
@@ -883,6 +1091,12 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
         taxMode: taxStrategy ? taxStrategy.mode : null,
         targetNet,
         netGap: -targetNet,
+        targetNetBuffered: bufferedTargetNet,
+        netBufferGap: -bufferedTargetNet,
+        netBufferRatio: netBufferRatio,
+        netBufferAbsolute: netBufferAbsolute,
+        pricingPenalty: 0,
+        pricingFenceViolations: 0,
         bufferPercentBase: portfolioComfortTargets.base * 100,
         comfortMarginPercent: portfolioComfortTargets.uplift * 100,
         bufferPercentEffective: portfolioComfortTargets.total * 100
@@ -890,9 +1104,15 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       violations: [],
       metrics: {
         violationCount: 0,
+        meetsBuffer: bufferedTargetNet <= 0,
         meetsTarget: targetNet <= 0,
+        priorityDiff: -bufferedTargetNet,
+        bufferDiff: -bufferedTargetNet,
+        targetDiff: -targetNet,
         diff: -targetNet,
-        net: 0
+        net: 0,
+        pricingPenalty: 0,
+        pricingFenceViolations: 0
       }
     };
   } else {
@@ -914,6 +1134,12 @@ export function solvePortfolio(state, capacityMetrics, serviceDescriptors = serv
       taxMode: taxStrategy ? taxStrategy.mode : null,
       targetNet,
       netGap: -targetNet,
+      targetNetBuffered: targetNet * (1 + netBufferRatio) + netBufferAbsolute,
+      netBufferGap: -(targetNet * (1 + netBufferRatio) + netBufferAbsolute),
+      netBufferRatio: netBufferRatio,
+      netBufferAbsolute: netBufferAbsolute,
+      pricingPenalty: 0,
+      pricingFenceViolations: 0,
       bufferPercentBase: portfolioComfortTargets.base * 100,
       comfortMarginPercent: portfolioComfortTargets.uplift * 100,
       bufferPercentEffective: portfolioComfortTargets.total * 100

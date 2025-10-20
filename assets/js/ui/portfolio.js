@@ -83,6 +83,21 @@ function buildPlanItems(mix, capacity) {
         : activeMonths
           ? annualUnits / activeMonths
           : 0;
+      const pricePerUnit = Number.isFinite(descriptor.pricePerUnit)
+        ? descriptor.pricePerUnit
+        : null;
+      const fenceSource = descriptor.pricingFence && typeof descriptor.pricingFence === 'object'
+        ? descriptor.pricingFence
+        : null;
+      const pricingFence = fenceSource
+        ? {
+            min: Number.isFinite(fenceSource.min) ? fenceSource.min : null,
+            target: Number.isFinite(fenceSource.target) ? fenceSource.target : null,
+            stretch: Number.isFinite(fenceSource.stretch) ? fenceSource.stretch : null,
+            status: typeof fenceSource.status === 'string' ? fenceSource.status : 'unknown',
+            delta: Number.isFinite(fenceSource.delta) ? fenceSource.delta : null
+          }
+        : null;
 
       const daysPerWeek = workingWeeks ? serviceDays / workingWeeks : 0;
       const netPerWeek = workingWeeks ? netAnnual / workingWeeks : 0;
@@ -92,7 +107,9 @@ function buildPlanItems(mix, capacity) {
         title,
         daysPerWeek,
         unitsPerMonth,
-        netPerWeek
+        netPerWeek,
+        pricePerUnit,
+        pricingFence
       };
     })
     .filter(item => item.daysPerWeek > 0 || item.unitsPerMonth > 0 || item.netPerWeek !== 0)
@@ -168,6 +185,40 @@ function renderWeeklyPlan(listElement, mix, capacity, symbol) {
 
     header.append(name, days);
 
+    const badges = document.createElement('div');
+    badges.className = 'portfolio-week__badges';
+
+    const fence = item.pricingFence && typeof item.pricingFence === 'object' ? item.pricingFence : null;
+    const pricePerUnit = Number.isFinite(item.pricePerUnit) ? item.pricePerUnit : null;
+    if (fence && (fence.status === 'belowMin' || fence.status === 'aboveStretch')) {
+      const badge = document.createElement('span');
+      badge.className = 'portfolio-week__badge portfolio-week__badge--alert';
+      const delta = Number.isFinite(fence.delta) ? Math.abs(fence.delta) : null;
+      const diffLabel = delta !== null ? formatCurrency(symbol, delta) : null;
+      const badgeText = fence.status === 'belowMin'
+        ? diffLabel
+          ? `Below min fence by ${diffLabel}`
+          : 'Below min fence'
+        : diffLabel
+          ? `Above stretch fence by +${diffLabel}`
+          : 'Above stretch fence';
+      setText(badge, badgeText);
+
+      const fenceValue = fence.status === 'belowMin'
+        ? (Number.isFinite(fence.min) ? fence.min : null)
+        : (Number.isFinite(fence.stretch) ? fence.stretch : null);
+      if (pricePerUnit !== null && fenceValue !== null) {
+        const currentLabel = formatCurrency(symbol, pricePerUnit);
+        const fenceLabel = formatCurrency(symbol, fenceValue);
+        badge.dataset.tooltip = `Current ${currentLabel} vs fence ${fenceLabel}`;
+        badge.setAttribute('aria-label', `${badgeText}. Current ${currentLabel} vs fence ${fenceLabel}.`);
+      } else {
+        badge.setAttribute('aria-label', badgeText);
+      }
+
+      badges.append(badge);
+    }
+
     const metrics = document.createElement('dl');
     metrics.className = 'portfolio-week__metrics';
 
@@ -179,7 +230,11 @@ function renderWeeklyPlan(listElement, mix, capacity, symbol) {
       createMetric('Net/week', formatCurrency(symbol, item.netPerWeek))
     );
 
-    body.append(header, metrics);
+    body.append(header);
+    if (badges.childElementCount > 0) {
+      body.append(badges);
+    }
+    body.append(metrics);
     li.append(number, body);
     listElement.append(li);
   });
@@ -245,7 +300,7 @@ function updateStatus(statusElement, totals, symbol) {
     return;
   }
 
-  statusElement.classList.remove('is-positive', 'is-negative');
+  statusElement.classList.remove('is-positive', 'is-negative', 'is-warning');
 
   if (!totals || typeof totals !== 'object') {
     setText(statusElement, 'Waiting for scenario…');
@@ -255,9 +310,38 @@ function updateStatus(statusElement, totals, symbol) {
   const net = Number.isFinite(totals.net) ? totals.net : null;
   const target = Number.isFinite(totals.targetNet) ? totals.targetNet : null;
   const gap = Number.isFinite(totals.netGap) ? totals.netGap : (net !== null && target !== null ? net - target : null);
+  const bufferTarget = Number.isFinite(totals.targetNetBuffered) ? totals.targetNetBuffered : null;
+  const bufferGap = Number.isFinite(totals.netBufferGap) ? totals.netBufferGap : null;
+  const bufferRatio = Number.isFinite(totals.netBufferRatio) ? totals.netBufferRatio : 0;
+  const bufferAbsolute = Number.isFinite(totals.netBufferAbsolute) ? totals.netBufferAbsolute : 0;
+  const hasBufferRequirement = bufferTarget !== null
+    && target !== null
+    && (bufferTarget > target + 1 || bufferRatio > 1e-4 || bufferAbsolute > 0);
 
   if (gap === null || net === null || target === null) {
     setText(statusElement, 'Portfolio results will appear here.');
+    return;
+  }
+
+  if (hasBufferRequirement && bufferGap !== null) {
+    if (bufferGap >= 0) {
+      statusElement.classList.add('is-positive');
+      const overage = formatCurrency(symbol, bufferGap);
+      setText(statusElement, `Comfort buffer met (+${overage}).`);
+      return;
+    }
+
+    if (gap >= 0) {
+      statusElement.classList.add('is-warning');
+      const shortfall = formatCurrency(symbol, Math.abs(bufferGap));
+      setText(statusElement, `Target met, add ${shortfall} to reach comfort buffer.`);
+      return;
+    }
+
+    statusElement.classList.add('is-negative');
+    const targetShortfall = formatCurrency(symbol, Math.abs(gap));
+    const bufferShortfall = formatCurrency(symbol, Math.abs(bufferGap));
+    setText(statusElement, `Shortfall of ${targetShortfall} versus target (${bufferShortfall} to hit comfort buffer).`);
     return;
   }
 

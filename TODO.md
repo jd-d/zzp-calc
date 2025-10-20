@@ -19,7 +19,6 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 
 ### Sprint 5 Portfolio Optimizer
 - [ ] [Implement portfolio solver honoring weekly hour caps, travel day limits, and hands-on quotas.](ROADMAP.md#task-51-implement-portfolio-solver-honoring-weekly-hour-caps-travel-day-limits-and-hands-on-quotas)
-- [ ] [Integrate pricing fences and comfort buffers into optimization scoring and outputs.](ROADMAP.md#task-52-integrate-pricing-fences-and-comfort-buffers-into-optimization-scoring-and-outputs)
 - [ ] [Present weekly schedule grid and summary metrics fed by solver selections.](ROADMAP.md#task-53-present-weekly-schedule-grid-and-summary-metrics-fed-by-solver-selections)
 
 ### Sprint 6 Advanced Tax and Experience Enhancers
@@ -45,3 +44,4 @@ This roadmap keeps the calculator deployable at the end of every sprint while la
 - [x] [Deliver quick scenario strips for time off, weekly hours, and travel intensity presets.](ROADMAP.md#task-41-deliver-quick-scenario-strips-for-time-off-weekly-hours-and-travel-intensity-presets) (2025-10-19)
 - [x] [Expose sandbox sliders for months off, utilization, tax reserve, and travel friction with instant recompute.](ROADMAP.md#task-42-expose-sandbox-sliders-for-months-off-utilization-tax-reserve-and-travel-friction-with-instant-recompute) (2025-10-23)
 - [x] [Add sparkline sensitivity visuals for net vs months off and net vs utilization.](ROADMAP.md#task-43-add-sparkline-sensitivity-visuals-for-net-vs-months-off-and-net-vs-utilization) (2025-10-24)
+- [x] [Integrate pricing fences and comfort buffers into optimization scoring and outputs.](ROADMAP.md#task-52-integrate-pricing-fences-and-comfort-buffers-into-optimization-scoring-and-outputs) (2025-10-19)
