@@ -5,6 +5,8 @@ import { mountScenarioToolbar } from './ui/scenario-toolbar.js';
 import { mountPortfolio } from './ui/portfolio.js';
 import { mountSandboxCharts } from './ui/sandbox-charts.js';
 import { bindSliderPair } from './ui/components.js';
+import { mountServiceCards } from './ui/service-cards.js';
+import { services } from './services.js';
 
 const percentFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const monthFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
@@ -39,6 +41,7 @@ export function initializeApp() {
   initializePageUi();
   const calculator = initializeCalculatorUI();
   const scenario = mountScenarioToolbar(store);
+  const serviceCards = mountServiceCards(store, services);
   const portfolio = mountPortfolio(store);
   const sensitivity = mountSandboxCharts(store);
 
@@ -105,6 +108,7 @@ export function initializeApp() {
   return {
     calculator,
     scenario,
+    serviceCards,
     portfolio,
     sensitivity,
     store

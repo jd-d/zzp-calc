@@ -590,6 +590,9 @@ export function bindStateInput(target, options = {}) {
   };
 }
 
+const DEFAULT_CURRENCY_SYMBOL = '€';
+const NUMBER_FORMATTER = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+
 export const fmt = {
   currency(value, locale = 'nl-NL', currency = 'EUR') {
     const formatter = new Intl.NumberFormat(locale, {
@@ -633,6 +636,161 @@ export const fmt = {
     return formatter.format(numeric);
   }
 };
+
+function normalizeCurrencySymbol(symbol) {
+  if (typeof symbol === 'string' && symbol.trim()) {
+    return symbol.trim();
+  }
+  return DEFAULT_CURRENCY_SYMBOL;
+}
+
+function formatCurrencyWithSymbol(symbol, value) {
+  const normalizedSymbol = normalizeCurrencySymbol(symbol);
+  if (!Number.isFinite(value)) {
+    return `${normalizedSymbol}0`;
+  }
+  const rounded = Math.round(value);
+  const formatted = NUMBER_FORMATTER.format(Math.abs(rounded));
+  return rounded < 0
+    ? `-${normalizedSymbol}${formatted}`
+    : `${normalizedSymbol}${formatted}`;
+}
+
+const PRICE_NEUTRAL_TOLERANCE_RATIO = 0.015;
+const PRICE_NEUTRAL_TOLERANCE_MIN = 25;
+
+export function describePricingFenceStatus(pricing, { symbol, toleranceAmount } = {}) {
+  const normalizedSymbol = normalizeCurrencySymbol(symbol);
+
+  if (!pricing || typeof pricing !== 'object') {
+    return {
+      label: 'Pricing unknown',
+      detail: '',
+      tone: 'neutral',
+      tooltip: 'Pricing fences not available.',
+      status: 'unknown',
+      ariaLabel: 'Pricing fences not available.'
+    };
+  }
+
+  const rawFences = pricing.fences && typeof pricing.fences === 'object' ? pricing.fences : pricing;
+  const price = Number.isFinite(pricing.price) ? pricing.price
+    : Number.isFinite(pricing.pricePerUnit) ? pricing.pricePerUnit
+      : null;
+  const min = Number.isFinite(pricing.min) ? pricing.min
+    : Number.isFinite(rawFences?.min) ? rawFences.min
+      : null;
+  const target = Number.isFinite(pricing.target) ? pricing.target
+    : Number.isFinite(rawFences?.target) ? rawFences.target
+      : (Number.isFinite(min) ? min : null);
+  const stretchValue = Number.isFinite(pricing.stretch) ? pricing.stretch
+    : Number.isFinite(rawFences?.stretch) ? rawFences.stretch
+      : null;
+  const stretch = Number.isFinite(stretchValue) && stretchValue !== Infinity ? stretchValue : null;
+
+  const resolvedDelta = Number.isFinite(pricing.delta)
+    ? pricing.delta
+    : Number.isFinite(price) && Number.isFinite(target)
+      ? price - target
+      : null;
+
+  const status = typeof pricing.status === 'string' ? pricing.status : 'unknown';
+
+  const toleranceBase = Number.isFinite(target) ? target : Number.isFinite(price) ? price : 0;
+  const neutralTolerance = Number.isFinite(toleranceAmount)
+    ? Math.max(Math.round(Math.abs(toleranceAmount)), 0)
+    : Math.max(Math.round(Math.abs(toleranceBase) * PRICE_NEUTRAL_TOLERANCE_RATIO), PRICE_NEUTRAL_TOLERANCE_MIN);
+
+  let label = 'Pricing unknown';
+  let tone = 'neutral';
+  let detail = '';
+
+  switch (status) {
+    case 'belowMin': {
+      label = 'Below minimum';
+      tone = 'danger';
+      if (resolvedDelta !== null) {
+        detail = `Need +${formatCurrencyWithSymbol(normalizedSymbol, Math.abs(resolvedDelta))}`;
+      }
+      break;
+    }
+    case 'aboveStretch': {
+      label = 'Above stretch';
+      tone = 'warning';
+      if (resolvedDelta !== null) {
+        detail = `Trim ${formatCurrencyWithSymbol(normalizedSymbol, Math.abs(resolvedDelta))}`;
+      }
+      break;
+    }
+    case 'within': {
+      if (resolvedDelta === null) {
+        label = 'Within fences';
+        tone = 'positive';
+      } else {
+        const absDelta = Math.abs(resolvedDelta);
+        if (absDelta <= neutralTolerance) {
+          label = 'At target';
+          tone = 'positive';
+        } else if (resolvedDelta > 0) {
+          label = 'Above target';
+          tone = 'accent';
+          detail = `+${formatCurrencyWithSymbol(normalizedSymbol, absDelta)}`;
+        } else {
+          label = 'Below target';
+          tone = 'warning';
+          detail = `−${formatCurrencyWithSymbol(normalizedSymbol, absDelta)}`;
+        }
+      }
+      break;
+    }
+    default: {
+      label = 'Pricing unknown';
+      tone = 'neutral';
+    }
+  }
+
+  const tooltipParts = [];
+  if (Number.isFinite(price)) {
+    tooltipParts.push(`Rate ${formatCurrencyWithSymbol(normalizedSymbol, price)}`);
+  } else {
+    tooltipParts.push('Rate unavailable');
+  }
+
+  const fenceSegments = [];
+  if (Number.isFinite(min)) {
+    fenceSegments.push(`Min ${formatCurrencyWithSymbol(normalizedSymbol, min)}`);
+  }
+  if (Number.isFinite(target)) {
+    fenceSegments.push(`Target ${formatCurrencyWithSymbol(normalizedSymbol, target)}`);
+  }
+  if (Number.isFinite(stretch)) {
+    fenceSegments.push(`Stretch ${formatCurrencyWithSymbol(normalizedSymbol, stretch)}`);
+  }
+
+  if (fenceSegments.length) {
+    tooltipParts.push(fenceSegments.join(' · '));
+  }
+
+  if (status === 'belowMin' && resolvedDelta !== null) {
+    tooltipParts.push(`${formatCurrencyWithSymbol(normalizedSymbol, Math.abs(resolvedDelta))} below minimum fence`);
+  } else if (status === 'aboveStretch' && resolvedDelta !== null) {
+    tooltipParts.push(`${formatCurrencyWithSymbol(normalizedSymbol, Math.abs(resolvedDelta))} above stretch fence`);
+  } else if (status === 'within' && resolvedDelta !== null && detail) {
+    tooltipParts.push(detail.replace('Need ', '')); // keep tooltip concise
+  }
+
+  const tooltip = tooltipParts.join(' • ');
+  const ariaDetail = detail ? ` ${detail.replace('Need ', '')}` : '';
+
+  return {
+    label,
+    detail,
+    tone,
+    tooltip,
+    status,
+    ariaLabel: `${label}${ariaDetail ? `. ${ariaDetail}` : ''}`
+  };
+}
 
 function defaultParse(value) {
   if (value === null || value === undefined) {

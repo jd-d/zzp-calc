@@ -1381,6 +1381,9 @@ export function computeServiceRevenue(config, hoursMetrics, costs = {}) {
         variable: 0
       };
 
+  const pricingFences = resolvePricingFences(config);
+  const pricingBand = classifyPricingFence(pricePerUnit, pricingFences);
+
   return {
     pricePerUnit,
     revenue,
@@ -1392,7 +1395,15 @@ export function computeServiceRevenue(config, hoursMetrics, costs = {}) {
     taxRate,
     net,
     buffer,
-    costShares
+    costShares,
+    pricing: {
+      price: pricePerUnit,
+      pricePerUnit,
+      fences: pricingFences,
+      status: pricingBand.status,
+      delta: pricingBand.delta,
+      penalty: pricingBand.penalty
+    }
   };
 }
 
@@ -1753,6 +1764,23 @@ function createServiceDescriptor(id) {
           lockedRate: rateTarget.locked,
           lockedVolume: volumeTarget.locked
         },
+        pricing: revenueMetrics.pricing
+          ? {
+              price: revenueMetrics.pricing.price ?? revenueMetrics.pricePerUnit,
+              pricePerUnit: revenueMetrics.pricing.pricePerUnit ?? revenueMetrics.pricePerUnit,
+              status: revenueMetrics.pricing.status || 'unknown',
+              delta: Number.isFinite(revenueMetrics.pricing.delta)
+                ? revenueMetrics.pricing.delta
+                : null,
+              fences: revenueMetrics.pricing.fences || resolvePricingFences(config)
+            }
+          : {
+              price: revenueMetrics.pricePerUnit,
+              pricePerUnit: revenueMetrics.pricePerUnit,
+              status: 'unknown',
+              delta: null,
+              fences: resolvePricingFences(config)
+            },
         views
       };
     }
