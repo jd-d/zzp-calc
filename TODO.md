@@ -4,30 +4,30 @@
 This roadmap keeps the calculator deployable at the end of every sprint while layering in the ZZP Fruit Pro lab capabilities.
 
 ### Sprint 1 Foundation and Rebrand
-- [ ] [Set up synchronized Target-to-Plan, Sandbox, and Portfolio layout shells with responsive cards.](ROADMAP.md#task-12-set-up-synchronized-target-to-plan-sandbox-and-portfolio-layout-shells-with-responsive-cards)
-- [ ] [Stabilize existing calculator inputs and results under the new layout to keep the site shippable.](ROADMAP.md#task-13-stabilize-existing-calculator-inputs-and-results-under-the-new-layout-to-keep-the-site-shippable)
 
 ### Sprint 2 Core Capacity and State Engine
-- [ ] [Build a unified calcState store with capacity pipeline covering time off, availability, and utilization.](ROADMAP.md#task-21-build-a-unified-calcstate-store-with-capacity-pipeline-covering-time-off-availability-and-utilization)
-- [ ] [Refactor UI inputs to drive the new state store and surface validation for impossible schedules.](ROADMAP.md#task-22-refactor-ui-inputs-to-drive-the-new-state-store-and-surface-validation-for-impossible-schedules)
 
 ### Sprint 3 Service Models and Cards
-- [ ] [Model each service with rate and volume solvers that respect hours per unit and travel overhead.](ROADMAP.md#task-31-model-each-service-with-rate-and-volume-solvers-that-respect-hours-per-unit-and-travel-overhead)
-- [ ] [Render dual-tab service cards showing rate needed and volume needed with two-column metric tables.](ROADMAP.md#task-32-render-dual-tab-service-cards-showing-rate-needed-and-volume-needed-with-two-column-metric-tables)
 
 ### Sprint 4 Scenario Sandbox Controls
 
 ### Sprint 5 Portfolio Optimizer
-- [ ] [Implement portfolio solver honoring weekly hour caps, travel day limits, and hands-on quotas.](ROADMAP.md#task-51-implement-portfolio-solver-honoring-weekly-hour-caps-travel-day-limits-and-hands-on-quotas)
-- [ ] [Present weekly schedule grid and summary metrics fed by solver selections.](ROADMAP.md#task-53-present-weekly-schedule-grid-and-summary-metrics-fed-by-solver-selections)
 
 ### Sprint 6 Advanced Tax and Experience Enhancers
-- [ ] [Ship one-click plan presets plus pricing fences badges for Min, Target, Stretch.](ROADMAP.md#task-62-ship-one-click-plan-presets-plus-pricing-fences-badges-for-min-target-stretch)
 
 ## Legacy Backlog
-- [ ] Auto-select light or dark mode by time of day while allowing manual overrides with a lock control.
 
 ## DONE
+- [x] [Set up synchronized Target-to-Plan, Sandbox, and Portfolio layout shells with responsive cards.](ROADMAP.md#task-12-set-up-synchronized-target-to-plan-sandbox-and-portfolio-layout-shells-with-responsive-cards) (2025-10-26)
+- [x] [Stabilize existing calculator inputs and results under the new layout to keep the site shippable.](ROADMAP.md#task-13-stabilize-existing-calculator-inputs-and-results-under-the-new-layout-to-keep-the-site-shippable) (2025-10-26)
+- [x] [Build a unified calcState store with capacity pipeline covering time off, availability, and utilization.](ROADMAP.md#task-21-build-a-unified-calcstate-store-with-capacity-pipeline-covering-time-off-availability-and-utilization) (2025-10-26)
+- [x] [Refactor UI inputs to drive the new state store and surface validation for impossible schedules.](ROADMAP.md#task-22-refactor-ui-inputs-to-drive-the-new-state-store-and-surface-validation-for-impossible-schedules) (2025-10-26)
+- [x] [Model each service with rate and volume solvers that respect hours per unit and travel overhead.](ROADMAP.md#task-31-model-each-service-with-rate-and-volume-solvers-that-respect-hours-per-unit-and-travel-overhead) (2025-10-26)
+- [x] [Render dual-tab service cards showing rate needed and volume needed with two-column metric tables.](ROADMAP.md#task-32-render-dual-tab-service-cards-showing-rate-needed-and-volume-needed-with-two-column-metric-tables) (2025-10-26)
+- [x] [Implement portfolio solver honoring weekly hour caps, travel day limits, and hands-on quotas.](ROADMAP.md#task-51-implement-portfolio-solver-honoring-weekly-hour-caps-travel-day-limits-and-hands-on-quotas) (2025-10-26)
+- [x] [Present weekly schedule grid and summary metrics fed by solver selections.](ROADMAP.md#task-53-present-weekly-schedule-grid-and-summary-metrics-fed-by-solver-selections) (2025-10-26)
+- [x] [Ship one-click plan presets plus pricing fences badges for Min, Target, Stretch.](ROADMAP.md#task-62-ship-one-click-plan-presets-plus-pricing-fences-badges-for-min-target-stretch) (2025-10-26)
+- [x] Auto-select light or dark mode by time of day while allowing manual overrides with a lock control. (2025-10-26)
 - [x] Reposition UI and copy around the fruit trade CFO sandbox narrative. (2025-10-19)
 - [x] Sprint 0 Produce feasibility assessment and roadmap documentation. (2025-10-18)
 - [x] Ensure on mobile that the preset buttons appear above the form and reduce the large space that appears on mobile between the blog title and the form (see pic). (2025-09-30)
