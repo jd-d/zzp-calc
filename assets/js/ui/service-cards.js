@@ -1,4 +1,4 @@
-import { qs, qsa, on, setText, fmt, renderSparkline } from './components.js';
+import { qs, qsa, on, setText, fmt, renderSparkline, describePricingFenceStatus } from './components.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DEFAULT_ICON_KEY = 'briefcase';
@@ -110,13 +110,27 @@ function ensureIconContainer(card) {
   return container;
 }
 
+function ensureIndicatorContainer(card) {
+  if (!(card instanceof HTMLElement)) {
+    return null;
+  }
+  const header = qs('.service-card__header', card) || card;
+  let container = qs('.service-card__indicators', header);
+  if (!(container instanceof HTMLElement)) {
+    container = document.createElement('div');
+    container.className = 'service-card__indicators';
+    header.appendChild(container);
+  }
+  return container;
+}
+
 function ensureStatusBadge(card) {
   if (!(card instanceof HTMLElement)) {
     return { badge: null, label: null };
   }
 
-  const header = qs('.service-card__header', card) || card;
-  let badge = qs('[data-service-flag]', header);
+  const container = ensureIndicatorContainer(card);
+  let badge = container ? qs('[data-service-flag]', container) : null;
   let label = badge instanceof HTMLElement ? badge.querySelector('.service-card__flag-label') : null;
 
   if (!(badge instanceof HTMLElement)) {
@@ -134,7 +148,9 @@ function ensureStatusBadge(card) {
     label.textContent = 'Needs attention';
 
     badge.append(dot, label);
-    header.appendChild(badge);
+    if (container) {
+      container.appendChild(badge);
+    }
   } else {
     if (!(label instanceof HTMLElement)) {
       label = document.createElement('span');
@@ -152,6 +168,52 @@ function ensureStatusBadge(card) {
   }
 
   return { badge, label };
+}
+
+function ensurePricingBadge(card) {
+  if (!(card instanceof HTMLElement)) {
+    return { badge: null, label: null, detail: null };
+  }
+
+  const container = ensureIndicatorContainer(card);
+  let badge = container ? qs('[data-pricing-badge]', container) : null;
+  let label = badge instanceof HTMLElement ? badge.querySelector('.pricing-badge__label') : null;
+  let detail = badge instanceof HTMLElement ? badge.querySelector('.pricing-badge__detail') : null;
+
+  if (!(badge instanceof HTMLElement)) {
+    badge = document.createElement('span');
+    badge.className = 'pricing-badge service-card__pricing-badge';
+    badge.setAttribute('data-pricing-badge', '');
+    badge.hidden = true;
+
+    label = document.createElement('span');
+    label.className = 'pricing-badge__label';
+    badge.appendChild(label);
+
+    detail = document.createElement('span');
+    detail.className = 'pricing-badge__detail';
+    detail.hidden = true;
+    badge.appendChild(detail);
+
+    if (container) {
+      container.appendChild(badge);
+    }
+  } else {
+    if (!(label instanceof HTMLElement)) {
+      label = document.createElement('span');
+      label.className = 'pricing-badge__label';
+      badge.prepend(label);
+    }
+
+    if (!(detail instanceof HTMLElement)) {
+      detail = document.createElement('span');
+      detail.className = 'pricing-badge__detail';
+      detail.hidden = true;
+      badge.appendChild(detail);
+    }
+  }
+
+  return { badge, label, detail };
 }
 
 function activateTab(tabs, panelMap, tab, { focus = false } = {}) {
@@ -370,6 +432,56 @@ function formatBufferStatus(viewKey, metrics) {
   return parts.length ? parts.join(' · ') : '--';
 }
 
+function readCurrencySymbol(state) {
+  const symbol = state && state.config && state.config.currencySymbol;
+  if (typeof symbol === 'string' && symbol.trim()) {
+    return symbol.trim();
+  }
+  return '€';
+}
+
+function updatePricingBadge(registration, pricing, state) {
+  if (!registration || !(registration.badge instanceof HTMLElement)) {
+    return;
+  }
+
+  const summary = describePricingFenceStatus(pricing, { symbol: readCurrencySymbol(state) });
+  const { badge, label, detail } = registration;
+
+  badge.className = 'pricing-badge service-card__pricing-badge';
+  if (summary.tone) {
+    badge.classList.add(`pricing-badge--${summary.tone}`);
+  }
+
+  if (label instanceof HTMLElement) {
+    setText(label, summary.label || 'Pricing unknown');
+  }
+
+  if (detail instanceof HTMLElement) {
+    if (summary.detail) {
+      setText(detail, summary.detail);
+      detail.hidden = false;
+    } else {
+      setText(detail, '');
+      detail.hidden = true;
+    }
+  }
+
+  badge.hidden = summary.status === 'unknown';
+
+  if (summary.tooltip) {
+    badge.dataset.tooltip = summary.tooltip;
+  } else {
+    delete badge.dataset.tooltip;
+  }
+
+  if (summary.ariaLabel) {
+    badge.setAttribute('aria-label', summary.ariaLabel);
+  } else {
+    badge.removeAttribute('aria-label');
+  }
+}
+
 function updateViewMetrics(card, id, viewKey, metrics) {
   if (!metrics || typeof metrics !== 'object') {
     return;
@@ -441,7 +553,8 @@ export function mountServiceCards(calcState, services, root = document) {
 
     setupTabs(card, service, cleanup);
     const status = ensureStatusBadge(card);
-    registered.set(id, { card, status });
+    const pricingIndicator = ensurePricingBadge(card);
+    registered.set(id, { card, status, pricing: pricingIndicator });
   });
 
   const render = (state, derived = {}) => {
@@ -525,6 +638,9 @@ export function mountServiceCards(calcState, services, root = document) {
           }
         }
       }
+
+      const pricingIndicator = registration ? registration.pricing : ensurePricingBadge(card);
+      updatePricingBadge(pricingIndicator, result.pricing, state);
 
       const sparkTarget = qs(`#${id}-spark`, card) || qs(`#${id}-spark`, context);
       if (sparkTarget instanceof HTMLElement) {

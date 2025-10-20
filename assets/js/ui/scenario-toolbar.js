@@ -47,7 +47,8 @@ const PRESET_TOKEN_HANDLERS = {
       return null;
     }
     return createNestedPatch(['config', 'currencySymbol'], normalized);
-  }
+  },
+  plan: (value, context) => createPlanPresetPatch(value, context)
 };
 
 const TRAVEL_INTENSITY_VALUES = Object.freeze({
@@ -55,6 +56,56 @@ const TRAVEL_INTENSITY_VALUES = Object.freeze({
   base: 20,
   medium: 20,
   high: 45
+});
+
+const PLAN_PRESET_DEFINITIONS = Object.freeze({
+  retainer: {
+    id: 'retainer',
+    services: {
+      representation: 0.32,
+      ops: 0.22,
+      qc: 0.16,
+      training: 0.18,
+      intel: 0.12
+    },
+    constraints: {
+      handsOnShareTarget: 0.38,
+      handsOnShareTolerance: 0.12,
+      comfortBuffer: 0.27
+    }
+  },
+  ops: {
+    id: 'ops',
+    services: {
+      representation: 0.26,
+      ops: 0.36,
+      qc: 0.16,
+      training: 0.12,
+      intel: 0.1
+    },
+    constraints: {
+      handsOnShareTarget: 0.55,
+      handsOnShareTolerance: 0.1,
+      comfortBuffer: 0.24,
+      maxTravelDays: 68
+    }
+  },
+  qc: {
+    id: 'qc',
+    services: {
+      representation: 0.24,
+      ops: 0.22,
+      qc: 0.32,
+      training: 0.12,
+      intel: 0.1
+    },
+    constraints: {
+      handsOnShareTarget: 0.48,
+      handsOnShareTolerance: 0.1,
+      comfortBuffer: 0.26,
+      maxTravelDays: 52
+    }
+  }
 });
 
 const NUMERIC_TOLERANCE = 0.01;
@@ -333,6 +384,70 @@ function createNestedPatch(path, value) {
   }
 
   return path.reduceRight((acc, key) => ({ [key]: acc }), value);
+}
+
+function createPlanPresetPatch(rawValue) {
+  const key = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : '';
+  if (!key) {
+    return null;
+  }
+
+  const definition = PLAN_PRESET_DEFINITIONS[key];
+  if (!definition) {
+    return null;
+  }
+
+  const servicesPatch = {};
+  if (definition.services && typeof definition.services === 'object') {
+    Object.entries(definition.services).forEach(([serviceId, share]) => {
+      if (!Number.isFinite(share)) {
+        return;
+      }
+      servicesPatch[serviceId] = {
+        shareOfCapacity: share,
+        targetNetShare: share,
+        unitsPerMonth: null,
+        pricePerUnit: null,
+        pricePerUnitOverride: null,
+        lockedRate: false,
+        lockedVolume: false
+      };
+    });
+  }
+
+  const constraintsPatch = {
+    maxTravelDays: null,
+    handsOnShareTarget: null,
+    handsOnShareTolerance: null,
+    comfortBuffer: null
+  };
+  const constraints = definition.constraints && typeof definition.constraints === 'object'
+    ? definition.constraints
+    : {};
+
+  if (Number.isFinite(constraints.handsOnShareTarget)) {
+    constraintsPatch.handsOnShareTarget = Math.min(Math.max(constraints.handsOnShareTarget, 0), 1);
+  }
+  if (Number.isFinite(constraints.handsOnShareTolerance)) {
+    constraintsPatch.handsOnShareTolerance = Math.min(Math.max(constraints.handsOnShareTolerance, 0), 0.5);
+  }
+  if (Number.isFinite(constraints.comfortBuffer)) {
+    constraintsPatch.comfortBuffer = Math.min(Math.max(constraints.comfortBuffer, 0), 0.95);
+  }
+  if (Number.isFinite(constraints.maxTravelDays)) {
+    constraintsPatch.maxTravelDays = Math.max(constraints.maxTravelDays, 0);
+  }
+
+  const patch = {
+    portfolio: {
+      planPreset: definition.id
+    },
+    services: servicesPatch
+  };
+
+  patch.portfolioConstraints = constraintsPatch;
+
+  return patch;
 }
 
 function createNumericPatch(path, rawValue, limits = {}) {

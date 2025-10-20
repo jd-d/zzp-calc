@@ -1,4 +1,4 @@
-import { announce, qs, setText } from './components.js';
+import { announce, qs, setText, describePricingFenceStatus } from './components.js';
 import { solvePortfolio, serviceCopy } from '../services.js';
 
 const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
@@ -628,7 +628,7 @@ function renderViolations(block, list, violations) {
   return summaryParts.join('; ');
 }
 
-function updateTotals(elements, totals, symbol, capacity) {
+function updateTotals(elements, totals, symbol, capacity, mix) {
   const data = totals && typeof totals === 'object'
     ? totals
     : {};
@@ -716,6 +716,98 @@ function updateTotals(elements, totals, symbol, capacity) {
       setText(travelViolationEl, '');
     }
   }
+
+  renderPricingBadges(elements.pricingBadges, mix, symbol);
+}
+
+function renderPricingBadges(container, mix, symbol) {
+  if (!(container instanceof HTMLElement)) {
+    return;
+  }
+
+  container.textContent = '';
+  container.dataset.empty = 'true';
+
+  const entries = mix && typeof mix === 'object'
+    ? Object.entries(mix)
+    : [];
+
+  if (!entries.length) {
+    const placeholder = document.createElement('span');
+    placeholder.className = 'pricing-badge__empty';
+    setText(placeholder, '—');
+    container.appendChild(placeholder);
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  let added = 0;
+
+  entries.forEach(([id, entry]) => {
+    if (!entry || typeof entry !== 'object') {
+      return;
+    }
+
+    const fence = entry.pricingFence && typeof entry.pricingFence === 'object'
+      ? entry.pricingFence
+      : null;
+    if (!fence) {
+      return;
+    }
+
+    const summary = describePricingFenceStatus(
+      {
+        status: fence.status,
+        delta: fence.delta,
+        price: Number.isFinite(entry.pricePerUnit) ? entry.pricePerUnit : null,
+        fences: {
+          min: fence.min,
+          target: fence.target,
+          stretch: fence.stretch
+        }
+      },
+      { symbol }
+    );
+
+    if (!summary || summary.status === 'unknown') {
+      return;
+    }
+
+    const badge = document.createElement('span');
+    badge.className = 'pricing-badge portfolio-pricing-badge';
+    if (summary.tone) {
+      badge.classList.add(`pricing-badge--${summary.tone}`);
+    }
+
+    const serviceName = serviceCopy[id]?.title || id;
+    const detailText = summary.detail ? ` ${summary.detail}` : '';
+    setText(badge, `${serviceName}: ${summary.label}${detailText}`);
+    badge.dataset.service = id;
+
+    if (summary.tooltip) {
+      badge.dataset.tooltip = summary.tooltip;
+    }
+
+    if (summary.ariaLabel) {
+      badge.setAttribute('aria-label', `${serviceName} pricing. ${summary.ariaLabel}`);
+    } else {
+      badge.setAttribute('aria-label', `${serviceName} pricing ${summary.label}`);
+    }
+
+    fragment.appendChild(badge);
+    added += 1;
+  });
+
+  if (!added) {
+    const placeholder = document.createElement('span');
+    placeholder.className = 'pricing-badge__empty';
+    setText(placeholder, '—');
+    container.appendChild(placeholder);
+    return;
+  }
+
+  container.appendChild(fragment);
+  container.dataset.empty = 'false';
 }
 
 function updateStatus(statusElement, totals, symbol) {
@@ -876,7 +968,8 @@ export function mountPortfolio(calcState, root = document) {
     utilization: qs('#p-utilization', section),
     utilizationViolation: qs('#p-utilization-violation', section),
     travel: qs('#p-travel', section),
-    travelViolation: qs('#p-travel-violation', section)
+    travelViolation: qs('#p-travel-violation', section),
+    pricingBadges: qs('#p-pricing-badges', section)
   };
   const bufferElements = {
     effective: qs('#p-buffer-effective', section),
@@ -983,7 +1076,7 @@ export function mountPortfolio(calcState, root = document) {
     latestCapacity = capacity;
     latestSymbol = symbol;
 
-    updateTotals(totalsElements, totals, symbol, capacity);
+    updateTotals(totalsElements, totals, symbol, capacity, portfolio ? portfolio.mix : null);
     updateBufferSummary(bufferElements, totals);
     updateStatus(statusElement, totals, symbol);
     updateComfortIndicator(comfortElement, portfolio ? portfolio.comfort : null);
