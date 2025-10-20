@@ -1,4 +1,5 @@
 import { initializeThemeControls } from './theming.js';
+import { initializeLanguageControls } from './language.js';
 
 export function initializePageUi() {
   const howToLink = document.getElementById('how-to-link');
@@ -726,10 +727,12 @@ export function initializePageUi() {
     });
   }
 
+  const languageControls = initializeLanguageControls({ root: document });
   const themeControls = initializeThemeControls();
 
   return {
     setSectionExpanded,
-    themeControls
+    themeControls,
+    languageControls
   };
 }

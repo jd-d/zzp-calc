@@ -1,4 +1,5 @@
 import { announce, qs, setText, describePricingFenceStatus } from './components.js';
+import { translate, getLocale } from './i18n.js';
 import { solvePortfolio, serviceCopy } from '../services.js';
 
 const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
@@ -9,6 +10,12 @@ const fractionalFormatter = new Intl.NumberFormat(undefined, {
 const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
 const DAY_LABELS = Object.freeze(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+const COMFORT_FLAG_FALLBACK = Object.freeze({
+  margin: 'margin quality',
+  service: 'service days',
+  travel: 'travel days',
+  handsOn: 'hands-on mix'
+});
 
 function getCurrencySymbol(state) {
   const raw = state && state.config && state.config.currencySymbol;
@@ -45,6 +52,124 @@ function formatPercentValue(value, { signed = false } = {}) {
     return `+${formatted}%`;
   }
   return `${formatted}%`;
+}
+
+const listFormatterCache = new Map();
+
+function formatList(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return '';
+  }
+
+  if (typeof Intl !== 'undefined' && typeof Intl.ListFormat === 'function') {
+    const locale = getLocale();
+    const key = locale || 'default';
+    let formatter = listFormatterCache.get(key);
+
+    if (!formatter) {
+      try {
+        formatter = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
+      } catch (error) {
+        formatter = new Intl.ListFormat(undefined, { style: 'long', type: 'conjunction' });
+      }
+      listFormatterCache.set(key, formatter);
+    }
+
+    try {
+      return formatter.format(items);
+    } catch (error) {
+      // Fall back to manual formatting
+    }
+  }
+
+  if (items.length === 1) {
+    return items[0];
+  }
+
+  const head = items.slice(0, -1);
+  const tail = items[items.length - 1];
+  return `${head.join(', ')} and ${tail}`;
+}
+
+function formatFlagList(flagKeys) {
+  if (!Array.isArray(flagKeys) || flagKeys.length === 0) {
+    return '';
+  }
+
+  const labels = flagKeys
+    .map(key => translate(`portfolio.comfort.flags.${key}`) || COMFORT_FLAG_FALLBACK[key] || key)
+    .filter(Boolean);
+
+  return formatList(labels);
+}
+
+function formatTravelDaysValue(value) {
+  if (!Number.isFinite(value)) {
+    return '—';
+  }
+  return formatCount(value);
+}
+
+function formatTravelMultiplier(value) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '—';
+  }
+  const rounded = Math.round(value * 100) / 100;
+  return `×${rounded}`;
+}
+
+function formatTravelFrictionPercent(value) {
+  if (!Number.isFinite(value)) {
+    return '—';
+  }
+  return formatPercentValue(value * 100, { signed: true });
+}
+
+function evaluateTravelFatigue(components = {}) {
+  const travel = components.travel && typeof components.travel === 'object' ? components.travel : {};
+  const friction = components.travelFriction && typeof components.travelFriction === 'object'
+    ? components.travelFriction
+    : {};
+
+  const used = Number.isFinite(travel.used) ? travel.used : null;
+  const limit = Number.isFinite(travel.limit) ? travel.limit : null;
+  const factor = Number.isFinite(friction.factor) ? friction.factor : null;
+  const multiplier = Number.isFinite(friction.multiplier) ? friction.multiplier : null;
+
+  let level = 'unknown';
+
+  if (limit && used !== null) {
+    const ratio = limit > 0 ? used / limit : null;
+    if (ratio !== null) {
+      if (ratio >= 0.9 || (factor !== null && factor > 0.35)) {
+        level = 'high';
+      } else if (ratio >= 0.7 || (factor !== null && factor > 0.2)) {
+        level = 'medium';
+      } else {
+        level = 'low';
+      }
+    }
+  } else if (used !== null) {
+    if (factor !== null && factor > 0.3) {
+      level = 'medium';
+    }
+  }
+
+  if (level === 'unknown' && factor !== null) {
+    if (factor > 0.35) {
+      level = 'high';
+    } else if (factor > 0.15) {
+      level = 'medium';
+    }
+  }
+
+  return {
+    used,
+    limit,
+    factor,
+    multiplier,
+    level
+  };
 }
 
 function readCapacity(derived) {
@@ -911,6 +1036,12 @@ function updateComfortIndicator(container, comfort) {
   const valueEl = container.querySelector('[data-comfort-value]');
   const summaryEl = container.querySelector('[data-comfort-summary]');
   const fillEl = container.querySelector('[data-comfort-fill]');
+  const fatigueContainer = container.querySelector('[data-travel-fatigue]');
+  const travelDaysEl = container.querySelector('[data-travel-days]');
+  const travelLimitEl = container.querySelector('[data-travel-limit]');
+  const travelFrictionEl = container.querySelector('[data-travel-friction]');
+  const travelMultiplierEl = container.querySelector('[data-travel-multiplier]');
+  const fatigueSummaryEl = container.querySelector('[data-travel-fatigue-summary]');
 
   container.classList.remove('is-high', 'is-medium', 'is-low', 'is-unknown');
 
@@ -918,13 +1049,35 @@ function updateComfortIndicator(container, comfort) {
     container.classList.add('is-unknown');
     container.setAttribute('aria-busy', 'true');
     if (valueEl) {
-      setText(valueEl, 'N/A');
+      setText(valueEl, translate('portfolio.comfort.valueUnavailable') || 'N/A');
     }
     if (summaryEl) {
-      setText(summaryEl, 'Comfort score will appear once the solver runs.');
+      setText(summaryEl, translate('portfolio.comfort.loadingSummary') || 'Comfort score will appear once the solver runs.');
     }
     if (fillEl instanceof HTMLElement) {
       fillEl.style.width = '0%';
+    }
+    if (fatigueContainer instanceof HTMLElement) {
+      fatigueContainer.classList.add('is-empty');
+      if (travelDaysEl) {
+        setText(travelDaysEl, '—');
+      }
+      if (travelLimitEl) {
+        setText(travelLimitEl, '—');
+      }
+      if (travelFrictionEl) {
+        setText(travelFrictionEl, '—');
+      }
+      if (travelMultiplierEl) {
+        setText(travelMultiplierEl, '—');
+      }
+      if (fatigueSummaryEl) {
+        setText(
+          fatigueSummaryEl,
+          translate('portfolio.comfort.travelUnavailable')
+            || 'Travel fatigue indicators will appear once optimization data is ready.'
+        );
+      }
     }
     return;
   }
@@ -949,7 +1102,57 @@ function updateComfortIndicator(container, comfort) {
   container.classList.add(levelClass);
 
   if (summaryEl) {
-    setText(summaryEl, comfort.summary || 'Comfort summary ready.');
+    let summaryText = comfort.summary || translate('portfolio.comfort.readyFallback') || 'Comfort summary ready.';
+
+    if (typeof comfort.summaryKey === 'string') {
+      const key = comfort.summaryKey;
+      if (key === 'portfolio.comfort.summary.focusSingle') {
+        const factor = comfort.summaryArgs?.factor;
+        const label = formatFlagList([factor]);
+        summaryText = translate(key, { factor: label }) || summaryText;
+      } else if (key === 'portfolio.comfort.summary.focusMultiple') {
+        const factors = Array.isArray(comfort.summaryArgs?.factors) ? comfort.summaryArgs.factors : [];
+        const label = formatFlagList(factors);
+        summaryText = translate(key, { factors: label }) || summaryText;
+      } else {
+        summaryText = translate(key) || summaryText;
+      }
+    }
+
+    setText(summaryEl, summaryText);
+  }
+
+  if (fatigueContainer instanceof HTMLElement) {
+    const fatigue = evaluateTravelFatigue(comfort.components || {});
+    const hasData = fatigue.used !== null || fatigue.limit !== null || fatigue.factor !== null;
+
+    fatigueContainer.classList.toggle('is-empty', !hasData);
+
+    if (travelDaysEl) {
+      const label = formatTravelDaysValue(fatigue.used);
+      setText(travelDaysEl, label);
+    }
+
+    if (travelLimitEl) {
+      const limitLabel = formatTravelDaysValue(fatigue.limit);
+      setText(travelLimitEl, limitLabel);
+    }
+
+    if (travelFrictionEl) {
+      setText(travelFrictionEl, formatTravelFrictionPercent(fatigue.factor));
+    }
+
+    if (travelMultiplierEl) {
+      setText(travelMultiplierEl, formatTravelMultiplier(fatigue.multiplier));
+    }
+
+    if (fatigueSummaryEl) {
+      const summaryKey = `portfolio.comfort.travelSummary.${fatigue.level || 'unknown'}`;
+      const fatigueSummary = translate(summaryKey)
+        || translate('portfolio.comfort.travelUnavailable')
+        || 'Travel fatigue indicators will appear once optimization data is ready.';
+      setText(fatigueSummaryEl, fatigueSummary);
+    }
   }
 }
 
