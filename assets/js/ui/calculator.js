@@ -24,6 +24,10 @@ import {
   setTravelFrictionPercent,
   setHandsOnQuotaPercent,
   setTaxMode,
+  setZelfstandigenaftrekEnabled,
+  setStartersaftrekEnabled,
+  setMkbVrijstellingEnabled,
+  setIncludeZvwEnabled,
   setIncomeTargetMode,
   TARGET_NET_BASIS_VALUES,
   TARGET_INCOME_MODES,
@@ -34,7 +38,15 @@ import {
 } from '../state.js';
 import { deriveCapacity } from '../capacity.js';
 import { deriveTargetNetDefaults, deriveIncomeTargets } from '../income.js';
-import { calculateTaxReserve, calculateTaxFromProfit, resolveTaxMode } from '../tax2025.js';
+import {
+  calculateTaxReserve,
+  calculateTaxFromProfit,
+  resolveTaxMode,
+  isZelfstandigenaftrekEnabled,
+  isStartersaftrekEnabled,
+  isMkbVrijstellingEnabled,
+  isZvwContributionEnabled
+} from '../tax2025.js';
 import { computeCosts } from '../costs.js';
 import { normalizeScenarioModifiers } from '../modifiers.js';
 import { announce, bindStateInput } from './components.js';
@@ -51,6 +63,10 @@ export function initializeCalculatorUI() {
     taxRate: document.getElementById('tax-rate'),
     taxModeSimple: document.getElementById('tax-mode-simple'),
     taxModeDutch: document.getElementById('tax-mode-dutch'),
+    taxZelfstandigenaftrek: document.getElementById('tax-zelfstandigenaftrek'),
+    taxStartersaftrek: document.getElementById('tax-startersaftrek'),
+    taxMkbVrijstelling: document.getElementById('tax-mkb-vrijstelling'),
+    taxIncludeZvw: document.getElementById('tax-include-zvw'),
     targetModeNet: document.getElementById('target-mode-net'),
     targetModeGross: document.getElementById('target-mode-gross'),
     fixedCosts: document.getElementById('fixed-costs'),
@@ -598,6 +614,46 @@ export function initializeCalculatorUI() {
       }
     });
 
+    registerControlBinding(controls.taxZelfstandigenaftrek, {
+      parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
+      commit: ({ value }, meta = {}) => {
+        const enabled = setZelfstandigenaftrekEnabled(value);
+        if (meta?.source !== 'persistence') {
+          announce(enabled ? 'Zelfstandigenaftrek enabled.' : 'Zelfstandigenaftrek disabled.');
+        }
+      }
+    });
+
+    registerControlBinding(controls.taxStartersaftrek, {
+      parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
+      commit: ({ value }, meta = {}) => {
+        const enabled = setStartersaftrekEnabled(value);
+        if (meta?.source !== 'persistence') {
+          announce(enabled ? 'Starter deduction enabled.' : 'Starter deduction disabled.');
+        }
+      }
+    });
+
+    registerControlBinding(controls.taxMkbVrijstelling, {
+      parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
+      commit: ({ value }, meta = {}) => {
+        const enabled = setMkbVrijstellingEnabled(value);
+        if (meta?.source !== 'persistence') {
+          announce(enabled ? 'MKB-vrijstelling enabled.' : 'MKB-vrijstelling disabled.');
+        }
+      }
+    });
+
+    registerControlBinding(controls.taxIncludeZvw, {
+      parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
+      commit: ({ value }, meta = {}) => {
+        const enabled = setIncludeZvwEnabled(value);
+        if (meta?.source !== 'persistence') {
+          announce(enabled ? 'Zvw contribution enabled.' : 'Zvw contribution disabled.');
+        }
+      }
+    });
+
     registerControlBinding(controls.targetModeNet, {
       parse: (raw, { input }) => ({ value: Boolean(input && input.checked) }),
       commit: ({ value }, meta = {}) => {
@@ -834,6 +890,22 @@ export function initializeCalculatorUI() {
 
     if (controls.taxModeDutch instanceof HTMLInputElement) {
       controls.taxModeDutch.checked = taxMode === 'dutch2025';
+    }
+
+    if (controls.taxZelfstandigenaftrek instanceof HTMLInputElement) {
+      controls.taxZelfstandigenaftrek.checked = isZelfstandigenaftrekEnabled(state);
+    }
+
+    if (controls.taxStartersaftrek instanceof HTMLInputElement) {
+      controls.taxStartersaftrek.checked = isStartersaftrekEnabled(state);
+    }
+
+    if (controls.taxMkbVrijstelling instanceof HTMLInputElement) {
+      controls.taxMkbVrijstelling.checked = isMkbVrijstellingEnabled(state);
+    }
+
+    if (controls.taxIncludeZvw instanceof HTMLInputElement) {
+      controls.taxIncludeZvw.checked = isZvwContributionEnabled(state);
     }
 
     if (controls.variableCostPerClass instanceof HTMLInputElement) {
