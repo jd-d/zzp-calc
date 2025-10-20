@@ -23,7 +23,12 @@ export const SERVICE_DEFAULTS = {
     basePrice: 2250,
     directCostPerUnit: 180,
     fixedCostShare: 0.34,
-    variableCostShare: 0.28
+    variableCostShare: 0.28,
+    pricingFences: {
+      min: 2030,
+      target: 2250,
+      stretch: 2700
+    }
   },
   ops: {
     shareOfCapacity: 0.22,
@@ -31,7 +36,12 @@ export const SERVICE_DEFAULTS = {
     basePrice: 1450,
     directCostPerUnit: 140,
     fixedCostShare: 0.2,
-    variableCostShare: 0.25
+    variableCostShare: 0.25,
+    pricingFences: {
+      min: 1310,
+      target: 1450,
+      stretch: 1740
+    }
   },
   qc: {
     shareOfCapacity: 0.16,
@@ -39,7 +49,12 @@ export const SERVICE_DEFAULTS = {
     basePrice: 980,
     directCostPerUnit: 90,
     fixedCostShare: 0.12,
-    variableCostShare: 0.15
+    variableCostShare: 0.15,
+    pricingFences: {
+      min: 880,
+      target: 980,
+      stretch: 1180
+    }
   },
   training: {
     shareOfCapacity: 0.18,
@@ -47,7 +62,12 @@ export const SERVICE_DEFAULTS = {
     basePrice: 1180,
     directCostPerUnit: 105,
     fixedCostShare: 0.18,
-    variableCostShare: 0.2
+    variableCostShare: 0.2,
+    pricingFences: {
+      min: 1060,
+      target: 1180,
+      stretch: 1420
+    }
   },
   intel: {
     shareOfCapacity: 0.12,
@@ -55,7 +75,12 @@ export const SERVICE_DEFAULTS = {
     basePrice: 760,
     directCostPerUnit: 80,
     fixedCostShare: 0.16,
-    variableCostShare: 0.12
+    variableCostShare: 0.12,
+    pricingFences: {
+      min: 680,
+      target: 760,
+      stretch: 910
+    }
   }
 };
 
