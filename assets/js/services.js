@@ -405,39 +405,84 @@ function computeComfortSnapshot({ totals = {}, constraints = {}, capacity = {}, 
 
   const score = parts.length ? parts.reduce((sum, value) => sum + value, 0) / parts.length : null;
   let level = 'unknown';
-  let summary = 'Adjust your scenario to compute comfort.';
+  let summaryKey = 'portfolio.comfort.summary.pending';
+  const summaryArgs = {};
+  const flagged = [];
 
   if (score !== null) {
     if (score >= 0.75) {
       level = 'high';
-      summary = 'Comfortable margin across workload, travel, and delivery targets.';
+      summaryKey = 'portfolio.comfort.summary.high';
     } else if (score >= 0.5) {
       level = 'medium';
-      summary = 'Mixed comfort. Review highlighted constraints to stay on track.';
+      summaryKey = 'portfolio.comfort.summary.medium';
     } else {
       level = 'low';
-      summary = 'Comfort risk detected. Adjust capacity, travel, or pricing inputs.';
+      summaryKey = 'portfolio.comfort.summary.low';
     }
 
-    const flagged = [];
     if (marginScore !== null && marginScore < 0.75) {
       flagged.push('margin');
     }
     if (serviceScore !== null && serviceScore < 0.75) {
-      flagged.push('service days');
+      flagged.push('service');
     }
     if (travelScore !== null && travelScore < 0.75) {
-      flagged.push('travel days');
+      flagged.push('travel');
     }
     if (handsOnScore !== null && handsOnScore < 0.75) {
-      flagged.push('hands-on mix');
+      flagged.push('handsOn');
     }
 
     if (flagged.length === 1) {
-      summary = `Focus on ${flagged[0]} to improve comfort.`;
+      summaryKey = 'portfolio.comfort.summary.focusSingle';
+      summaryArgs.factor = flagged[0];
     } else if (flagged.length > 1) {
-      summary = `Focus on ${flagged.slice(0, -1).join(', ')} and ${flagged.slice(-1)}.`;
+      summaryKey = 'portfolio.comfort.summary.focusMultiple';
+      summaryArgs.factors = [...flagged];
     }
+  }
+
+  const summaryFlagLabels = {
+    margin: 'margin',
+    service: 'service days',
+    travel: 'travel days',
+    handsOn: 'hands-on mix'
+  };
+
+  let summary = 'Adjust your scenario to compute comfort.';
+  switch (summaryKey) {
+    case 'portfolio.comfort.summary.high':
+      summary = 'Comfortable margin across workload, travel, and delivery targets.';
+      break;
+    case 'portfolio.comfort.summary.medium':
+      summary = 'Mixed comfort. Review highlighted constraints to stay on track.';
+      break;
+    case 'portfolio.comfort.summary.low':
+      summary = 'Comfort risk detected. Adjust capacity, travel, or pricing inputs.';
+      break;
+    case 'portfolio.comfort.summary.focusSingle': {
+      const label = summaryFlagLabels[summaryArgs.factor] || summaryArgs.factor || 'key factors';
+      summary = `Focus on ${label} to improve comfort.`;
+      break;
+    }
+    case 'portfolio.comfort.summary.focusMultiple': {
+      const factors = Array.isArray(summaryArgs.factors) ? summaryArgs.factors : [];
+      if (factors.length) {
+        const readable = factors
+          .map(flag => summaryFlagLabels[flag] || flag)
+          .filter(Boolean);
+        if (readable.length === 1) {
+          summary = `Focus on ${readable[0]} to improve comfort.`;
+        } else if (readable.length > 1) {
+          const last = readable.pop();
+          summary = `Focus on ${readable.join(', ')} and ${last}.`;
+        }
+      }
+      break;
+    }
+    default:
+      break;
   }
 
   return {
@@ -445,6 +490,9 @@ function computeComfortSnapshot({ totals = {}, constraints = {}, capacity = {}, 
     scorePercent: score !== null ? Math.round(score * 100) : null,
     level,
     summary,
+    summaryKey,
+    summaryArgs,
+    flags: flagged,
     components
   };
 }

@@ -105,8 +105,36 @@
       <header class="hero surface-card motion-fade-in" aria-labelledby="hero-title">
         <div class="surface-content stack">
           <div class="hero__top cluster cluster--end">
-          <a href="#" id="how-to-link" class="chip chip--outline">How To Use This Tool</a>
-          <a class="chip chip--outline" href="#privacy-info">Your Info Is Safe</a>
+          <a
+            href="#"
+            id="how-to-link"
+            class="chip chip--outline"
+            data-i18n-key="hero.howToUse"
+            data-i18n-fallback="How To Use This Tool"
+          >How To Use This Tool</a>
+          <a
+            class="chip chip--outline"
+            href="#privacy-info"
+            data-i18n-key="hero.privacyLink"
+            data-i18n-fallback="Your Info Is Safe"
+          >Your Info Is Safe</a>
+          <div
+            class="language-controls"
+            data-language-toggle
+            role="group"
+            aria-label="Language selection"
+          >
+            <button
+              type="button"
+              class="chip chip--outline"
+              data-language-option="en"
+            >English</button>
+            <button
+              type="button"
+              class="chip chip--outline"
+              data-language-option="es"
+            >Español</button>
+          </div>
           <div class="theme-controls" role="group" aria-label="Color theme controls">
             <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="true">
               <span class="toggle-track" aria-hidden="true">
@@ -121,9 +149,19 @@
           </div>
         </div>
           <div class="hero__body stack stack--tight">
-            <span class="hero__eyebrow">Fruit trade CFO sandbox</span>
-            <h1 id="hero-title">ZZP Pricing Lab</h1>
-            <p class="hero__lede">
+            <span
+              class="hero__eyebrow"
+              data-i18n-key="hero.eyebrow"
+              data-i18n-fallback="Fruit trade CFO sandbox"
+            >Fruit trade CFO sandbox</span>
+            <h1 id="hero-title" data-i18n-key="hero.heading" data-i18n-fallback="ZZP Pricing Lab">
+              ZZP Pricing Lab
+            </h1>
+            <p
+              class="hero__lede"
+              data-i18n-key="hero.intro"
+              data-i18n-fallback="Translate your net target into a resilient service mix with comfort buffer guardrails built in."
+            >
               Translate your net target into a resilient service mix with comfort buffer guardrails built in.
             </p>
           </div>
@@ -135,14 +173,29 @@
       <section class="hero-controls surface-card motion-slide-up" aria-labelledby="quick-controls-heading">
         <div class="surface-content stack">
           <div class="stack stack--tight">
-          <h2 id="quick-controls-heading">Net target sandbox controls</h2>
-          <p class="field-note">Start with a net target preset, then explore service mix levers and comfort buffers.</p>
+          <h2
+            id="quick-controls-heading"
+            data-i18n-key="quickControls.heading"
+            data-i18n-fallback="Net target sandbox controls"
+          >
+            Net target sandbox controls
+          </h2>
+          <p
+            class="field-note"
+            data-i18n-key="quickControls.description"
+            data-i18n-fallback="Start with a net target preset, then explore service mix levers and comfort buffers."
+          >
+            Start with a net target preset, then explore service mix levers and comfort buffers.
+          </p>
         </div>
         <div
           class="hero-controls__presets cluster"
           id="scenario-presets"
           role="group"
           aria-label="Net target sandbox presets"
+          data-i18n-key="quickControls.presetsGroup"
+          data-i18n-attr="aria-label"
+          data-i18n-fallback="Net target sandbox presets"
           data-preset-group="scenarios"
         >
           <button
@@ -151,7 +204,10 @@
             data-preset="net:40000 tax:35 buffer:10 timeoff:1.5"
             aria-pressed="false"
           >
-            €40k net ramp · lean mix
+            <span
+              data-i18n-key="quickControls.presets.starter"
+              data-i18n-fallback="€40k net ramp · lean mix"
+            >€40k net ramp · lean mix</span>
           </button>
           <button
             type="button"
@@ -159,7 +215,10 @@
             data-preset="net:50000 tax:40 buffer:15 timeoff:2"
             aria-pressed="true"
           >
-            €50k net steady · +15% buffer
+            <span
+              data-i18n-key="quickControls.presets.steady"
+              data-i18n-fallback="€50k net steady · +15% buffer"
+            >€50k net steady · +15% buffer</span>
           </button>
           <button
             type="button"
@@ -167,12 +226,22 @@
             data-preset="net:70000 tax:42 buffer:20 timeoff:1"
             aria-pressed="false"
           >
-            €70k net growth · +20% buffer
+            <span
+              data-i18n-key="quickControls.presets.growth"
+              data-i18n-fallback="€70k net growth · +20% buffer"
+            >€70k net growth · +20% buffer</span>
           </button>
         </div>
         <div class="hero-controls__preset-rows">
           <div class="hero-controls__preset-row">
-            <p id="timeoff-presets-label" class="preset-row__label">Time off plan</p>
+            <p
+              id="timeoff-presets-label"
+              class="preset-row__label"
+              data-i18n-key="quickControls.rows.timeoff"
+              data-i18n-fallback="Time off plan"
+            >
+              Time off plan
+            </p>
             <div
               class="preset-row__actions"
               data-preset-group="timeoff"
@@ -184,6 +253,8 @@
                 class="chip"
                 data-preset="timeoff:0"
                 aria-pressed="false"
+                data-i18n-key="quickControls.options.timeoff.zero"
+                data-i18n-fallback="0 months"
               >
                 0 months
               </button>
@@ -192,6 +263,8 @@
                 class="chip"
                 data-preset="timeoff:1"
                 aria-pressed="false"
+                data-i18n-key="quickControls.options.timeoff.one"
+                data-i18n-fallback="1 month"
               >
                 1 month
               </button>
@@ -200,13 +273,22 @@
                 class="chip is-active"
                 data-preset="timeoff:2"
                 aria-pressed="true"
+                data-i18n-key="quickControls.options.timeoff.two"
+                data-i18n-fallback="2 months"
               >
                 2 months
               </button>
             </div>
           </div>
           <div class="hero-controls__preset-row">
-            <p id="weekly-presets-label" class="preset-row__label">Weekly hours target</p>
+            <p
+              id="weekly-presets-label"
+              class="preset-row__label"
+              data-i18n-key="quickControls.rows.weekly"
+              data-i18n-fallback="Weekly hours target"
+            >
+              Weekly hours target
+            </p>
             <div
               class="preset-row__actions"
               data-preset-group="weekly"
@@ -218,6 +300,8 @@
                 class="chip"
                 data-preset="weekly:32"
                 aria-pressed="false"
+                data-i18n-key="quickControls.options.weekly.h32"
+                data-i18n-fallback="32 hours"
               >
                 32 hours
               </button>
@@ -226,6 +310,8 @@
                 class="chip"
                 data-preset="weekly:36"
                 aria-pressed="false"
+                data-i18n-key="quickControls.options.weekly.h36"
+                data-i18n-fallback="36 hours"
               >
                 36 hours
               </button>
@@ -234,13 +320,22 @@
                 class="chip"
                 data-preset="weekly:40"
                 aria-pressed="false"
+                data-i18n-key="quickControls.options.weekly.h40"
+                data-i18n-fallback="40 hours"
               >
                 40 hours
               </button>
             </div>
           </div>
           <div class="hero-controls__preset-row">
-            <p id="travel-presets-label" class="preset-row__label">Travel intensity</p>
+            <p
+              id="travel-presets-label"
+              class="preset-row__label"
+              data-i18n-key="quickControls.rows.travel"
+              data-i18n-fallback="Travel intensity"
+            >
+              Travel intensity
+            </p>
             <div
               class="preset-row__actions"
               data-preset-group="travel"
@@ -252,6 +347,8 @@
                 class="chip is-active"
                 data-preset="travel:low"
                 aria-pressed="true"
+                data-i18n-key="quickControls.options.travel.light"
+                data-i18n-fallback="Light travel"
               >
                 Light travel
               </button>
@@ -260,6 +357,8 @@
                 class="chip"
                 data-preset="travel:base"
                 aria-pressed="false"
+                data-i18n-key="quickControls.options.travel.base"
+                data-i18n-fallback="Base travel"
               >
                 Base travel
               </button>
@@ -268,6 +367,8 @@
                 class="chip"
                 data-preset="travel:high"
                 aria-pressed="false"
+                data-i18n-key="quickControls.options.travel.heavy"
+                data-i18n-fallback="Heavy travel"
               >
                 Heavy travel
               </button>
@@ -277,7 +378,13 @@
         <div class="hero-controls__sliders control-group">
           <div class="control control--range">
             <label for="quick-target-net">
-              <span class="label-text">Annual net target</span>
+              <span
+                class="label-text"
+                data-i18n-key="quickControls.sliders.targetNet"
+                data-i18n-fallback="Annual net target"
+              >
+                Annual net target
+              </span>
             </label>
             <input
               type="range"
@@ -300,7 +407,13 @@
           </div>
           <div class="control control--range">
             <label for="quick-buffer">
-              <span class="label-text">Comfort buffer uplift (%)</span>
+              <span
+                class="label-text"
+                data-i18n-key="quickControls.sliders.buffer"
+                data-i18n-fallback="Comfort buffer uplift (%)"
+              >
+                Comfort buffer uplift (%)
+              </span>
             </label>
             <input
               type="range"
@@ -323,7 +436,13 @@
           </div>
           <div class="control control--range">
             <label for="quick-months-off">
-              <span class="label-text">Planned months off</span>
+              <span
+                class="label-text"
+                data-i18n-key="quickControls.sliders.monthsOff"
+                data-i18n-fallback="Planned months off"
+              >
+                Planned months off
+              </span>
             </label>
             <input
               type="range"
@@ -1829,13 +1948,69 @@
           </dl>
           <div class="comfort-meter" id="portfolio-comfort" aria-live="polite" aria-busy="true">
             <div class="comfort-meter__header">
-              <span class="comfort-meter__title">Comfort index</span>
+              <span
+                class="comfort-meter__title"
+                data-i18n-key="portfolio.comfort.title"
+                data-i18n-fallback="Comfort index"
+              >
+                Comfort index
+              </span>
               <span class="comfort-meter__value" data-comfort-value>N/A</span>
             </div>
             <div class="comfort-meter__track" role="presentation">
               <div class="comfort-meter__fill" data-comfort-fill style="width: 0%;"></div>
             </div>
-            <p class="comfort-meter__summary" data-comfort-summary>Comfort score will appear once the solver runs.</p>
+            <p
+              class="comfort-meter__summary"
+              data-comfort-summary
+              data-i18n-fallback="Comfort score will appear once the solver runs."
+            >
+              Comfort score will appear once the solver runs.
+            </p>
+            <div class="comfort-meter__insight" data-travel-fatigue>
+              <h3
+                class="comfort-meter__insight-title"
+                data-i18n-key="portfolio.comfort.travelHeading"
+                data-i18n-fallback="Travel fatigue"
+              >
+                Travel fatigue
+              </h3>
+              <dl class="comfort-meter__insight-grid">
+                <div>
+                  <dt
+                    data-i18n-key="portfolio.comfort.travelDaysLabel"
+                    data-i18n-fallback="Travel days"
+                  >
+                    Travel days
+                  </dt>
+                  <dd>
+                    <span data-travel-days>—</span>
+                    <span aria-hidden="true">/</span>
+                    <span data-travel-limit>—</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt
+                    data-i18n-key="portfolio.comfort.travelFrictionLabel"
+                    data-i18n-fallback="Travel friction"
+                  >
+                    Travel friction
+                  </dt>
+                  <dd>
+                    <span data-travel-friction>—</span>
+                    <span aria-hidden="true">·</span>
+                    <span data-travel-multiplier>—</span>
+                  </dd>
+                </div>
+              </dl>
+              <p
+                class="comfort-meter__insight-summary"
+                data-travel-fatigue-summary
+                data-i18n-fallback="Travel fatigue indicators will appear once optimization data is ready."
+              >
+                Travel fatigue indicators will appear once optimization data is ready.
+              </p>
+            </div>
           </div>
         </div>
         <div class="portfolio-weekly">
@@ -1943,8 +2118,24 @@
     <div class="readme-dialog__backdrop" id="readme-backdrop" tabindex="-1"></div>
     <div class="readme-dialog__content" role="document">
       <div class="readme-dialog__header">
-        <h2 id="readme-title">How To Use This Tool</h2>
-        <button type="button" class="readme-dialog__close" id="readme-close" aria-label="Close instructions">×</button>
+        <h2
+          id="readme-title"
+          data-i18n-key="hero.howToUse"
+          data-i18n-fallback="How To Use This Tool"
+        >
+          How To Use This Tool
+        </h2>
+        <button
+          type="button"
+          class="readme-dialog__close"
+          id="readme-close"
+          aria-label="Close instructions"
+          data-i18n-key="readme.close"
+          data-i18n-attr="aria-label,title"
+          data-i18n-fallback="Close instructions"
+        >
+          ×
+        </button>
       </div>
       <div class="readme-dialog__body" id="readme-body" tabindex="0"></div>
     </div>
