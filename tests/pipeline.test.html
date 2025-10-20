@@ -647,6 +647,41 @@
       resetTaxOverrides();
     });
 
+    addTest('calculateDutchTax2025 allows overriding deduction amounts and rates', () => {
+      resetTaxOverrides();
+      const capacity = deriveCapacity({});
+      const state = createIncomeState(60000);
+      state.tax.startersaftrek = true;
+      const costs = computeCosts(state, capacity);
+
+      calcState.tax.startersaftrek = true;
+      calcState.tax.overrides = {
+        zelfstandigenaftrekAmount: 1000,
+        startersaftrekAmount: 500,
+        mkbVrijstellingRate: 0.1,
+        zvwRate: 0.04,
+        zvwMaximumIncome: 50000
+      };
+
+      const result = calculateDutchTax2025(state, capacity, costs);
+
+      if (Math.abs(result.zelfstandigenaftrek - 1000) > EPSILON) {
+        throw new Error('Zelfstandigenaftrek override should apply');
+      }
+      if (Math.abs(result.startersaftrek - 500) > EPSILON) {
+        throw new Error('Starter deduction override should apply');
+      }
+      if (Math.abs(result.mkbVrijstellingRate - 0.1) > EPSILON) {
+        throw new Error('MKB-vrijstelling rate override should apply');
+      }
+      const expectedZvwContribution = Math.min(result.taxableProfitBeforeMkb, 50000) * 0.04;
+      if (Math.abs(result.zvwContribution - expectedZvwContribution) > 1e-6) {
+        throw new Error('Zvw override should update contribution calculation');
+      }
+
+      resetTaxOverrides();
+    });
+
     function recordResult(name, passed, error) {
       const item = document.createElement('li');
       item.textContent = `${passed ? '✅ PASS' : '❌ FAIL'} · ${name}`;
