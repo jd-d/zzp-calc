@@ -832,6 +832,27 @@ header.hero {
   gap: var(--space-3);
 }
 
+.language-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.language-controls .chip {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-pill);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.language-controls .chip.is-active {
+  background: var(--accent);
+  color: var(--surface-0);
+  border-color: transparent;
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -1357,6 +1378,51 @@ header.hero {
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--text-muted);
+}
+
+.comfort-meter__insight {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.comfort-meter__insight-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-muted-strong, var(--text-default));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.comfort-meter__insight-grid {
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.comfort-meter__insight-grid dt {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.comfort-meter__insight-grid dd {
+  margin: 0;
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.comfort-meter__insight-summary {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.comfort-meter__insight.is-empty .comfort-meter__insight-grid {
+  opacity: 0.6;
 }
 
 .comfort-meter.is-high {

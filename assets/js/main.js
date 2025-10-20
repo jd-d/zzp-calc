@@ -34,6 +34,7 @@ export { initializePageUi } from './ui/main.js';
 export { mountScenarioToolbar } from './ui/scenario-toolbar.js';
 export { mountPortfolio } from './ui/portfolio.js';
 export * from './ui/i18n.js';
+export { initializeLanguageControls, applyTranslationsToDom } from './ui/language.js';
 export * from './ui/theming.js';
 export { calculateDutchTax2025 } from './tax2025.js';
 
